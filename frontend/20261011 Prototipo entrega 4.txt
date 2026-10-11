@@ -1,0 +1,165 @@
+_
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de neumáticos CAEX</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#1d1d1b;--mut:#6b6a66;--line:#dcdad4;--sel:#1d6fd1;--pill:#fbe3d0;--rojo:#c0472f;--amarillo:#c9962a;--verde:#5b8c5a;--gris:#9aa3ad;--n2:#e67e22;--n3:#c62828;--rojo-bg:#f1d6d0;--amarillo-bg:#f3e8cc;--verde-bg:#dfeadb;--gris-bg:#e8eaed;--btn:#1d1d1b;--btnt:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#222221;--ink:#f1f0ec;--mut:#a09f99;--line:#3b3a37;--pill:#4a3524;--rojo-bg:#4a2a25;--amarillo-bg:#46391b;--verde-bg:#243523;--gris-bg:#2d2f32;--btn:#f1f0ec;--btnt:#161615}}
+:root[data-theme="dark"]{--bg:#161615;--card:#222221;--ink:#f1f0ec;--mut:#a09f99;--line:#3b3a37;--pill:#4a3524;--rojo-bg:#4a2a25;--amarillo-bg:#46391b;--verde-bg:#243523;--gris-bg:#2d2f32;--btn:#f1f0ec;--btnt:#161615}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+nav{display:flex;gap:6px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;align-items:center}
+nav b{margin-right:auto}nav button{border:0;background:none;color:var(--mut);font:inherit;padding:6px 12px;border-radius:6px;cursor:pointer}
+nav button.on{background:var(--pill);color:var(--ink);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:18px 16px 100px}
+h1{font-size:24px;margin:0 0 4px}p{margin:0}.mut{color:var(--mut)}.sm{font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card .n{font-size:26px;font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+input{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;background:var(--card);color:var(--ink)}
+.pl{border:1px solid var(--line);background:var(--card);color:inherit;font:inherit;border-radius:20px;padding:6px 14px;cursor:pointer}
+.pl.on{background:var(--pill);border-color:var(--n2)}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);text-align:left;padding:12px 10px;font-weight:600}
+td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:top}
+tr.go{cursor:pointer}tr.go:hover td{filter:brightness(.97)}
+.r td{background:var(--rojo-bg)}.a td{background:var(--amarillo-bg)}.num{text-align:right;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:600;border:1.5px solid;border-radius:20px;padding:1px 9px;white-space:nowrap}
+a.s{color:inherit;text-decoration:underline;cursor:pointer}
+.alert{border:2px solid var(--n3);border-radius:10px;padding:12px 16px;margin:14px 0;background:var(--card);cursor:pointer;width:100%;text-align:left;color:inherit;font:inherit}
+.truck{display:grid;grid-template-columns:200px 1fr;gap:16px;margin-bottom:12px}
+@media(max-width:560px){.truck{grid-template-columns:1fr}}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,120px));gap:8px}
+.tile{border:1px solid;border-radius:8px;padding:8px;text-align:center;cursor:pointer;font:inherit;color:inherit}
+.tile b{display:block}.tile small{display:block;font-size:11px;margin-top:2px}
+.rojo{background:var(--rojo-bg);border-color:var(--rojo)}.amarillo{background:var(--amarillo-bg);border-color:var(--amarillo)}.verde{background:var(--verde-bg);border-color:var(--verde)}.gris{background:var(--gris-bg);border-color:var(--gris)}
+.cols{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.opt{display:block;width:100%;text-align:left;color:inherit;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;cursor:pointer}
+.opt.sel{border:2px solid var(--sel);padding:13px}.opt.full{opacity:.45;cursor:not-allowed}.opt b{display:block}
+.cta{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
+.cta button{display:block;width:100%;max-width:520px;margin:0 auto;border:0;border-radius:8px;background:var(--btn);color:var(--btnt);font:600 15px "IBM Plex Sans",system-ui,sans-serif;padding:14px;cursor:pointer}
+.cta button:disabled{opacity:.35;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+svg{width:100%;height:auto;display:block;border-radius:6px}.ok{border:2px solid var(--verde)}
+</style></head><body>
+<nav><b>Control de neumáticos CAEX</b><button id="t0" onclick="nav('#/')">Tablero</button><button id="t1" onclick="nav('#/c')">Camiones</button><button id="t2" onclick="nav('#/o')">Órdenes</button></nav>
+<main id="app"></main>
+<script>
+const NOM=["Sin daño","Leve","Moderado","Crítico"],NC=["var(--verde)","var(--amarillo)","var(--n2)","var(--n3)"];
+const TR=[["CAEX-101","Cat 793F","16.791 h",[1687,3365,1548,3971,6571,7741]],["CAEX-102","Cat 793F","13.622 h",[1285,4359,34,3206,2247,441]],["CAEX-103","Komatsu 930E-4","21.087 h",[1597,3624,4566,2390,392,4121]],["CAEX-104","","",[2100,480,3300,1850,2760,4020]],["CAEX-105","","",[1320,168,2410,3050,106,1980]],["CAEX-106","","",[2210,95,1740,150,143,3320]]];
+const K={"102-3":["5980R63-2426-1348",20.4,1.17,"24-09-2026"],"106-2":["5980R63-2328-1590",21.7,1.79,"21-09-2026"],"105-5":["5980R63-2345-1534",21.2,1.14,"20-09-2026"],"106-5":["5980R63-2618-1611",22.3,1.61,"21-09-2026"],"106-4":["5980R63-2531-1596",22.9,1.94,"21-09-2026"],"105-2":["5980R63-2312-1561",24.1,2.44,"20-09-2026 (obs.)"]};
+const D={"102-3":[3,"corte profundo en flanco",.94],"106-4":[2,"roca incrustada en la banda",.88],"106-2":[1,"desgaste irregular",.76]};
+const zona=h=>h==null?"gris":h<200?"rojo":h<500?"amarillo":"verde";
+const ZN={rojo:"rojo",amarillo:"amarillo",verde:"verde",gris:"sin datos"};
+const f=n=>String(n).replace(".",","),H=n=>n.toLocaleString("es-CL")+" h";
+const T=TR.flatMap((c,ci)=>c[3].map((h,k)=>{const p=k+1,key=(101+ci)+"-"+p,kn=K[key],d=D[key];
+const rate=kn?kn[2]:1.1;return{cx:c[0],pos:p,h,serial:kn?kn[0]:`5980R63-${2000+ci*137+p*53}-${1300+ci*61+p*17}`,rate,mm:kn?kn[1]:+(20+h*rate/100).toFixed(1),seg:h<500?"observada":"nominal",fecha:kn?kn[3]:"24-09-2026",nivel:d?d[0]:0,dmg:d?[{t:d[1],c:d[2]}]:[]}}));
+const ST=s=>T.find(t=>t.serial===s);
+const NOTA="Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar la goma retirada en la cancha de garantía con el serial legible para el reclamo al proveedor.";
+let O=[["ot-0068","26-09-2026 10:59","5980R63-2531-1596","retiro",NOTA,"29-09-2026","turno A, 08:00 a 12:00",150,"med-2494","22,9 mm, tasa observada","programada"],
+["ot-0067","26-09-2026 09:24","5980R63-2328-1590","retiro","Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.","29-09-2026","turno B, 20:00 a 00:00",95,"med-2492","21,7 mm, tasa observada","programada"],
+["ot-0066","25-09-2026 16:40","5980R63-2345-1534","retiro","Retiro programado por proyección de 106 h remanentes.","30-09-2026","turno A, 08:00 a 12:00",106,"med-2490","21,2 mm, tasa observada","programada"],
+["ot-0065","25-09-2026 11:05","5980R63-2312-1561","retiro","Retiro programado por proyección de 168 h remanentes.","30-09-2026","turno B, 20:00 a 00:00",168,"med-2488","24,1 mm, tasa observada","programada"],
+["ot-0064","24-09-2026 15:12","5980R63-2218-1478","rotacion","Rotación por desgaste desigual entre posiciones.","01-10-2026","turno A, 08:00 a 12:00",392,"med-2485","20,4 mm, tasa observada","programada"],
+["ot-0052","18-09-2026 08:30","5980R63-2100-1301","retiro","Retiro ejecutado, goma entregada en cancha de garantía.","19-09-2026","turno A, 08:00 a 12:00",120,"med-2410","20,2 mm, tasa observada","ejecutada"],
+["ot-0047","15-09-2026 13:10","5980R63-2150-1355","inspeccion","Anulada: el neumático se rotó antes de la ventana.","16-09-2026","turno B, 20:00 a 00:00",480,"med-2380","20,9 mm, tasa nominal","anulada"]];
+const BASE={ejecutada:54,anulada:7},ES={programada:"var(--amarillo)",ejecutada:"var(--verde)",anulada:"var(--gris)"};
+const W=[{id:1,dia:"29-09-2026",turno:"turno B, 20:00 a 00:00",libres:2,en:36},{id:2,dia:"30-09-2026",turno:"turno A, 08:00 a 12:00",libres:1,en:56},{id:3,dia:"01-10-2026",turno:"turno B, 20:00 a 00:00",libres:3,en:84}];
+let fz="todas",ft="cualquier",q="",eo="todos",to="todos",qo="",chosen=null,msg="",open={};
+const $=document.getElementById("app");const nav=h=>{location.hash=h};
+const bd=n=>`<span class="badge" style="color:${NC[n]}">${n} · ${NOM[n]}</span>`;
+const zb=z=>`<span class="dot" style="background:var(--${z})"></span>${ZN[z]}`;
+const tabs=i=>[0,1,2].forEach(k=>document.getElementById("t"+k).classList.toggle("on",k===i));
+const pills=(arr,cur,fn)=>arr.map(a=>`<button class="pl ${a===cur?"on":""}" onclick="${fn}('${a}')">${a}</button>`).join("");
+function pTablero(){tabs(0);const c={rojo:0,amarillo:0,verde:0,gris:0};T.forEach(t=>c[zona(t.h)]++);
+const L=T.filter(t=>(fz==="todas"||ZN[zona(t.h)]===fz)&&(ft==="cualquier"||t.seg===ft.replace("tasa ",""))&&(t.serial+t.cx+t.pos).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.h-b.h);
+const cr=T.find(t=>t.nivel===3);
+const K4=[["rojo","menos de 200 horas: programar el retiro ahora"],["amarillo","menos de 500 horas: entra a la próxima ventana"],["verde","más de 500 horas"],["gris","sin mediciones: no hay proyección"]].map(([z,s])=>`<div class="card"><div class="mut sm">${zb(z).toUpperCase()}</div><div class="n">${c[z]}</div><div class="mut sm">${s}</div></div>`).join("");
+$.innerHTML=`<h1>Tablero del turno</h1><p class="mut">La flota ordenada por horas de vida útil remanente. Una fila es un neumático montado; se abre con un clic.</p>
+${cr?`<button class="alert" onclick="nav('#/n/${cr.serial}')"><b style="color:var(--n3)">Alerta de daño crítico</b> · ${cr.cx}, posición ${cr.pos}: ${cr.dmg[0].t}. Sacar el CAEX del ciclo.</button>`:""}
+<div class="kpis">${K4}</div>
+<div class="bar"><input id="q" placeholder="buscar por serial o camión" value="${q}" oninput="q=this.value;pTablero();document.getElementById('q').focus();">${pills(["todas","rojo","amarillo","verde","sin datos"],fz,"setZ")}${pills(["cualquier","tasa observada","tasa nominal"],ft,"setT")}</div>
+<div class="tw"><table><thead><tr><th>Camión</th><th>Pos.</th><th>Serial</th><th class="num">Profundidad</th><th class="num">Tasa reciente</th><th>Tasa según</th><th class="num">Horas rem.</th><th>Zona</th><th>Daño</th><th>Última medición</th></tr></thead><tbody>
+${L.map(t=>`<tr class="go ${zona(t.h)[0]}" onclick="nav('#/n/${t.serial}')"><td>${t.cx}</td><td>${t.pos}</td><td>${t.serial}</td><td class="num">${f(t.mm)} mm</td><td class="num">${f(t.rate)} mm / 100 h</td><td>${t.seg}</td><td class="num">${H(t.h)}</td><td>${zb(zona(t.h))}</td><td>${bd(t.nivel)}</td><td>${t.fecha}</td></tr>`).join("")||`<tr><td colspan="10" class="mut">Sin resultados. Limpia los filtros.</td></tr>`}</tbody></table></div>`}
+const setZ=v=>{fz=v;pTablero()},setT=v=>{ft=v;pTablero()};
+function pCamiones(){tabs(1);
+const cs=TR.filter(c=>(c[0]+c[1]+T.filter(t=>t.cx===c[0]).map(t=>t.serial).join()).toLowerCase().includes(q.toLowerCase()));
+$.innerHTML=`<h1>Camiones</h1><p class="mut">Seis posiciones por CAEX. Cada posición abre la ficha del neumático que lleva montado; desde la ficha se registra la medición.</p>
+<div class="bar" style="margin-top:14px"><input id="q" placeholder="buscar por camión, modelo, serial o zona" value="${q}" oninput="q=this.value;pCamiones();document.getElementById('q').focus();"></div>
+${cs.map(c=>{const ts=T.filter(t=>t.cx===c[0]),rojos=ts.filter(t=>zona(t.h)==="rojo").length,mx=Math.max(...ts.map(t=>t.nivel));
+return`<div class="card truck"><div><b>${c[0]}</b><div class="mut">${c[1]||"modelo por definir"}</div><div>${c[2]?"Horómetro "+c[2]:""}</div>${rojos?`<div><span class="dot" style="background:var(--rojo)"></span>${rojos} en rojo</div>`:""}<div style="margin-top:6px">${bd(mx)}</div></div>
+<div class="tiles">${ts.map(t=>`<button class="tile ${zona(t.h)}" onclick="nav('#/n/${t.serial}')"><b>P${t.pos}</b>${H(t.h)}${t.nivel?`<small style="color:${NC[t.nivel]}"><b>Daño ${t.nivel}</b></small>`:""}</button>`).join("")}</div></div>`}).join("")||`<p class="mut">Sin resultados.</p>`}`}
+function foto(t){const col=NC[t.nivel],bl=Array.from({length:12},(_,i)=>`<rect x="${14+i*24}" y="16" width="16" height="130" rx="3" fill="#4a4a47"/>`).join("");
+const bx=t.dmg.map(d=>`<rect x="110" y="50" width="70" height="46" fill="none" stroke="${col}" stroke-width="3"/><text x="110" y="44" font-size="11" fill="#fff">${d.t} ${Math.round(d.c*100)}%</text>`).join("");
+return`<svg viewBox="0 0 300 162" role="img" aria-label="Foto de ejemplo con daños marcados"><rect width="300" height="162" fill="#2b2b29"/>${bl}${bx}</svg><p class="mut sm">Imagen de ejemplo. Aquí irá la foto real de la pasada.</p>`}
+function chart(t){const d=Array.from({length:8},(_,i)=>+(t.mm+(7-i)*t.rate).toFixed(2)),mn=Math.min(19,t.mm-.5),mx=Math.max(...d)+.5,X=i=>36+i*43,Y=v=>10+(mx-v)/(mx-mn)*120;
+return`<svg viewBox="0 0 350 160" role="img" aria-label="Profundidad por pasada"><line x1="36" y1="${Y(20)}" x2="340" y2="${Y(20)}" stroke="var(--rojo)" stroke-dasharray="5 4"/><text x="340" y="${Y(20)-4}" text-anchor="end" font-size="10" fill="var(--rojo)">umbral de retiro 20 mm</text><polyline fill="none" stroke="currentColor" stroke-width="2.5" points="${d.map((v,i)=>X(i)+","+Y(v)).join(" ")}"/>${d.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="3.5" fill="currentColor"/>`).join("")}<text x="190" y="155" text-anchor="middle" font-size="10" fill="var(--mut)">últimas 8 pasadas</text></svg>`}
+function pFicha(s){const t=ST(s);if(!t)return nav("#/");tabs(-1);const z=zona(t.h),sug=z!=="verde"||t.nivel>=2;
+$.innerHTML=`<button class="pl" onclick="history.back()">‹ Volver</button><div style="margin:12px 0"><h1>${t.serial}</h1><p class="mut">${t.cx} · posición ${t.pos} · última medición ${t.fecha} · modelo v1.3</p></div>
+<div class="kpis"><div class="card"><div class="mut sm">HORAS REMANENTES</div><div class="n">${H(t.h)}</div><div>${zb(z)}</div></div><div class="card"><div class="mut sm">PROFUNDIDAD</div><div class="n">${f(t.mm)} mm</div><div class="mut sm">tasa ${f(t.rate)} mm / 100 h (${t.seg})</div></div><div class="card"><div class="mut sm">NIVEL DE DAÑO</div><div style="margin-top:8px">${bd(t.nivel)}</div></div></div>
+<div class="cols"><div class="card">${foto(t)}<b>Daños detectados</b>${t.dmg.length?t.dmg.map(d=>`<p>${d.t} · confianza ${Math.round(d.c*100)}%${d.c<.7?" · <b>por confirmar</b>":""}</p>`).join(""):`<p class="mut">No se detectaron daños.</p>`}</div>
+<div><div class="card" style="margin-bottom:14px">${chart(t)}</div><div class="card"><b>Corregir clasificación</b><div class="bar" style="margin:8px 0 0">${[0,1,2,3].map(n=>`<button class="pl ${n===t.nivel?"on":""}" onclick="corr('${s}',${n})">${n} · ${NOM[n]}</button>`).join("")}</div></div></div></div>
+<div class="cta"><button onclick="nav('#/a/${s}')" ${sug?"":"disabled"}>${sug?"Agendar intervención":"Sin intervención requerida"}</button></div>`}
+function corr(s,n){const t=ST(s);t.nivel=n;t.dmg=n?[{t:["","desgaste irregular","roca incrustada en la banda","corte profundo en flanco"][n],c:1}]:[];pFicha(s)}
+function pAgenda(s){const t=ST(s),w=W.find(x=>x.id===chosen);tabs(-1);
+$.innerHTML=`<button class="pl" onclick="nav('#/n/${s}')">‹ Volver</button><div style="margin:12px 0"><h1>Agendar ${s}</h1><p class="mut">Ventanas disponibles del taller</p></div>
+${W.map(x=>`<button class="opt ${chosen===x.id?"sel":""} ${x.libres?"":"full"}" onclick="${x.libres?`chosen=${x.id};pAgenda('${s}')`:""}"><b>${x.dia}, ${x.turno}</b><span class="mut">${x.libres} de 3 cupos libres</span></button>`).join("")}
+${w?`<div class="card"><b>Quedan ${H(t.h)} de operación</b><p class="mut">${t.nivel===3&&w.id!==1?"Daño crítico: conviene la ventana más próxima.":w.en<t.h?"La ventana elegida cae dentro del margen.":"La ventana llega tarde: el neumático cruza el umbral antes."}</p></div>`:""}
+<div class="cta"><button onclick="emitir('${s}')" ${w?"":"disabled"}>Confirmar y emitir orden</button></div>`}
+function emitir(s){const t=ST(s),w=W.find(x=>x.id===chosen);w.libres--;const id="ot-00"+(69+O.filter(o=>+o[0].slice(3)>68).length);
+O.unshift([id,"26-09-2026 12:00",s,"retiro",`Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length?" Daño: "+t.dmg[0].t+".":""}`,w.dia,w.turno,t.h,"med-2496",f(t.mm)+" mm, tasa "+t.seg,"programada"]);
+chosen=null;msg=`Orden ${id} emitida: escrita en el ERP y notificada al taller. Queda como evidencia para la reunión semanal y la negociación con el proveedor.`;nav("#/o")}
+function pOrdenes(){tabs(2);const cnt=e=>O.filter(o=>o[10]===e).length+(BASE[e]||0);
+const L=O.filter(o=>(eo==="todos"||o[10]===eo)&&(to==="todos"||o[3]===to||o[3]==="rotacion"&&to==="rotación"||o[3]==="inspeccion"&&to==="inspección")&&o.slice(0,5).join(" ").toLowerCase().includes(qo.toLowerCase()));
+$.innerHTML=`<h1>Órdenes de trabajo</h1><p class="mut">Cada orden conserva la medición y la proyección que la originaron: esa es la traza que sirve frente al taller y frente al proveedor.</p>
+${msg?`<div class="card ok" style="margin-top:14px">${msg}</div>`:""}
+<div class="kpis" style="grid-template-columns:repeat(3,1fr)">${["programada","ejecutada","anulada"].map(e=>`<div class="card"><div class="mut sm">${e.toUpperCase()}</div><div class="n">${cnt(e)}</div></div>`).join("")}</div>
+<div class="bar"><input id="qo" placeholder="buscar por orden, serial, camión o texto de la nota" value="${qo}" oninput="qo=this.value;pOrdenes();document.getElementById('qo').focus();">${pills(["todos","programada","ejecutada","anulada"],eo,"setE")}</div>
+<div class="bar">${pills(["todos","retiro","rotación","inspección"],to,"setO")}</div>
+<div class="tw"><table><thead><tr><th>Orden</th><th>Neumático</th><th>Intervención y nota</th><th>Programada</th><th class="num">Horas al emitir</th><th>Origen</th><th>Estado</th><th></th></tr></thead><tbody>
+${L.map(o=>{const t=ST(o[2]),long=o[4].length>110,ab=open[o[0]];return`<tr><td><b>${o[0]}</b><div class="mut sm">${o[1]}</div></td><td><a class="s" onclick="${t?`nav('#/n/${o[2]}')`:""}">${o[2]}</a><div class="mut sm">${t?t.cx+" P"+t.pos:""}</div></td>
+<td style="max-width:340px"><b>${o[3]}</b><div>${long&&!ab?o[4].slice(0,110)+"… ":o[4]} ${long?`<a class="s sm" onclick="open['${o[0]}']=!open['${o[0]}'];pOrdenes()">${ab?"ver menos":"ver más"}</a>`:""}</div></td>
+<td>${o[5]}<div class="mut sm">${o[6]}</div></td><td class="num">${o[7]} h</td><td>${o[8]}<div class="mut sm">${o[9]}</div></td><td><span class="badge" style="color:${ES[o[10]]}">${o[10]}</span>${(o[11]||[]).length?`<div class="mut sm" style="max-width:200px">${o[11][o[11].length-1]}</div>`:""}</td><td>${o[10]==="programada"?`<button class="pl" onclick="nav('#/e/${o[0]}')">Modificar o anular</button>`:""}</td></tr>`}).join("")||`<tr><td colspan="8" class="mut">Sin resultados.</td></tr>`}</tbody></table></div>
+<p class="mut sm" style="margin-top:8px">Se muestran las órdenes más recientes.</p>`;msg=""}
+const setE=v=>{eo=v;pOrdenes()},setO=v=>{to=v;pOrdenes()};
+
+let ed=null;
+const now=()=>new Date().toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"});
+const cur=o=>(W.find(w=>w.dia===o[5]&&w.turno===o[6])||{id:0}).id;
+const libera=o=>{const w=W.find(x=>x.id===cur(o));if(w)w.libres++};
+const MOT=["El neumático ya se rotó","Se retiró en otra ventana","Error al emitir la orden","Otro motivo"];
+function upd(){const o=O.find(x=>x[0]===ed.id),b=document.getElementById("sv");if(b)b.disabled=!((ed.w!==cur(o)||ed.nota!==o[4])&&ed.mot.trim())}
+function pEditar(id){tabs(2);const o=O.find(x=>x[0]===id);if(!o)return nav("#/o");
+if(!ed||ed.id!==id)ed={id,w:cur(o),nota:o[4],mot:"",cm:"",st:0};
+const t=ST(o[2]),hist=(o[11]||[]).map(h=>`<li>${h}</li>`).join("")||`<li class="mut">Sin cambios desde que se emitió.</li>`;
+if(o[10]!=="programada"){$.innerHTML=`<button class="pl" onclick="nav('#/o')">‹ Volver</button><h1 style="margin-top:12px">Orden ${id}</h1><div class="card" style="margin:12px 0">Esta orden está <b>${o[10]}</b> y ya no se puede modificar. Se conserva como registro.</div><div class="card"><b>Historial</b><ul>${hist}</ul></div>`;return}
+$.innerHTML=`<button class="pl" onclick="ed=null;nav('#/o')">‹ Volver</button><div style="margin:12px 0"><h1>Modificar orden ${id}</h1><p class="mut">${o[2]} · ${t?t.cx+" P"+t.pos:""} · ${o[3]} · emitida ${o[1]}</p></div>
+<div class="cols"><div><b>Ventana del taller</b><div style="margin:8px 0">
+<button class="opt ${ed.w===0?"sel":""}" onclick="ed.w=0;pEditar('${id}')"><b>Actual: ${o[5]}</b><span class="mut">${o[6]}</span></button>
+${W.map(w=>{const ac=cur(o)===w.id;return ac?"":`<button class="opt ${ed.w===w.id?"sel":""} ${w.libres?"":"full"}" onclick="${w.libres?`ed.w=${w.id};pEditar('${id}')`:""}"><b>${w.dia}</b><span class="mut">${w.turno} · ${w.libres} de 3 cupos libres</span></button>`}).join("")}</div>
+${cur(o)?`<button class="opt ${ed.w===cur(o)?"sel":""}" onclick="ed.w=${cur(o)};pEditar('${id}')"><b>Mantener ${o[5]}</b><span class="mut">${o[6]}</span></button>`:""}
+<b>Nota de la orden</b><textarea style="width:100%;min-height:110px;margin:8px 0;border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;background:var(--card);color:var(--ink)" oninput="ed.nota=this.value;upd()">${ed.nota}</textarea>
+<b>Motivo del cambio</b><input style="width:100%;margin:8px 0" placeholder="obligatorio, queda en el historial" value="${ed.mot}" oninput="ed.mot=this.value;upd()">
+<button id="sv" class="pl on" style="padding:10px 20px" onclick="guardar()" disabled>Guardar cambios</button></div>
+<div><div class="card" style="border:2px solid var(--n3);margin-bottom:14px"><b style="color:var(--n3)">Anular esta orden</b><p class="mut sm" style="margin:6px 0 10px">La orden no se borra: queda como anulada, con su motivo, para conservar la trazabilidad. Se libera el cupo del taller.</p>
+<div class="bar" style="margin-bottom:10px">${MOT.map(m=>`<button class="pl ${ed.cm===m?"on":""}" onclick="ed.cm='${m}';ed.st=0;pEditar('${id}')">${m}</button>`).join("")}</div>
+${ed.st?`<p><b>¿Confirmas anular ${id}?</b> No se puede deshacer.</p><div class="bar" style="margin-top:8px"><button class="pl" style="background:var(--n3);color:#fff;border-color:var(--n3)" onclick="anular()">Sí, anular</button><button class="pl" onclick="ed.st=0;pEditar('${id}')">No</button></div>`:`<button class="pl" ${ed.cm?"":"disabled"} onclick="ed.st=1;pEditar('${id}')">Anular orden</button>`}</div>
+<div class="card"><b>Historial</b><ul style="padding-left:18px;margin:8px 0 0">${hist}</ul></div></div></div>`;upd()}
+function guardar(){const o=O.find(x=>x[0]===ed.id),ch=[];
+if(ed.w!==cur(o)){const nw=W.find(x=>x.id===ed.w);ch.push(`ventana ${o[5]} → ${nw.dia}`);libera(o);nw.libres--;o[5]=nw.dia;o[6]=nw.turno}
+if(ed.nota!==o[4]){ch.push("nota editada");o[4]=ed.nota}
+o[11]=(o[11]||[]).concat(`${now()} · planificador · ${ch.join(", ")} · motivo: ${ed.mot.trim()}`);
+msg=`Orden ${o[0]} modificada: cambios guardados y taller notificado.`;ed=null;nav("#/o")}
+function anular(){const o=O.find(x=>x[0]===ed.id);libera(o);o[10]="anulada";
+o[11]=(o[11]||[]).concat(`${now()} · planificador · anulada · motivo: ${ed.cm}`);
+msg=`Orden ${o[0]} anulada. Queda registrada con su motivo y se liberó el cupo del taller.`;ed=null;nav("#/o")}
+function route(){const [,r,a]=location.hash.split("/");window.scrollTo(0,0);
+if(r!=="c"&&r!=="")q=q;r==="n"?pFicha(a):r==="a"?pAgenda(a):r==="e"?pEditar(a):r==="o"?pOrdenes():r==="c"?pCamiones():pTablero()}
+addEventListener("hashchange",()=>{q="";route()});route();
+</script></body></html>

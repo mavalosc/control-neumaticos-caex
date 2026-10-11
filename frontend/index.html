@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Control Predictivo de Neumáticos CAEX | Pórtico Dimensional OTR</title>
+  <!-- Google Fonts & Tailwind -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card: #18202c;
+      --card-hover: #1e2837;
+      --border: #2a3649;
+      --ink: #f0f4f8;
+      --muted: #8b9bb4;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --danger-border: #dc2626;
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --warning-border: #d97706;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --success-border: #059669;
+      --neutral: #64748b;
+      --neutral-bg: rgba(100, 116, 139, 0.15);
+    }
+
+    [data-theme="light"] {
+      --bg: #f3f5f8;
+      --card: #ffffff;
+      --card-hover: #f8fafc;
+      --border: #d7e0ea;
+      --ink: #0f172a;
+      --muted: #627282;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --warning: #d97706;
+      --warning-bg: #fef3c7;
+      --warning-border: #fcd34d;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --success-border: #86efac;
+      --neutral: #64748b;
+      --neutral-bg: #f1f5f9;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .font-mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    /* Pulse animation for active portal sensor */
+    @keyframes scan-laser {
+      0% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(120px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.8; }
+    }
+    .animate-laser {
+      animation: scan-laser 2.5s infinite ease-in-out;
+    }
+
+    /* Smooth transitions */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col theme-transition text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- TOP BAR -->
+  <header class="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-40 px-4 lg:px-8 py-3 shadow-sm">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Project Info -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 text-white font-bold text-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base tracking-tight text-[var(--ink)]">CAEX Neumáticos</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-mono font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">Pórtico 3D v1.3</span>
+          </div>
+          <p class="text-xs text-[var(--muted)] hidden sm:block">Control Predictivo OTR · Minería a Cielo Abierto · USACH Equipo 3</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 sm:gap-2 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)]">
+        <button id="nav-tablero" onclick="navigate('#/')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>Tablero</span>
+        </button>
+        <button id="nav-camiones" onclick="navigate('#/c')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+          <span>Camiones</span>
+        </button>
+        <button id="nav-ordenes" onclick="navigate('#/o')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          <span>Órdenes</span>
+        </button>
+        <button id="nav-portico" onclick="navigate('#/sim')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Simulador Pórtico</span>
+        </button>
+      </nav>
+
+      <!-- Right Actions: Theme Toggle & Reset Data -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="p-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] text-xs flex items-center justify-center transition-all" title="Alternar tema claro/oscuro">
+          <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="theme-icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <button onclick="resetPrototypeData()" class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] text-xs font-mono transition-all" title="Restaurar datos iniciales">
+          ↺ Reset
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 pb-28"></main>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast" class="fixed top-20 right-6 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none max-w-md bg-[var(--card)] border border-[var(--border)] p-4 rounded-xl shadow-2xl flex items-start gap-3"></div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    // --- ESTADO Y CONFIGURACIÓN INICIAL DEL PROTOTIPO ---
+    const STORAGE_KEY = "caex_neumaticos_v1";
+
+    const DAMAGE_NAMES = ["Sin daño", "Leve", "Moderado", "Crítico"];
+    const DAMAGE_COLORS = ["var(--success)", "var(--warning)", "#f97316", "var(--danger)"];
+    const DAMAGE_BG = ["var(--success-bg)", "var(--warning-bg)", "rgba(249,115,22,0.15)", "var(--danger-bg)"];
+
+    const INITIAL_TRUCKS = [
+      ["CAEX-101", "Cat 793F", "16.791 h", [1687, 3365, 1548, 3971, 6571, 7741]],
+      ["CAEX-102", "Cat 793F", "13.622 h", [1285, 4359, 34, 3206, 2247, 441]],
+      ["CAEX-103", "Komatsu 930E-4", "21.087 h", [1597, 3624, 4566, 2390, 392, 4121]],
+      ["CAEX-104", "Cat 797F", "18.450 h", [2100, 480, 3300, 1850, 2760, 4020]],
+      ["CAEX-105", "Komatsu 930E-4", "14.120 h", [1320, 168, 2410, 3050, 106, 1980]],
+      ["CAEX-106", "Cat 793F", "19.830 h", [2210, 95, 1740, 150, 143, 3320]]
+    ];
+
+    const INITIAL_KNOWN_TIRES = {
+      "102-3": ["5980R63-2426-1348", 20.4, 1.17, "24-09-2026", 104], // 104°C sobrecalentamiento
+      "106-2": ["5980R63-2328-1590", 21.7, 1.79, "21-09-2026", 82],
+      "105-5": ["5980R63-2345-1534", 21.2, 1.14, "20-09-2026", 79],
+      "106-5": ["5980R63-2618-1611", 22.3, 1.61, "21-09-2026", 88],
+      "106-4": ["5980R63-2531-1596", 22.9, 1.94, "21-09-2026", 85],
+      "105-2": ["5980R63-2312-1561", 24.1, 2.44, "20-09-2026 (obs.)", 92]
+    };
+
+    const INITIAL_DAMAGES = {
+      "102-3": [3, "corte profundo en flanco", 0.94],
+      "106-4": [2, "roca incrustada en la banda", 0.88],
+      "106-2": [1, "desgaste irregular", 0.76]
+    };
+
+    const INITIAL_ORDERS = [
+      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar la goma retirada en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
+      ["ot-0067", "26-09-2026 09:24", "5980R63-2328-1590", "retiro", "Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.", "29-09-2026", "turno B, 20:00 a 00:00", 95, "med-2492", "21,7 mm, tasa observada", "programada", []],
+      ["ot-0066", "25-09-2026 16:40", "5980R63-2345-1534", "retiro", "Retiro programado por proyección de 106 h remanentes.", "30-09-2026", "turno A, 08:00 a 12:00", 106, "med-2490", "21,2 mm, tasa observada", "programada", []],
+      ["ot-0065", "25-09-2026 11:05", "5980R63-2312-1561", "retiro", "Retiro programado por proyección de 168 h remanentes.", "30-09-2026", "turno B, 20:00 a 00:00", 168, "med-2488", "24,1 mm, tasa observada", "programada", []],
+      ["ot-0064", "24-09-2026 15:12", "5980R63-2218-1478", "rotacion", "Rotación por desgaste desigual entre posiciones traseras.", "01-10-2026", "turno A, 08:00 a 12:00", 392, "med-2485", "20,4 mm, tasa observada", "programada", []],
+      ["ot-0052", "18-09-2026 08:30", "5980R63-2100-1301", "retiro", "Retiro ejecutado en turno matutino, goma entregada en cancha de garantía bajo acta #891.", "19-09-2026", "turno A, 08:00 a 12:00", 120, "med-2410", "20,2 mm, tasa observada", "ejecutada", []],
+      ["ot-0047", "15-09-2026 13:10", "5980R63-2150-1355", "inspeccion", "Anulada: el neumático se rotó antes de la ventana programada.", "16-09-2026", "turno B, 20:00 a 00:00", 480, "med-2380", "20,9 mm, tasa nominal", "anulada", []]
+    ];
+
+    const INITIAL_WINDOWS = [
+      { id: 1, dia: "29-09-2026", turno: "turno B, 20:00 a 00:00", libres: 2, en: 36, max: 3 },
+      { id: 2, dia: "30-09-2026", turno: "turno A, 08:00 a 12:00", libres: 1, en: 56, max: 3 },
+      { id: 3, dia: "01-10-2026", turno: "turno B, 20:00 a 00:00", libres: 3, en: 84, max: 3 }
+    ];
+
+    // Carga de estado persistente
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch(e) { console.error("Error loading state", e); }
+      return {
+        trucks: INITIAL_TRUCKS,
+        orders: INITIAL_ORDERS,
+        windows: INITIAL_WINDOWS,
+        knownTires: INITIAL_KNOWN_TIRES,
+        damages: INITIAL_DAMAGES,
+        dispatchAlerts: [] // Avisos prioritarios a despacho mina
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch(e) { console.error("Error saving state", e); }
+    }
+
+    function resetPrototypeData() {
+      if (confirm("¿Deseas restaurar los datos del prototipo a su estado original?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        state = {
+          trucks: INITIAL_TRUCKS,
+          orders: INITIAL_ORDERS,
+          windows: INITIAL_WINDOWS,
+          knownTires: INITIAL_KNOWN_TIRES,
+          damages: INITIAL_DAMAGES,
+          dispatchAlerts: []
+        };
+        saveState();
+        showToast("Datos restaurados a valores de fábrica", "info");
+        route();
+      }
+    }
+
+    // Modelado de los neumáticos a partir de la flota
+    function getTires() {
+      return state.trucks.flatMap((c, ci) => c[3].map((h, k) => {
+        const p = k + 1;
+        const key = (101 + ci) + "-" + p;
+        const kn = state.knownTires[key];
+        const d = state.damages[key];
+        const rate = kn ? kn[2] : 1.1;
+        const mm = kn ? kn[1] : +(20 + h * rate / 100).toFixed(1);
+        const temp = kn ? (kn[4] || 76) : 74 + ((p * 3 + ci * 2) % 18);
+        return {
+          cx: c[0],
+          modelo: c[1] || "Cat 793F",
+          horometro: c[2] || "15.000 h",
+          pos: p,
+          posNombre: ["Delantero Izq (P1)", "Delantero Der (P2)", "Trasero Ext Izq (P3)", "Trasero Int Izq (P4)", "Trasero Int Der (P5)", "Trasero Ext Der (P6)"][k],
+          h,
+          serial: kn ? kn[0] : `5980R63-${2000 + ci * 137 + p * 53}-${1300 + ci * 61 + p * 17}`,
+          rate,
+          mm,
+          temp,
+          seg: h < 500 ? "observada" : "nominal",
+          fecha: kn ? kn[3] : "24-09-2026",
+          nivel: d ? d[0] : 0,
+          dmg: d ? [{ t: d[1], c: d[2] }] : []
+        };
+      }));
+    }
+
+    const zona = h => h == null ? "gris" : h < 200 ? "rojo" : h < 500 ? "amarillo" : "verde";
+    const ZN = { rojo: "Rojo (<200h)", amarillo: "Amarillo (<500h)", verde: "Verde (>500h)", gris: "Sin datos" };
+    const f = n => String(n).replace(".", ",");
+    const H = n => n.toLocaleString("es-CL") + " h";
+    const ST = s => getTires().find(t => t.serial === s);
+
+    // Helpers UI
+    const $ = document.getElementById("app");
+    const navigate = hash => { location.hash = hash; };
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById("toast");
+      const icon = type === "danger" 
+        ? `<svg class="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+        : `<svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+      
+      toast.innerHTML = `${icon} <div class="text-xs sm:text-sm font-medium text-[var(--ink)]">${msg}</div>`;
+      toast.classList.remove("opacity-0", "translate-y-[-20px]", "pointer-events-none");
+      toast.classList.add("opacity-100", "translate-y-0");
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-[-20px]", "pointer-events-none");
+        toast.classList.remove("opacity-100", "translate-y-0");
+      }, 4000);
+    }
+
+    function toggleTheme() {
+      const isLight = document.documentElement.getAttribute("data-theme") === "light";
+      document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+      document.getElementById("theme-icon-sun").classList.toggle("hidden", isLight);
+      document.getElementById("theme-icon-moon").classList.toggle("hidden", !isLight);
+    }
+
+    function updateActiveNav(activeId) {
+      ["nav-tablero", "nav-camiones", "nav-ordenes", "nav-portico"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        if (id === activeId) {
+          btn.className = btn.className.replace(/text-\[var\(--muted\)\]/g, "").replace(/bg-transparent/g, "");
+          btn.classList.add("bg-[var(--card)]", "text-[var(--ink)]", "shadow-sm", "border", "border-[var(--border)]");
+        } else if (id !== "nav-portico") {
+          btn.classList.remove("bg-[var(--card)]", "text-[var(--ink)]", "shadow-sm", "border", "border-[var(--border)]");
+          btn.classList.add("text-[var(--muted)]");
+        }
+      });
+    }
+
+    // Badges visuales
+    const renderBadge = n => {
+      const names = ["0 · Sin daño", "1 · Leve", "2 · Moderado", "3 · Crítico"];
+      const bgs = ["bg-emerald-500/10 text-emerald-400 border-emerald-500/30", "bg-amber-500/10 text-amber-400 border-amber-500/30", "bg-orange-500/10 text-orange-400 border-orange-500/30", "bg-rose-500/10 text-rose-400 border-rose-500/30"];
+      return `<span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border ${bgs[n]}">${names[n]}</span>`;
+    };
+
+    const renderZonePill = z => {
+      const colors = {
+        rojo: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+        amarillo: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+        verde: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+        gris: "bg-slate-500/15 text-slate-400 border-slate-500/30"
+      };
+      const dots = {
+        rojo: "bg-rose-500",
+        amarillo: "bg-amber-500",
+        verde: "bg-emerald-500",
+        gris: "bg-slate-500"
+      };
+      return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${colors[z]}">
+        <span class="w-1.5 h-1.5 rounded-full ${dots[z]}"></span>
+        <span>${ZN[z]}</span>
+      </span>`;
+    };
+
+    // --- PANTALLA 1: TABLERO DEL TURNO ---
+    let filterZone = "todas";
+    let filterRate = "cualquier";
+    let searchQuery = "";
+
+    function renderDashboard() {
+      updateActiveNav("nav-tablero");
+      const tires = getTires();
+      const counts = { rojo: 0, amarillo: 0, verde: 0, gris: 0 };
+      tires.forEach(t => counts[zona(t.h)]++);
+
+      const filtered = tires.filter(t => {
+        const matchZone = filterZone === "todas" || ZN[zona(t.h)] === filterZone || zona(t.h) === filterZone;
+        const matchRate = filterRate === "cualquier" || t.seg === filterRate.replace("tasa ", "");
+        const matchText = (t.serial + t.cx + t.pos + t.modelo).toLowerCase().includes(searchQuery.toLowerCase());
+        return matchZone && matchRate && matchText;
+      }).sort((a, b) => a.h - b.h);
+
+      const criticalDamageTire = tires.find(t => t.nivel === 3);
+
+      $.innerHTML = `
+        <div class="space-y-6">
+          
+          <!-- Banner Superior & Contexto -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border)]">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)] flex items-center gap-2">
+                Tablero de Control del Turno
+                <span class="text-xs font-mono font-normal bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Pórtico En Línea
+                </span>
+              </h1>
+              <p class="text-sm text-[var(--muted)] mt-1">Flota CAEX clasificada por horas de vida útil remanente. Detección automática en tránsito a 2-5 km/h.</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="navigate('#/sim')" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Simular Pasada Pórtico</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alerta de Daño Crítico -->
+          ${criticalDamageTire ? `
+            <div class="border-2 border-rose-500/80 bg-rose-500/10 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl shadow-rose-950/30 animate-pulse">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-lg">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold uppercase tracking-wider text-rose-400">Alerta de Seguridad Operacional Crítica</span>
+                    <span class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono">${criticalDamageTire.cx} · ${criticalDamageTire.posNombre}</span>
+                  </div>
+                  <p class="text-sm font-semibold text-[var(--ink)] mt-1">
+                    ${criticalDamageTire.dmg[0]?.t || "Daño crítico en flanco"} (${Math.round((criticalDamageTire.dmg[0]?.c || 0.94) * 100)}% certeza) · Temp: <span class="text-rose-400 font-mono">${criticalDamageTire.temp}°C</span>.
+                  </p>
+                  <p class="text-xs text-[var(--muted)] mt-0.5">Riesgo inminente de reventón en rampa. Retirar CAEX inmediatamente del circuito de acarreo.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 w-full md:w-auto">
+                <button onclick="notificarDespacho('${criticalDamageTire.cx}', '${criticalDamageTire.serial}')" class="flex-1 md:flex-none bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                  <span>Avisar Despacho Mina</span>
+                </button>
+                <button onclick="navigate('#/n/${criticalDamageTire.serial}')" class="flex-1 md:flex-none bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--ink)] border border-[var(--border)] font-medium text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all">
+                  Ver Ficha
+                </button>
+              </div>
+            </div>
+          ` : ""}
+
+          <!-- Tarjetas KPI -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div onclick="filterZone='rojo'; renderDashboard()" class="bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-rose-500/50 p-5 rounded-2xl cursor-pointer transition-all shadow-sm group">
+              <div class="flex items-center justify-between text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Zona Roja</span>
+                <span class="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full font-mono">< 200 h</span>
+              </div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono group-hover:text-rose-400 transition-colors">${counts.rojo}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Intervención inmediata: agendar retiro ahora</div>
+            </div>
+
+            <div onclick="filterZone='amarillo'; renderDashboard()" class="bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-amber-500/50 p-5 rounded-2xl cursor-pointer transition-all shadow-sm group">
+              <div class="flex items-center justify-between text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Zona Amarilla</span>
+                <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono">< 500 h</span>
+              </div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono group-hover:text-amber-400 transition-colors">${counts.amarillo}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Planificar en la próxima ventana disponible</div>
+            </div>
+
+            <div onclick="filterZone='verde'; renderDashboard()" class="bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-emerald-500/50 p-5 rounded-2xl cursor-pointer transition-all shadow-sm group">
+              <div class="flex items-center justify-between text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Zona Verde</span>
+                <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-mono">> 500 h</span>
+              </div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono group-hover:text-emerald-400 transition-colors">${counts.verde}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Operación segura dentro de parámetros normales</div>
+            </div>
+
+            <div onclick="filterZone='gris'; renderDashboard()" class="bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-slate-500/50 p-5 rounded-2xl cursor-pointer transition-all shadow-sm group">
+              <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Sin Proyección</span>
+                <span class="text-xs bg-slate-500/10 text-slate-400 px-2 py-0.5 rounded-full font-mono">0 lecturas</span>
+              </div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono group-hover:text-slate-300 transition-colors">${counts.gris}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Requiere al menos 2 pasadas por pórtico</div>
+            </div>
+          </div>
+
+          <!-- Filtros & Búsqueda -->
+          <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)]">
+            <div class="relative flex-1">
+              <svg class="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="search-box" type="text" placeholder="Buscar por serial, camión (CAEX-102) o posición..." value="${searchQuery}" oninput="searchQuery=this.value; renderDashboard(); document.getElementById('search-box').focus();" class="w-full pl-10 pr-4 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            </div>
+
+            <!-- Botones Filtro Zona -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-semibold text-[var(--muted)] mr-1 hidden sm:inline">Zona:</span>
+              ${["todas", "rojo", "amarillo", "verde"].map(z => `
+                <button onclick="filterZone='${z}'; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterZone === z ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                  ${z.charAt(0).toUpperCase() + z.slice(1)}
+                </button>
+              `).join("")}
+            </div>
+
+            <!-- Botones Filtro Tasa -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-semibold text-[var(--muted)] mr-1 hidden sm:inline">Tasa:</span>
+              ${["cualquier", "tasa observada", "tasa nominal"].map(t => `
+                <button onclick="filterRate='${t}'; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterRate === t ? 'bg-amber-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                  ${t === "cualquier" ? "Todas" : t.replace("tasa ", "")}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <!-- Tabla de Datos Principal -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--border)] bg-[var(--bg)]/50 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    <th class="py-3 px-4">Camión & Pos</th>
+                    <th class="py-3 px-4 font-mono">Serial Neumático</th>
+                    <th class="py-3 px-4 text-right">Profundidad</th>
+                    <th class="py-3 px-4 text-right">Tasa Desgaste</th>
+                    <th class="py-3 px-4">Tipo Tasa</th>
+                    <th class="py-3 px-4 text-right font-mono">Horas Rem.</th>
+                    <th class="py-3 px-4 text-center">Temp Flanco</th>
+                    <th class="py-3 px-4">Condición</th>
+                    <th class="py-3 px-4">Severidad Daño</th>
+                    <th class="py-3 px-4 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                  ${filtered.length ? filtered.map(t => {
+                    const z = zona(t.h);
+                    const isUrgent = z === "rojo";
+                    return `
+                      <tr onclick="navigate('#/n/${t.serial}')" class="hover:bg-[var(--card-hover)] cursor-pointer transition-colors ${isUrgent ? 'bg-rose-500/5' : ''}">
+                        <td class="py-3.5 px-4 font-medium text-[var(--ink)]">
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold">${t.cx}</span>
+                            <span class="text-xs px-1.5 py-0.5 rounded bg-[var(--bg)] text-[var(--muted)] border border-[var(--border)] font-mono">P${t.pos}</span>
+                          </div>
+                          <div class="text-xs text-[var(--muted)]">${t.posNombre.split(" ")[0]}</div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-blue-400 font-semibold">${t.serial}</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-medium text-[var(--ink)]">
+                          ${f(t.mm)} mm
+                          <div class="text-[11px] text-[var(--muted)]">umbral 20mm</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs text-[var(--ink)]">${f(t.rate)} mm/100h</td>
+                        <td class="py-3.5 px-4">
+                          <span class="text-xs px-2 py-0.5 rounded-full ${t.seg === 'observada' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-slate-500/10 text-slate-400 border border-slate-500/30'}">
+                            ${t.seg}
+                          </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono font-bold ${t.h < 200 ? 'text-rose-400 text-base' : t.h < 500 ? 'text-amber-400' : 'text-emerald-400'}">
+                          ${H(t.h)}
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono text-xs">
+                          <span class="${t.temp > 95 ? 'text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/30' : 'text-[var(--muted)]'}">
+                            ${t.temp}°C
+                          </span>
+                        </td>
+                        <td class="py-3.5 px-4">${renderZonePill(z)}</td>
+                        <td class="py-3.5 px-4">${renderBadge(t.nivel)}</td>
+                        <td class="py-3.5 px-4 text-right" onclick="event.stopPropagation()">
+                          <button onclick="navigate('#/n/${t.serial}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg)] hover:bg-blue-600 hover:text-white text-[var(--ink)] border border-[var(--border)] transition-all">
+                            Ficha ›
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join("") : `
+                    <tr>
+                      <td colspan="10" class="py-8 text-center text-sm text-[var(--muted)]">
+                        No se encontraron neumáticos con los filtros seleccionados.
+                      </td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 bg-[var(--bg)]/30 border-t border-[var(--border)] text-xs text-[var(--muted)] flex justify-between items-center">
+              <span>Mostrando ${filtered.length} de ${tires.length} neumáticos en operación</span>
+              <span>Pórtico calibrado a ±0,5 mm de precisión</span>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function notificarDespacho(caexId, serial) {
+      const msg = `ALERTA RADIAL: Se ha notificado al despachador de turno para desviar el ${caexId} (Serial ${serial}) del circuito de transporte hacia el taller de neumáticos por riesgo crítico de daño.`;
+      state.dispatchAlerts.push({ caexId, serial, fecha: new Date().toLocaleString("es-CL"), mensaje: msg });
+      saveState();
+      showToast(msg, "danger");
+      renderDashboard();
+    }
+
+    // --- PANTALLA 2: VISTA DE CAMIONES (CHASIS Y RUEDAS 6X4) ---
+    function renderTrucks() {
+      updateActiveNav("nav-camiones");
+      const tires = getTires();
+      const filteredTrucks = state.trucks.filter(c => {
+        const text = (c[0] + c[1] + c[2]).toLowerCase();
+        return text.includes(searchQuery.toLowerCase());
+      });
+
+      $.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border)]">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Flota de Camiones CAEX</h1>
+              <p class="text-sm text-[var(--muted)] mt-1">Esquema 6x4 de posiciones de neumático: Dirección delantera (P1, P2) y tándem trasero dual (P3 a P6).</p>
+            </div>
+            <div class="w-full sm:w-72">
+              <input id="truck-search" type="text" placeholder="Filtrar camión o modelo..." value="${searchQuery}" oninput="searchQuery=this.value; renderTrucks(); document.getElementById('truck-search').focus();" class="w-full px-4 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            ${filteredTrucks.map(truck => {
+              const truckTires = tires.filter(t => t.cx === truck[0]);
+              const reds = truckTires.filter(t => zona(t.h) === "rojo").length;
+              const yellows = truckTires.filter(t => zona(t.h) === "amarillo").length;
+              const maxDamage = Math.max(...truckTires.map(t => t.nivel));
+
+              return `
+                <div class="bg-[var(--card)] border ${reds > 0 ? 'border-rose-500/50 shadow-rose-950/20' : 'border-[var(--border)]'} rounded-2xl p-5 shadow-sm space-y-4">
+                  <!-- Cabecera de Camión -->
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-xl font-bold text-[var(--ink)] tracking-tight">${truck[0]}</span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)] font-mono">${truck[1] || "Cat 793F"}</span>
+                      </div>
+                      <div class="text-xs text-[var(--muted)] mt-1 flex items-center gap-2">
+                        <span>Horómetro: <strong class="text-[var(--ink)] font-mono">${truck[2] || "15.000 h"}</strong></span>
+                        <span>·</span>
+                        <span>6 Neumáticos 59/80R63</span>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      ${renderBadge(maxDamage)}
+                      ${reds > 0 ? `<div class="text-xs text-rose-400 font-bold mt-1">⚠️ ${reds} en Zona Roja</div>` : ''}
+                    </div>
+                  </div>
+
+                  <!-- Diagrama Esquemático del Chasis CAEX 6x4 -->
+                  <div class="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-4">
+                    <div class="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider text-center mb-3">
+                      ← Sentido de Marcha (Cabina Frontal)
+                    </div>
+
+                    <!-- Eje Frontal (P1 Izq, P2 Der) -->
+                    <div class="flex justify-around items-center mb-6">
+                      ${[1, 2].map(pNum => {
+                        const t = truckTires.find(x => x.pos === pNum);
+                        if (!t) return '';
+                        const z = zona(t.h);
+                        const bgCol = z === 'rojo' ? 'border-rose-500 bg-rose-500/10' : z === 'amarillo' ? 'border-amber-500 bg-amber-500/10' : 'border-emerald-500 bg-emerald-500/10';
+                        return `
+                          <button onclick="navigate('#/n/${t.serial}')" class="w-32 sm:w-36 p-3 rounded-xl border-2 ${bgCol} text-center hover:scale-105 transition-all shadow-sm">
+                            <div class="text-xs font-bold text-[var(--ink)]">P${t.pos} · Delantero ${pNum === 1 ? 'Izq' : 'Der'}</div>
+                            <div class="text-base font-extrabold font-mono mt-1 ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${H(t.h)}</div>
+                            <div class="text-[11px] text-[var(--muted)] font-mono mt-0.5">${f(t.mm)} mm · ${t.temp}°C</div>
+                            ${t.nivel > 0 ? `<div class="text-[10px] font-bold mt-1 text-orange-400">Daño ${t.nivel}</div>` : ''}
+                          </button>
+                        `;
+                      }).join("")}
+                    </div>
+
+                    <!-- Chasis Central Representativo -->
+                    <div class="h-1 bg-[var(--border)] rounded-full mx-12 my-2 relative">
+                      <div class="absolute left-1/2 -top-2.5 -translate-x-1/2 px-2 py-0.5 rounded bg-[var(--card)] text-[10px] font-mono text-[var(--muted)] border border-[var(--border)]">Tándem Trasero</div>
+                    </div>
+
+                    <!-- Eje Trasero Doble Dual (P3, P4, P5, P6) -->
+                    <div class="grid grid-cols-4 gap-2 pt-3">
+                      ${[3, 4, 5, 6].map(pNum => {
+                        const t = truckTires.find(x => x.pos === pNum);
+                        if (!t) return '';
+                        const z = zona(t.h);
+                        const bgCol = z === 'rojo' ? 'border-rose-500 bg-rose-500/10' : z === 'amarillo' ? 'border-amber-500 bg-amber-500/10' : 'border-emerald-500 bg-emerald-500/10';
+                        const labelPos = ["Ext Izq", "Int Izq", "Int Der", "Ext Der"][pNum - 3];
+                        return `
+                          <button onclick="navigate('#/n/${t.serial}')" class="p-2 sm:p-2.5 rounded-xl border-2 ${bgCol} text-center hover:scale-105 transition-all shadow-sm">
+                            <div class="text-[11px] font-bold text-[var(--ink)]">P${t.pos}</div>
+                            <div class="text-[10px] text-[var(--muted)]">${labelPos}</div>
+                            <div class="text-xs sm:text-sm font-extrabold font-mono mt-1 ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${t.h} h</div>
+                            <div class="text-[10px] text-[var(--muted)] font-mono">${f(t.mm)}mm</div>
+                            ${t.nivel > 0 ? `<div class="text-[10px] font-bold text-orange-400 mt-0.5">D${t.nivel}</div>` : ''}
+                          </button>
+                        `;
+                      }).join("")}
+                    </div>
+
+                  </div>
+
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- PANTALLA 3: FICHA DETALLADA DEL NEUMÁTICO ---
+    function renderTireDetail(serial) {
+      updateActiveNav("");
+      const t = ST(serial);
+      if (!t) {
+        showToast("Neumático no encontrado", "danger");
+        navigate("#/");
+        return;
+      }
+
+      const z = zona(t.h);
+      const isInterventionNeeded = z !== "verde" || t.nivel >= 2;
+
+      $.innerHTML = `
+        <div class="space-y-6">
+          
+          <!-- Botón Volver y Cabecera -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border)]">
+            <div class="flex items-center gap-3">
+              <button onclick="history.back()" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)] transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h1 class="text-2xl font-bold font-mono tracking-tight text-[var(--ink)]">${t.serial}</h1>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Goma OTR 59/80R63</span>
+                </div>
+                <p class="text-xs text-[var(--muted)] mt-1">
+                  Montado en <strong>${t.cx}</strong> (${t.modelo}) · <strong>${t.posNombre}</strong> · Última pasada pórtico: <strong>${t.fecha}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              ${renderZonePill(z)}
+              ${renderBadge(t.nivel)}
+            </div>
+          </div>
+
+          <!-- 3 Tarjetas de Métricas Dimensionales y Vida Remanente -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
+              <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Horas Remanentes</div>
+              <div class="text-3xl font-extrabold font-mono mt-1 ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">
+                ${H(t.h)}
+              </div>
+              <div class="text-xs text-[var(--muted)] mt-1 flex items-center gap-1.5">
+                <span>Proyección: <strong>Modelo v1.3</strong></span>
+              </div>
+            </div>
+
+            <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
+              <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Profundidad Remanente</div>
+              <div class="text-3xl font-extrabold font-mono text-[var(--ink)] mt-1">
+                ${f(t.mm)} <span class="text-base font-normal text-[var(--muted)]">mm</span>
+              </div>
+              <div class="text-xs text-[var(--muted)] mt-1">
+                Umbral seguro de retiro: <strong class="text-rose-400 font-mono">20,0 mm</strong>
+              </div>
+            </div>
+
+            <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
+              <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Tasa de Desgaste</div>
+              <div class="text-3xl font-extrabold font-mono text-amber-400 mt-1">
+                ${f(t.rate)} <span class="text-sm font-normal text-[var(--muted)]">mm/100h</span>
+              </div>
+              <div class="text-xs text-[var(--muted)] mt-1">
+                Régimen: <strong class="text-[var(--ink)]">${t.seg}</strong>
+              </div>
+            </div>
+
+            <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
+              <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Temperatura Flanco</div>
+              <div class="text-3xl font-extrabold font-mono mt-1 ${t.temp > 95 ? 'text-rose-400' : 'text-emerald-400'}">
+                ${t.temp} <span class="text-base font-normal text-[var(--muted)]">°C</span>
+              </div>
+              <div class="text-xs text-[var(--muted)] mt-1">
+                ${t.temp > 95 ? '<span class="text-rose-400 font-bold">Sobrecalentamiento crítico</span>' : 'Rango térmico nominal'}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Paneles de Análisis: Imagen Escáner 3D y Curva de Desgaste -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Panel 1: Detección Visual y Escaneo 3D -->
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-[var(--ink)]">Escáner 3D y Cámaras de Daño en Tránsito</h3>
+                  <p class="text-xs text-[var(--muted)]">Fotografía sintética de la banda de rodadura capturada en la pasada</p>
+                </div>
+                <span class="text-xs bg-slate-500/10 text-slate-400 border border-slate-500/30 px-2.5 py-1 rounded-full font-mono">Pórtico Óptico</span>
+              </div>
+
+              <!-- Simulación visual de banda con bounding boxes -->
+              <div class="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-inner">
+                <svg viewBox="0 0 460 220" class="w-full h-auto block" role="img">
+                  <!-- Fondo de goma neumática -->
+                  <rect width="460" height="220" fill="#1e2229"/>
+                  <!-- Patrón de surcos de banda de rodadura OTR -->
+                  ${Array.from({length: 16}, (_, i) => `
+                    <rect x="${16 + i * 27}" y="20" width="14" height="180" rx="4" fill="#2d333f" opacity="0.9"/>
+                    <line x1="${23 + i * 27}" y1="20" x2="${23 + i * 27}" y2="200" stroke="#12151a" stroke-width="3"/>
+                  `).join("")}
+                  
+                  <!-- Detección de daño si existe -->
+                  ${t.dmg.map(d => {
+                    const color = DAMAGE_COLORS[t.nivel];
+                    return `
+                      <!-- Bounding box -->
+                      <rect x="150" y="60" width="130" height="85" fill="none" stroke="${color}" stroke-width="3.5" rx="6" stroke-dasharray="4 2"/>
+                      <rect x="150" y="32" width="130" height="26" fill="${color}" rx="4"/>
+                      <text x="156" y="50" font-family="'IBM Plex Sans', sans-serif" font-size="11" font-weight="700" fill="#ffffff">
+                        ${d.t.slice(0, 16)} · ${Math.round(d.c * 100)}%
+                      </text>
+                      <!-- Punto focal del daño -->
+                      <circle cx="215" cy="102" r="12" fill="${color}" fill-opacity="0.3"/>
+                      <circle cx="215" cy="102" r="4" fill="${color}"/>
+                    `;
+                  }).join("")}
+
+                  <!-- Overlay térmico -->
+                  <text x="16" y="210" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#94a3b8">Termografía flanco: ${t.temp}°C | Emisividad: 0.95</text>
+                </svg>
+
+                <div class="absolute bottom-2 right-2 text-[10px] font-mono bg-black/60 backdrop-blur px-2 py-0.5 rounded text-slate-300">
+                  Resolución 3D: 1.2 mm/píxel
+                </div>
+              </div>
+
+              <!-- Lista de daños identificados -->
+              <div class="border-t border-[var(--border)] pt-3">
+                <div class="text-xs font-semibold text-[var(--ink)] mb-2">Daños Registrados por Algoritmo de Visión:</div>
+                ${t.dmg.length ? t.dmg.map(d => `
+                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs">
+                    <span class="font-medium text-[var(--ink)] flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full" style="background:${DAMAGE_COLORS[t.nivel]}"></span>
+                      ${d.t}
+                    </span>
+                    <span class="font-mono text-[var(--muted)]">Confianza IA: <strong>${Math.round(d.c * 100)}%</strong></span>
+                  </div>
+                `).join("") : `
+                  <p class="text-xs text-[var(--muted)] bg-[var(--bg)] p-3 rounded-xl border border-[var(--border)]">No se detectaron cortes, rocas incrustadas ni delaminaciones en la última pasada.</p>
+                `}
+              </div>
+
+              <!-- Industria 5.0: Validación Humano-en-el-Bucle -->
+              <div class="border-t border-[var(--border)] pt-3">
+                <div class="text-xs font-semibold text-[var(--ink)] mb-1">Validación del Planificador (Industria 5.0):</div>
+                <p class="text-xs text-[var(--muted)] mb-2">El criterio humano del mantenedor tiene prioridad sobre la inferencia del modelo.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  ${[0, 1, 2, 3].map(n => `
+                    <button onclick="corregirClasificacion('${t.serial}', ${n})" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all ${n === t.nivel ? 'bg-blue-600 text-white border-blue-500 shadow-md font-bold' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border-[var(--border)]'}">
+                      ${DAMAGE_NAMES[n]}
+                    </button>
+                  `).join("")}
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Panel 2: Curva de Desgaste Temporal y Proyección -->
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-[var(--ink)]">Evolución y Proyección de Desgaste</h3>
+                  <p class="text-xs text-[var(--muted)]">Historial de pasadas y cruce con el umbral de retiro</p>
+                </div>
+                <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full font-mono">Umbral 20 mm</span>
+              </div>
+
+              <!-- Gráfico SVG Proyección Temporal -->
+              <div class="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-4">
+                ${renderTireWearChart(t)}
+              </div>
+
+              <div class="space-y-2 text-xs text-[var(--muted)] border-t border-[var(--border)] pt-3">
+                <div class="flex justify-between">
+                  <span>Proyección estimada de cruce del umbral:</span>
+                  <strong class="font-mono text-[var(--ink)]">${H(t.h)} restantes</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span>Tasa actual de desgaste:</span>
+                  <strong class="font-mono text-amber-400">${f(t.rate)} mm por cada 100 h</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span>Trazabilidad para proveedor:</span>
+                  <span class="text-emerald-400 font-medium">Validada para reclamo de garantía</span>
+                </div>
+              </div>
+
+              <!-- Alerta Despacho en Ficha si daño crítico -->
+              ${t.nivel === 3 ? `
+                <div class="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between gap-3">
+                  <div class="text-xs text-rose-300">
+                    <strong>¡Atención!</strong> Este neumático presenta daño crítico que compromete la seguridad estructural.
+                  </div>
+                  <button onclick="notificarDespacho('${t.cx}', '${t.serial}')" class="bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg shrink-0">
+                    Avisar Despacho
+                  </button>
+                </div>
+              ` : ''}
+
+            </div>
+
+          </div>
+
+          <!-- Barra Inferior Fija para Agendar Intervención -->
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-[var(--card)]/90 backdrop-blur-md border-t border-[var(--border)] z-30 shadow-2xl">
+            <div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+              <div class="hidden sm:block">
+                <div class="text-xs text-[var(--muted)]">Acción recomendada por el sistema:</div>
+                <div class="text-sm font-semibold text-[var(--ink)]">
+                  ${isInterventionNeeded ? 'Programar retiro o intervención en ventana de taller' : 'Neumático en condiciones óptimas para continuar operación'}
+                </div>
+              </div>
+
+              <div class="w-full sm:w-auto flex items-center gap-3">
+                <button onclick="navigate('#/a/${t.serial}')" ${isInterventionNeeded ? '' : 'disabled'} class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>Agendar Intervención en Taller</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderTireWearChart(t) {
+      const historicalPoints = Array.from({ length: 8 }, (_, i) => +(t.mm + (7 - i) * t.rate).toFixed(2));
+      const minVal = Math.min(19, t.mm - 1);
+      const maxVal = Math.max(...historicalPoints) + 1;
+      const getX = i => 40 + i * 42;
+      const getY = v => 15 + ((maxVal - v) / (maxVal - minVal)) * 110;
+
+      const thresholdY = getY(20);
+
+      return `
+        <svg viewBox="0 0 380 160" class="w-full h-auto block" role="img">
+          <!-- Línea umbral crítico 20mm -->
+          <line x1="40" y1="${thresholdY}" x2="360" y2="${thresholdY}" stroke="#ef4444" stroke-dasharray="4 4" stroke-width="2"/>
+          <text x="360" y="${thresholdY - 5}" text-anchor="end" font-family="'IBM Plex Sans', sans-serif" font-size="10" font-weight="600" fill="#ef4444">Umbral de retiro 20,0 mm</text>
+
+          <!-- Polilínea de mediciones históricas -->
+          <polyline fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${historicalPoints.map((v, i) => `${getX(i)},${getY(v)}`).join(" ")}"/>
+          
+          <!-- Puntos de medición -->
+          ${historicalPoints.map((v, i) => `
+            <circle cx="${getX(i)}" cy="${getY(v)}" r="4.5" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
+            <text x="${getX(i)}" y="${getY(v) - 8}" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#94a3b8">${f(v)}</text>
+          `).join("")}
+
+          <!-- Eje X etiquetas -->
+          <text x="200" y="152" text-anchor="middle" font-family="'IBM Plex Sans', sans-serif" font-size="10" fill="#64748b">Últimas 8 pasadas por el pórtico</text>
+        </svg>
+      `;
+    }
+
+    function corregirClasificacion(serial, newLevel) {
+      const t = ST(serial);
+      if (!t) return;
+      
+      const prevLevel = t.nivel;
+      state.damages[(t.cx.split("-")[1]) + "-" + t.pos] = newLevel > 0 
+        ? [newLevel, ["", "desgaste irregular", "roca incrustada en la banda", "corte profundo en flanco"][newLevel], 1.0]
+        : null;
+
+      saveState();
+      showToast(`Clasificación actualizada de ${DAMAGE_NAMES[prevLevel]} a ${DAMAGE_NAMES[newLevel]} (registrado en auditoría)`, "info");
+      renderTireDetail(serial);
+    }
+
+    // --- PANTALLA 4: AGENDAR INTERVENCIÓN EN TALLER ---
+    let selectedWindowId = null;
+
+    function renderSchedule(serial) {
+      updateActiveNav("");
+      const t = ST(serial);
+      if (!t) return navigate("#/");
+
+      const selectedWin = state.windows.find(w => w.id === selectedWindowId);
+
+      $.innerHTML = `
+        <div class="max-w-3xl mx-auto space-y-6">
+          <div class="flex items-center gap-3 pb-3 border-b border-[var(--border)]">
+            <button onclick="navigate('#/n/${serial}')" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)]">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Agendar Intervención</h1>
+              <p class="text-xs text-[var(--muted)] font-mono">${serial} · ${t.cx} ${t.posNombre} · ${H(t.h)} remanentes</p>
+            </div>
+          </div>
+
+          <!-- Selección de Ventana de Taller -->
+          <div class="space-y-3">
+            <div class="text-sm font-semibold text-[var(--ink)]">Selecciona una Ventana Disponible en el Taller de Neumáticos:</div>
+            
+            <div class="grid grid-cols-1 gap-3">
+              ${state.windows.map(w => {
+                const isSelected = selectedWindowId === w.id;
+                const hasSlots = w.libres > 0;
+                const arrivesOnTime = w.en < t.h;
+
+                return `
+                  <button onclick="${hasSlots ? `selectedWindowId=${w.id}; renderSchedule('${serial}')` : ''}" class="w-full text-left p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)]'} ${!hasSlots ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="text-base font-bold text-[var(--ink)]">${w.dia} · ${w.turno}</div>
+                        <div class="text-xs text-[var(--muted)] mt-0.5">Ventana proyectada para dentro de ${w.en} horas</div>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-xs font-bold font-mono px-2.5 py-1 rounded-full ${hasSlots ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                          ${w.libres} de ${w.max} cupos libres
+                        </span>
+                      </div>
+                    </div>
+
+                    ${isSelected ? `
+                      <div class="mt-3 pt-3 border-t border-[var(--border)] text-xs flex items-center gap-2">
+                        ${arrivesOnTime ? `
+                          <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                            ✓ Ventana oportuna: La intervención se ejecutará con ${t.h - w.en} h de margen antes del cruce de umbral.
+                          </span>
+                        ` : `
+                          <span class="text-rose-400 font-semibold flex items-center gap-1">
+                            ⚠️ Advertencia de riesgo: El neumático cruzará el umbral ${w.en - t.h} h antes de esta ventana.
+                          </span>
+                        `}
+                      </div>
+                    ` : ''}
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+
+          <!-- Resumen de la Orden a Emitir -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3">
+            <h3 class="text-sm font-bold text-[var(--ink)]">Trazabilidad Dimensional que se escribirá en el ERP:</h3>
+            <div class="p-3 bg-[var(--bg)] rounded-xl text-xs font-mono text-[var(--muted)] space-y-1">
+              <div>Tipo de Intervención: <strong>RETIRO PROGRAMADO</strong></div>
+              <div>Banda Medida: <strong>${f(t.mm)} mm</strong> (contra umbral 20,0 mm)</div>
+              <div>Tasa Reciente: <strong>${f(t.rate)} mm/100h (${t.seg})</strong></div>
+              <div>Ingreso Bodega: <strong>Serial 5980R63-B-544</strong></div>
+              <div>Destino Retiro: <strong>Cancha de Garantía para reclamo a proveedor</strong></div>
+            </div>
+          </div>
+
+          <!-- Botón de Confirmación -->
+          <div class="pt-4">
+            <button onclick="emitirOrden('${serial}')" ${selectedWin ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Confirmar y Emitir Orden en SAP PM</span>
+            </button>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function emitirOrden(serial) {
+      const t = ST(serial);
+      const w = state.windows.find(x => x.id === selectedWindowId);
+      if (!t || !w) return;
+
+      w.libres--;
+      const newId = "ot-00" + (69 + state.orders.filter(o => +o[0].slice(3) > 68).length);
+      const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+
+      const newOrder = [
+        newId,
+        nowStr,
+        serial,
+        "retiro",
+        `Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length ? " Daño: " + t.dmg[0].t + "." : ""} Ingresa serial de bodega 5980R63-B-544. Dejar en cancha de garantía para informe semanal.`,
+        w.dia,
+        w.turno,
+        t.h,
+        "med-2498",
+        `${f(t.mm)} mm, tasa ${t.seg}`,
+        "programada",
+        [`${nowStr} · planificador · orden emitida con éxito y sincronizada con ERP`]
+      ];
+
+      state.orders.unshift(newOrder);
+      saveState();
+
+      selectedWindowId = null;
+      showToast(`Orden ${newId} emitida con éxito en ERP. Taller notificado.`, "success");
+      navigate("#/o");
+    }
+
+    // --- PANTALLA 5: ÓRDENES DE TRABAJO ---
+    let filterOrderStatus = "todos";
+    let filterOrderType = "todos";
+    let searchOrderQuery = "";
+    let openNotes = {};
+
+    function renderOrders() {
+      updateActiveNav("nav-ordenes");
+      const counts = {
+        programada: state.orders.filter(o => o[10] === "programada").length,
+        ejecutada: state.orders.filter(o => o[10] === "ejecutada").length + 54,
+        anulada: state.orders.filter(o => o[10] === "anulada").length + 7
+      };
+
+      const filtered = state.orders.filter(o => {
+        const matchStatus = filterOrderStatus === "todos" || o[10] === filterOrderStatus;
+        const matchType = filterOrderType === "todos" || o[3] === filterOrderType;
+        const matchText = (o[0] + o[2] + o[4]).toLowerCase().includes(searchOrderQuery.toLowerCase());
+        return matchStatus && matchType && matchText;
+      });
+
+      $.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border)]">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Órdenes de Trabajo (OT)</h1>
+              <p class="text-sm text-[var(--muted)] mt-1">Trazabilidad inmutable de intervenciones: medición de origen, proyección y respaldo frente al proveedor.</p>
+            </div>
+            <button onclick="exportarTrazabilidad()" class="px-4 py-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 transition-all">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Exportar Informe para Proveedor</span>
+            </button>
+          </div>
+
+          <!-- KPIs de Órdenes -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div onclick="filterOrderStatus='programada'; renderOrders()" class="bg-[var(--card)] border border-[var(--border)] hover:border-amber-500/50 p-5 rounded-2xl cursor-pointer transition-all">
+              <div class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Programadas</div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono mt-1">${counts.programada}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Con cupo reservado en taller</div>
+            </div>
+
+            <div onclick="filterOrderStatus='ejecutada'; renderOrders()" class="bg-[var(--card)] border border-[var(--border)] hover:border-emerald-500/50 p-5 rounded-2xl cursor-pointer transition-all">
+              <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Ejecutadas</div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono mt-1">${counts.ejecutada}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Retiros y rotaciones completados</div>
+            </div>
+
+            <div onclick="filterOrderStatus='anulada'; renderOrders()" class="bg-[var(--card)] border border-[var(--border)] hover:border-slate-500/50 p-5 rounded-2xl cursor-pointer transition-all">
+              <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Anuladas</div>
+              <div class="text-3xl font-extrabold text-[var(--ink)] font-mono mt-1">${counts.anulada}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Conservadas para trazabilidad</div>
+            </div>
+          </div>
+
+          <!-- Filtros de Órdenes -->
+          <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)]">
+            <input id="order-search" type="text" placeholder="Buscar por número de OT, serial o texto..." value="${searchOrderQuery}" oninput="searchOrderQuery=this.value; renderOrders(); document.getElementById('order-search').focus();" class="w-full sm:w-80 px-4 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none">
+
+            <div class="flex flex-wrap items-center gap-1.5">
+              ${["todos", "programada", "ejecutada", "anulada"].map(s => `
+                <button onclick="filterOrderStatus='${s}'; renderOrders()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterOrderStatus === s ? 'bg-blue-600 text-white' : 'bg-[var(--bg)] text-[var(--muted)] border border-[var(--border)]'}">
+                  ${s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <!-- Tabla de Órdenes -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--border)] bg-[var(--bg)]/50 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    <th class="py-3 px-4 font-mono">Orden</th>
+                    <th class="py-3 px-4 font-mono">Neumático</th>
+                    <th class="py-3 px-4">Intervención y Justificación</th>
+                    <th class="py-3 px-4">Programación</th>
+                    <th class="py-3 px-4 text-right font-mono">Horas Emisión</th>
+                    <th class="py-3 px-4">Origen Medición</th>
+                    <th class="py-3 px-4">Estado</th>
+                    <th class="py-3 px-4 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                  ${filtered.map(o => {
+                    const isOpen = openNotes[o[0]];
+                    const statusColor = o[10] === 'programada' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : o[10] === 'ejecutada' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-400 bg-slate-500/10 border-slate-500/30';
+                    return `
+                      <tr class="hover:bg-[var(--card-hover)] transition-colors">
+                        <td class="py-3 px-4 font-mono font-bold text-[var(--ink)]">
+                          <div>${o[0]}</div>
+                          <div class="text-[11px] font-normal text-[var(--muted)]">${o[1]}</div>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-xs text-blue-400">
+                          <a onclick="navigate('#/n/${o[2]}')" class="hover:underline cursor-pointer font-semibold">${o[2]}</a>
+                        </td>
+                        <td class="py-3 px-4 max-w-xs text-xs">
+                          <strong class="uppercase font-semibold text-[var(--ink)]">${o[3]}</strong>
+                          <div class="text-[var(--muted)] mt-1">
+                            ${isOpen || o[4].length <= 90 ? o[4] : o[4].slice(0, 90) + '...'}
+                            ${o[4].length > 90 ? `
+                              <button onclick="openNotes['${o[0]}']=!openNotes['${o[0]}']; renderOrders()" class="text-blue-400 font-medium ml-1">
+                                ${isOpen ? 'ver menos' : 'ver más'}
+                              </button>
+                            ` : ''}
+                          </div>
+                        </td>
+                        <td class="py-3 px-4 text-xs">
+                          <div class="font-semibold text-[var(--ink)]">${o[5]}</div>
+                          <div class="text-[var(--muted)]">${o[6]}</div>
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-xs font-bold text-[var(--ink)]">${o[7]} h</td>
+                        <td class="py-3 px-4 font-mono text-xs">
+                          <div class="text-[var(--ink)]">${o[8]}</div>
+                          <div class="text-[var(--muted)] text-[10px]">${o[9]}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                          <span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border ${statusColor}">
+                            ${o[10]}
+                          </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                          ${o[10] === 'programada' ? `
+                            <button onclick="navigate('#/e/${o[0]}')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--bg)] hover:bg-[var(--card-hover)] text-[var(--ink)] border border-[var(--border)] transition-all">
+                              Modificar
+                            </button>
+                          ` : `
+                            <span class="text-xs text-[var(--muted)]">Histórico</span>
+                          `}
+                        </td>
+                      </tr>
+                    `;
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function exportarTrazabilidad() {
+      const csvRows = [
+        ["Orden", "Fecha_Emision", "Serial_Neumatico", "Tipo_Intervencion", "Fecha_Taller", "Turno", "Horas_Remanentes", "Medicion_Origen", "Estado"],
+        ...state.orders.map(o => [o[0], o[1], o[2], o[3], o[5], o[6], o[7], o[8], o[10]])
+      ];
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(";")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `informe_neumaticos_caex_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Informe descargado en formato CSV para reunión y reclamo de garantía", "success");
+    }
+
+    // --- PANTALLA 6: MODIFICAR / ANULAR ORDEN ---
+    let editState = null;
+
+    function renderEditOrder(orderId) {
+      updateActiveNav("");
+      const o = state.orders.find(x => x[0] === orderId);
+      if (!o) return navigate("#/o");
+
+      if (!editState || editState.id !== orderId) {
+        const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]) || { id: 0 };
+        editState = {
+          id: orderId,
+          w: curWin.id,
+          nota: o[4],
+          motivo: "",
+          motivoAnulacion: "",
+          confirmingAnulacion: false
+        };
+      }
+
+      const t = ST(o[2]);
+      const hist = (o[11] || []).map(h => `<li class="text-xs text-[var(--muted)] font-mono">${h}</li>`).join("") || '<li class="text-xs text-[var(--muted)]">Sin cambios registrados desde la emisión.</li>';
+
+      $.innerHTML = `
+        <div class="max-w-3xl mx-auto space-y-6">
+          <div class="flex items-center gap-3 pb-3 border-b border-[var(--border)]">
+            <button onclick="editState=null; navigate('#/o')" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)]">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Modificar Orden ${orderId}</h1>
+              <p class="text-xs text-[var(--muted)] font-mono">${o[2]} · Emitida: ${o[1]}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Formulario de Reasignación de Ventana y Notas -->
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
+              <h3 class="text-sm font-bold text-[var(--ink)]">Reasignar Ventana de Taller</h3>
+              
+              <div class="space-y-2">
+                ${state.windows.map(w => {
+                  const isCurrent = o[5] === w.dia && o[6] === w.turno;
+                  const isSelected = editState.w === w.id;
+                  return `
+                    <button onclick="editState.w=${w.id}; renderEditOrder('${orderId}')" class="w-full text-left p-3 rounded-xl border transition-all text-xs ${isSelected ? 'border-blue-500 bg-blue-500/10 font-bold' : 'border-[var(--border)] bg-[var(--bg)]'}">
+                      <div>${w.dia} · ${w.turno}</div>
+                      <div class="text-[var(--muted)] font-mono">${isCurrent ? '(Ventana actual)' : `${w.libres} cupos libres`}</div>
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-semibold text-[var(--ink)]">Justificación de la Nota:</label>
+                <textarea oninput="editState.nota=this.value" class="w-full h-24 p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none">${editState.nota}</textarea>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-semibold text-[var(--ink)]">Motivo del Cambio (Requerido para auditoría):</label>
+                <input type="text" placeholder="Ej: Cambio de prioridad por faena o retraso de repuesto" value="${editState.motivo}" oninput="editState.motivo=this.value" class="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none">
+              </div>
+
+              <button onclick="guardarCambiosOrden('${orderId}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
+                Guardar Modificaciones
+              </button>
+            </div>
+
+            <!-- Panel de Anulación y Auditoría -->
+            <div class="space-y-6">
+              
+              <div class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-5 space-y-3">
+                <h3 class="text-sm font-bold text-rose-400">Anular esta Orden</h3>
+                <p class="text-xs text-[var(--muted)]">La orden no se elimina de la base de datos: queda registrada como ANULADA para auditoría y se libera el cupo reservado en el taller.</p>
+
+                <div class="space-y-1">
+                  <div class="text-xs font-medium text-[var(--ink)] mb-1">Motivo de Anulación:</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${["El neumático ya se rotó", "Se retiró en otra ventana", "Error al emitir la orden", "Otro motivo"].map(m => `
+                      <button onclick="editState.motivoAnulacion='${m}'; renderEditOrder('${orderId}')" class="px-2.5 py-1 rounded-lg text-xs border transition-all ${editState.motivoAnulacion === m ? 'bg-rose-600 text-white border-rose-600' : 'bg-[var(--card)] text-[var(--muted)] border-[var(--border)]'}">
+                        ${m}
+                      </button>
+                    `).join("")}
+                  </div>
+                </div>
+
+                ${editState.confirmingAnulacion ? `
+                  <div class="p-3 bg-[var(--card)] rounded-xl border border-rose-500/40 text-xs space-y-2">
+                    <div class="font-bold text-rose-400">¿Confirmar anulación definitiva?</div>
+                    <div class="flex gap-2">
+                      <button onclick="confirmarAnulacion('${orderId}')" class="bg-rose-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs">Sí, anular</button>
+                      <button onclick="editState.confirmingAnulacion=false; renderEditOrder('${orderId}')" class="bg-[var(--bg)] text-[var(--ink)] px-3 py-1.5 rounded-lg text-xs">Cancelar</button>
+                    </div>
+                  </div>
+                ` : `
+                  <button onclick="editState.confirmingAnulacion=true; renderEditOrder('${orderId}')" ${editState.motivoAnulacion ? '' : 'disabled'} class="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-semibold text-xs py-2.5 rounded-xl transition-all">
+                    Anular Orden de Trabajo
+                  </button>
+                `}
+              </div>
+
+              <!-- Historial de Auditoría -->
+              <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-2">
+                <h3 class="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">Historial de Trazabilidad</h3>
+                <ul class="space-y-1.5 list-disc pl-4">${hist}</ul>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      `;
+    }
+
+    function guardarCambiosOrden(orderId) {
+      const o = state.orders.find(x => x[0] === orderId);
+      if (!o) return;
+
+      const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
+      const newWin = state.windows.find(w => w.id === editState.w);
+
+      if (newWin && (!curWin || curWin.id !== newWin.id)) {
+        if (curWin) curWin.libres++;
+        newWin.libres--;
+        o[5] = newWin.dia;
+        o[6] = newWin.turno;
+      }
+
+      o[4] = editState.nota;
+      o[11] = (o[11] || []).concat(`${nowStr} · planificador · modificación de orden · motivo: ${editState.motivo || 'actualización operacional'}`);
+
+      saveState();
+      editState = null;
+      showToast(`Orden ${orderId} actualizada correctamente`, "success");
+      navigate("#/o");
+    }
+
+    function confirmarAnulacion(orderId) {
+      const o = state.orders.find(x => x[0] === orderId);
+      if (!o) return;
+
+      const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
+      if (curWin) curWin.libres++;
+
+      o[10] = "anulada";
+      o[11] = (o[11] || []).concat(`${nowStr} · planificador · orden anulada · motivo: ${editState.motivoAnulacion}`);
+
+      saveState();
+      editState = null;
+      showToast(`Orden ${orderId} anulada y cupo en taller liberado`, "info");
+      navigate("#/o");
+    }
+
+    // --- PANTALLA 7: SIMULADOR DE PASADA POR PÓRTICO (DEMO DE CAPTURA) ---
+    let simSelectedTruck = "CAEX-102";
+    let isSimulating = false;
+    let simLog = [];
+
+    function renderSimulator() {
+      updateActiveNav("nav-portico");
+
+      $.innerHTML = `
+        <div class="max-w-4xl mx-auto space-y-6">
+          <div class="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)] flex items-center gap-2">
+                Simulador del Pórtico Dimensional Predictivo
+                <span class="text-xs font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">En Vivo</span>
+              </h1>
+              <p class="text-xs text-[var(--muted)] mt-1">Demostración técnica de paso en tránsito (2 a 5 km/h) con captura de 6 neumáticos simultáneos.</p>
+            </div>
+            <button onclick="navigate('#/')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]">
+              Volver al Tablero
+            </button>
+          </div>
+
+          <!-- Estructura del Pórtico Virtual -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 relative overflow-hidden shadow-lg">
+            
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+              
+              <!-- Selector de Camión a Pasar -->
+              <div class="space-y-2 w-full md:w-64 shrink-0">
+                <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Camión CAEX a Evaluar:</label>
+                <select onchange="simSelectedTruck=this.value" class="w-full p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm font-bold text-[var(--ink)] focus:outline-none">
+                  ${state.trucks.map(c => `
+                    <option value="${c[0]}" ${c[0] === simSelectedTruck ? 'selected' : ''}>${c[0]} (${c[1] || 'Cat 793F'})</option>
+                  `).join("")}
+                </select>
+
+                <div class="text-xs text-[var(--muted)] space-y-1 pt-2">
+                  <div>Velocidad programada: <strong class="text-[var(--ink)] font-mono">3,8 km/h</strong></div>
+                  <div>Sensores: <strong class="text-[var(--ink)]">Láser 3D, Térmico, RFID</strong></div>
+                </div>
+
+                <button onclick="ejecutarPasadaPortico()" ${isSimulating ? 'disabled' : ''} class="w-full mt-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-slate-900 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span>${isSimulating ? 'Capturando Sensores...' : 'Iniciar Pasada en Tránsito'}</span>
+                </button>
+              </div>
+
+              <!-- Representación Gráfica del Pórtico -->
+              <div class="flex-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-4 relative min-h-[180px] flex flex-col justify-between overflow-hidden">
+                <div class="flex justify-between items-center text-xs font-mono text-emerald-400">
+                  <span>ESTADO: ${isSimulating ? 'ESCANEANDO SENSORES 3D' : 'LISTO PARA CAPTURA'}</span>
+                  <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span> GPS & GATE SYNC</span>
+                </div>
+
+                <!-- Simulación Láser y Pórtico -->
+                <div class="relative my-4 flex items-center justify-center">
+                  <div class="w-full h-24 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center relative">
+                    <div class="text-sm font-bold font-mono text-slate-400">
+                      ZONA DE MEDICIÓN ÓPTICA Y TÉRMICA [P1 - P6]
+                    </div>
+                    ${isSimulating ? `
+                      <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_15px_#10b981] animate-laser"></div>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <div class="text-[11px] font-mono text-slate-500 flex justify-between">
+                  <span>Tolerancia dimensional: ±0.5 mm</span>
+                  <span>Lectura RFID: Activa (915 MHz)</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Consola de Telemetría Sintética en Vivo -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3">
+            <h3 class="text-xs font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              Registro de Telemetría Sensorial de la Pasada
+            </h3>
+            
+            <div id="sim-terminal" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-1 max-h-56 overflow-y-auto">
+              ${simLog.length ? simLog.map(l => `<div>${l}</div>`).join("") : `
+                <div class="text-slate-600">// Presiona "Iniciar Pasada en Tránsito" para generar telemetría sensorial sintética del camión seleccionado...</div>
+              `}
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function ejecutarPasadaPortico() {
+      isSimulating = true;
+      simLog = [
+        `[${new Date().toLocaleTimeString()}] Inicializando sincronización de pórtico para ${simSelectedTruck}...`,
+        `[${new Date().toLocaleTimeString()}] Velocidad detectada: 3.4 km/h (Dentro del rango óptimo 2-5 km/h)`,
+        `[${new Date().toLocaleTimeString()}] Sincronizando escáner 3D LiDAR y termografía de flanco...`
+      ];
+      renderSimulator();
+
+      setTimeout(() => {
+        const truckIndex = state.trucks.findIndex(c => c[0] === simSelectedTruck);
+        if (truckIndex >= 0) {
+          // Desgaste sintético simulado: reduce entre 0.1 y 0.3 mm la banda y recalculan horas
+          const truckTires = state.trucks[truckIndex][3];
+          for (let p = 0; p < 6; p++) {
+            const key = (101 + truckIndex) + "-" + (p + 1);
+            const deltaHours = Math.floor(Math.random() * 25) + 15;
+            truckTires[p] = Math.max(20, truckTires[p] - deltaHours);
+
+            if (state.knownTires[key]) {
+              state.knownTires[key][1] = +(state.knownTires[key][1] - 0.2).toFixed(1);
+              state.knownTires[key][3] = new Date().toLocaleDateString("es-CL");
+            }
+          }
+        }
+
+        simLog.push(
+          `[${new Date().toLocaleTimeString()}] ✓ 6 de 6 neumáticos escaneados con éxito.`,
+          `[${new Date().toLocaleTimeString()}] ✓ Nubes de puntos 3D integradas al historial dimensional.`,
+          `[${new Date().toLocaleTimeString()}] ✓ Horas remanentes recalculadas en base al modelo predictivo v1.3.`,
+          `[${new Date().toLocaleTimeString()}] Telemetría enviada al Tablero de Control del Turno.`
+        );
+
+        saveState();
+        isSimulating = false;
+        renderSimulator();
+        showToast(`Pasada de ${simSelectedTruck} procesada exitosamente en el pórtico`, "success");
+      }, 2000);
+    }
+
+    // --- ENRUTADOR PRINCIPAL ---
+    function route() {
+      const hash = location.hash || "#/";
+      const [path, param] = hash.replace("#", "").split("/").filter(Boolean);
+      window.scrollTo(0, 0);
+
+      if (!path) {
+        renderDashboard();
+      } else if (path === "c") {
+        renderTrucks();
+      } else if (path === "o") {
+        renderOrders();
+      } else if (path === "n" && param) {
+        renderTireDetail(param);
+      } else if (path === "a" && param) {
+        renderSchedule(param);
+      } else if (path === "e" && param) {
+        renderEditOrder(param);
+      } else if (path === "sim") {
+        renderSimulator();
+      } else {
+        renderDashboard();
+      }
+    }
+
+    window.addEventListener("hashchange", route);
+    window.addEventListener("DOMContentLoaded", () => {
+      route();
+    });
+  </script>
+</body>
+</html>
+
