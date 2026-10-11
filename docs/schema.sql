@@ -2,13 +2,24 @@
 -- ESQUEMA RELACIONAL SUPABASE (POSTGRESQL) - CONTROL DE NEUMÁTICOS CAEX
 -- Proyecto: Pórtico Dimensional Predictivo de Neumáticos CAEX
 -- Ecosistema DSD - Ingeniería Digital USACH · Equipo 3
+-- Compatible y Re-ejecutable (Idempotente) para SQL Editor de Supabase
 -- =============================================================================
 
 -- 1. TIPOS ENUMERADOS (DOMINIO DEL NEGOCIO)
-CREATE TYPE tipo_intervencion_enum AS ENUM ('retiro', 'rotacion', 'inspeccion');
-CREATE TYPE estado_orden_enum AS ENUM ('programada', 'ejecutada', 'anulada');
-CREATE TYPE zona_criticidad_enum AS ENUM ('rojo', 'amarillo', 'verde', 'gris');
-CREATE TYPE severidad_dano_enum AS ENUM ('0', '1', '2', '3'); -- 0: Sin daño, 1: Leve, 2: Moderado, 3: Crítico
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_intervencion_enum') THEN
+        CREATE TYPE tipo_intervencion_enum AS ENUM ('retiro', 'rotacion', 'inspeccion');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_orden_enum') THEN
+        CREATE TYPE estado_orden_enum AS ENUM ('programada', 'ejecutada', 'anulada');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'zona_criticidad_enum') THEN
+        CREATE TYPE zona_criticidad_enum AS ENUM ('rojo', 'amarillo', 'verde', 'gris');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'severidad_dano_enum') THEN
+        CREATE TYPE severidad_dano_enum AS ENUM ('0', '1', '2', '3'); -- 0: Sin daño, 1: Leve, 2: Moderado, 3: Crítico
+    END IF;
+END $$;
 
 -- 2. TABLA: CAMIONES CAEX
 CREATE TABLE IF NOT EXISTS camiones (
@@ -119,7 +130,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_decrementar_cupo
+DROP TRIGGER IF EXISTS trg_decrementar_cupo ON ordenes_trabajo;
+CREATE TRIGGER trg_decrementar_cupo
 AFTER INSERT ON ordenes_trabajo
 FOR EACH ROW
 WHEN (NEW.estado = 'programada')
@@ -138,7 +150,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_liberar_cupo_anulacion
+DROP TRIGGER IF EXISTS trg_liberar_cupo_anulacion ON ordenes_trabajo;
+CREATE TRIGGER trg_liberar_cupo_anulacion
 AFTER UPDATE ON ordenes_trabajo
 FOR EACH ROW
 EXECUTE FUNCTION liberar_cupo_taller_anulacion();
@@ -192,4 +205,3 @@ LEFT JOIN LATERAL (
     ORDER BY fecha_registro DESC 
     LIMIT 1
 ) d ON TRUE;
-
