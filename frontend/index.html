@@ -208,13 +208,28 @@
       { id: 3, dia: "01-10-2026", turno: "turno B, 20:00 a 00:00", libres: 3, en: 84, max: 3 }
     ];
 
+    const DEFAULT_CAMERAS = [
+      { id: "CAM-101", num: 1, pos: "Frontal Centro", estado: "buena", cobertura: "Dirección frontal y banda delantera" },
+      { id: "CAM-102", num: 2, pos: "Frontal Derecha (Lateral)", estado: "buena", cobertura: "P2 Delantero Derecho (flanco ext.)" },
+      { id: "CAM-103", num: 3, pos: "Lateral Derecha (Centro)", estado: "buena", cobertura: "P4 y P6 Tándem derecho (banda)" },
+      { id: "CAM-104", num: 4, pos: "Trasera Derecha (Lateral)", estado: "buena", cobertura: "P6 Trasero Ext Derecho (flanco)" },
+      { id: "CAM-105", num: 5, pos: "Trasera Centro", estado: "buena", cobertura: "P3, P4, P5, P6 Banda trasera dual" },
+      { id: "CAM-106", num: 6, pos: "Trasera Izquierda (Lateral)", estado: "buena", cobertura: "P3 Trasero Ext Izquierdo (flanco)" },
+      { id: "CAM-107", num: 7, pos: "Lateral Izquierda (Centro)", estado: "buena", cobertura: "P3 y P5 Tándem izquierdo (banda)" },
+      { id: "CAM-108", num: 8, pos: "Frontal Izquierda (Lateral)", estado: "buena", cobertura: "P1 Delantero Izquierdo (flanco ext.)" }
+    ];
+
     // Carga de estado persistente
     let state = loadState();
 
     function loadState() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (!parsed.cameras || !parsed.cameras.length) parsed.cameras = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+          return parsed;
+        }
       } catch(e) { console.error("Error loading state", e); }
       return {
         trucks: INITIAL_TRUCKS,
@@ -222,7 +237,8 @@
         windows: INITIAL_WINDOWS,
         knownTires: INITIAL_KNOWN_TIRES,
         damages: INITIAL_DAMAGES,
-        dispatchAlerts: [] // Avisos prioritarios a despacho mina
+        dispatchAlerts: [], // Avisos prioritarios a despacho mina
+        cameras: JSON.parse(JSON.stringify(DEFAULT_CAMERAS))
       };
     }
 
@@ -1396,94 +1412,354 @@
       navigate("#/o");
     }
 
-    // --- PANTALLA 7: SIMULADOR DE PASADA POR PÓRTICO (DEMO DE CAPTURA) ---
+    // --- PANTALLA 7: SIMULADOR DE PASADA POR PÓRTICO (DEMO DE CAPTURA P-100) ---
     let simSelectedTruck = "CAEX-102";
     let isSimulating = false;
     let simLog = [];
 
+    function toggleCamEstado(camId) {
+      if (!state.cameras) state.cameras = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+      const c = state.cameras.find(x => x.id === camId);
+      if (c) {
+        c.estado = c.estado === "buena" ? "falla" : "buena";
+        saveState();
+        renderSimulator();
+        showToast(`Cámara ${camId} marcada como: ${c.estado === 'buena' ? 'OPERATIVA (Buena)' : 'EN FALLA (Alerta)'}`, c.estado === 'buena' ? 'info' : 'danger');
+      }
+    }
+
     function renderSimulator() {
       updateActiveNav("nav-portico");
 
+      if (!state.cameras || !state.cameras.length) {
+        state.cameras = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+      }
+
+      const truckData = state.trucks.find(c => c[0] === simSelectedTruck) || state.trucks[1];
+      const allTires = getTires();
+      const currentTruckTires = allTires.filter(t => t.cx === simSelectedTruck);
+
+      const camsBuenas = state.cameras.filter(c => c.estado === "buena").length;
+      const totalCams = state.cameras.length;
+      const allCamsOk = camsBuenas === totalCams;
+
       $.innerHTML = `
-        <div class="max-w-4xl mx-auto space-y-6">
-          <div class="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+        <div class="max-w-5xl mx-auto space-y-6">
+          
+          <!-- Encabezado de la Vista -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border)]">
             <div>
-              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)] flex items-center gap-2">
-                Simulador del Pórtico Dimensional Predictivo
-                <span class="text-xs font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">En Vivo</span>
-              </h1>
-              <p class="text-xs text-[var(--muted)] mt-1">Demostración técnica de paso en tránsito (2 a 5 km/h) con captura de 6 neumáticos simultáneos.</p>
+              <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Simulador del Pórtico Dimensional Predictivo</h1>
+                <span class="text-xs font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full">PÓRTICO P-100</span>
+              </div>
+              <p class="text-xs text-[var(--muted)] mt-1">Inspección volumétrica 3D, termografía y visión artificial en tránsito (2 a 5 km/h) · Minera a Cielo Abierto</p>
             </div>
-            <button onclick="navigate('#/')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]">
-              Volver al Tablero
+            <button onclick="navigate('#/')" class="text-xs px-3.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--ink)] transition-all">
+              ‹ Volver al Tablero
             </button>
           </div>
 
-          <!-- Estructura del Pórtico Virtual -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 relative overflow-hidden shadow-lg">
-            
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-              
-              <!-- Selector de Camión a Pasar -->
-              <div class="space-y-2 w-full md:w-64 shrink-0">
-                <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Camión CAEX a Evaluar:</label>
-                <select onchange="simSelectedTruck=this.value" class="w-full p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm font-bold text-[var(--ink)] focus:outline-none">
-                  ${state.trucks.map(c => `
-                    <option value="${c[0]}" ${c[0] === simSelectedTruck ? 'selected' : ''}>${c[0]} (${c[1] || 'Cat 793F'})</option>
-                  `).join("")}
-                </select>
-
-                <div class="text-xs text-[var(--muted)] space-y-1 pt-2">
-                  <div>Velocidad programada: <strong class="text-[var(--ink)] font-mono">3,8 km/h</strong></div>
-                  <div>Sensores: <strong class="text-[var(--ink)]">Láser 3D, Térmico, RFID</strong></div>
+          <!-- SECCIÓN 1: SELECTOR DE CAMIÓN + FOTO CON CÓDIGO DINÁMICO EN LA TOLVA -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-4">
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div class="space-y-1 flex-1">
+                <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Seleccionar Camión CAEX a Evaluar en Pórtico:</label>
+                <div class="flex items-center gap-3">
+                  <select onchange="simSelectedTruck=this.value; renderSimulator();" class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm font-bold text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    ${state.trucks.map(c => `
+                      <option value="${c[0]}" ${c[0] === simSelectedTruck ? 'selected' : ''}>${c[0]} (${c[1] || 'Cat 793F'} · Horómetro ${c[2] || '15.000 h'})</option>
+                    `).join("")}
+                  </select>
+                  <span class="text-xs px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 font-mono border border-amber-500/30 font-semibold">
+                    Velocidad: 3,8 km/h
+                  </span>
                 </div>
+              </div>
 
-                <button onclick="ejecutarPasadaPortico()" ${isSimulating ? 'disabled' : ''} class="w-full mt-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-slate-900 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+              <div>
+                <button onclick="ejecutarPasadaPortico()" ${isSimulating ? 'disabled' : ''} class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-slate-900 font-extrabold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  <span>${isSimulating ? 'Capturando Sensores...' : 'Iniciar Pasada en Tránsito'}</span>
+                  <span>${isSimulating ? 'Escaneando en Pórtico P-100...' : 'Iniciar Pasada en Tránsito'}</span>
                 </button>
               </div>
+            </div>
 
-              <!-- Representación Gráfica del Pórtico -->
-              <div class="flex-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-4 relative min-h-[180px] flex flex-col justify-between overflow-hidden">
-                <div class="flex justify-between items-center text-xs font-mono text-emerald-400">
-                  <span>ESTADO: ${isSimulating ? 'ESCANEANDO SENSORES 3D' : 'LISTO PARA CAPTURA'}</span>
-                  <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span> GPS & GATE SYNC</span>
-                </div>
+            <!-- FOTO DEL CAMIÓN CON CÓDIGO DINÁMICO EN EL RECUADRO BLANCO LATERAL -->
+            <div class="relative w-full rounded-2xl overflow-hidden border border-[var(--border)] bg-slate-950 shadow-xl group">
+              <img src="./assets/camion-caex.jpg" alt="Camión CAEX" class="w-full h-auto object-cover block">
+              
+              <!-- Texto con código del camión overlay en el panel blanco lateral de la tolva -->
+              <div class="absolute flex items-center justify-center font-black font-mono tracking-wider select-none pointer-events-none"
+                   style="top: 25%; left: 61.2%; width: 24.8%; height: 16.5%; transform: skewY(1.2deg) rotate(1deg);">
+                <span class="text-base sm:text-2xl md:text-3xl lg:text-4xl font-black text-slate-950 tracking-widest drop-shadow-sm">
+                  ${simSelectedTruck}
+                </span>
+              </div>
 
-                <!-- Simulación Láser y Pórtico -->
-                <div class="relative my-4 flex items-center justify-center">
-                  <div class="w-full h-24 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center relative">
-                    <div class="text-sm font-bold font-mono text-slate-400">
-                      ZONA DE MEDICIÓN ÓPTICA Y TÉRMICA [P1 - P6]
-                    </div>
-                    ${isSimulating ? `
-                      <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_15px_#10b981] animate-laser"></div>
-                    ` : ''}
+              <!-- Badge inferior sobre la foto -->
+              <div class="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/60 flex items-center gap-2 text-xs">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-mono text-slate-300">Unidad Evaluada: <strong class="text-white">${simSelectedTruck}</strong> (${truckData[1] || 'Cat 793F'})</span>
+              </div>
+              <div class="absolute top-3 right-3 bg-black/75 backdrop-blur px-3 py-1 rounded-xl text-[11px] font-mono text-amber-300 border border-amber-500/30">
+                RFID TAG: 915-EPC-${simSelectedTruck.replace('-', '')}
+              </div>
+            </div>
+
+            <!-- Panel de Estado del Pórtico Láser -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 relative min-h-[140px] flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-xs font-mono text-emerald-400">
+                <span>ESTADO PÓRTICO P-100: ${isSimulating ? 'ESCANEANDO SENSORES 3D Y CÁMARAS' : 'CALIBRADO Y LISTO'}</span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span>
+                  SINCRONIZACIÓN GPS & BARRERA ÓPTICA
+                </span>
+              </div>
+
+              <div class="relative my-3 flex items-center justify-center">
+                <div class="w-full h-16 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center relative">
+                  <div class="text-xs font-bold font-mono text-slate-400 tracking-wider">
+                    ZONA DE MEDICIÓN LÁSER Y TÉRMICA PÓRTICO P-100 [P1 A P6]
                   </div>
-                </div>
-
-                <div class="text-[11px] font-mono text-slate-500 flex justify-between">
-                  <span>Tolerancia dimensional: ±0.5 mm</span>
-                  <span>Lectura RFID: Activa (915 MHz)</span>
+                  ${isSimulating ? `
+                    <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_18px_#10b981] animate-laser"></div>
+                  ` : ''}
                 </div>
               </div>
 
+              <div class="text-[11px] font-mono text-slate-500 flex justify-between">
+                <span>Precisión dimensional: ±0,5 mm</span>
+                <span>Termografía: Flancos exteriores e interiores</span>
+              </div>
             </div>
-
           </div>
 
-          <!-- Consola de Telemetría Sintética en Vivo -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3">
+          <!-- SECCIÓN 2: REGISTRO DE TELEMETRÍA SENSORIAL DE LA PASADA -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3 shadow-sm">
             <h3 class="text-xs font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
               <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
               Registro de Telemetría Sensorial de la Pasada
             </h3>
             
-            <div id="sim-terminal" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-1 max-h-56 overflow-y-auto">
+            <div id="sim-terminal" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-1 max-h-52 overflow-y-auto">
               ${simLog.length ? simLog.map(l => `<div>${l}</div>`).join("") : `
-                <div class="text-slate-600">// Presiona "Iniciar Pasada en Tránsito" para generar telemetría sensorial sintética del camión seleccionado...</div>
+                <div class="text-slate-600">// Presiona "Iniciar Pasada en Tránsito" para activar la telemetría del camión seleccionado en el Pórtico P-100...</div>
               `}
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3: DESPLIEGUE INDICANDO QUE EL CAMIÓN PASÓ POR EL PÓRTICO P-100 -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-slate-950 border-2 border-blue-500/50 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/40 flex items-center justify-center shrink-0 shadow-lg">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Punto de Control Operacional</span>
+                  <span class="text-xs font-mono font-black px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">PÓRTICO P-100</span>
+                  <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-mono border border-emerald-500/30">En Tránsito (4 kph)</span>
+                </div>
+                <h3 class="text-lg font-bold text-[var(--ink)] mt-1">
+                  Paso Registrado: El camión <span class="text-amber-400 font-mono">${simSelectedTruck}</span> atravesó exitosamente el Pórtico P-100
+                </h3>
+                <p class="text-xs text-[var(--muted)] mt-0.5">
+                  Ubicación: Salida Taller Central / Estación de Combustible · Cobertura dimensional: 6 de 6 neumáticos escaneados
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <div class="text-right">
+                <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 justify-end">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  CAPTURA CONFIRMADA
+                </div>
+                <div class="text-[11px] font-mono text-[var(--muted)]">Trazabilidad enviada a ERP</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 4: ARREGLO DE 8 CÁMARAS (CAM-101 A CAM-108) + IMAGEN DE DISTRIBUCIÓN -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+              <div>
+                <h2 class="text-lg font-bold text-[var(--ink)] flex items-center gap-2">
+                  Arreglo de Cámaras del Pórtico P-100
+                  <span class="text-xs font-mono px-2.5 py-0.5 rounded-full ${allCamsOk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                    ${camsBuenas} de ${totalCams} Operativas
+                  </span>
+                </h2>
+                <p class="text-xs text-[var(--muted)] mt-0.5">8 cámaras ópticas perimetrales (CAM-101 a CAM-108) para cobertura total de los 6 neumáticos</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-[var(--muted)] flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Operativa (Buena)
+                </span>
+                <span class="text-xs font-medium text-[var(--muted)] flex items-center gap-1.5 ml-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#ef4444]"></span> En Falla (Alerta)
+                </span>
+              </div>
+            </div>
+
+            <!-- Grilla: Imagen de Distribución + Lista Detallada de Cámaras -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              <!-- Columna Imagen: Distribución física de las 8 cámaras -->
+              <div class="lg:col-span-5 bg-slate-950 p-3 rounded-2xl border border-slate-800 shadow-inner space-y-2">
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-mono">
+                  Distribución Perimetral de Sensores en Pórtico
+                </div>
+                <div class="overflow-hidden rounded-xl border border-slate-800">
+                  <img src="./assets/distribucion-camaras.jpg" alt="Distribución de Cámaras Pórtico" class="w-full h-auto object-cover block hover:scale-105 transition-transform duration-300">
+                </div>
+                <div class="text-[10px] text-slate-500 text-center font-mono">
+                  Diagrama: 8 cámaras perimetrales con visión cruzada en avance a 4 kph
+                </div>
+              </div>
+
+              <!-- Columna Telemetría: Lista de CAM-101 a CAM-108 -->
+              <div class="lg:col-span-7 space-y-2.5">
+                <div class="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1 flex justify-between items-center">
+                  <span>Reporte Individual de Sensores Ópticos:</span>
+                  <span class="text-[11px] text-[var(--muted)]">Clic en el estado para simular falla/reparación</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  ${state.cameras.map(cam => {
+                    const isOk = cam.estado === "buena";
+                    return `
+                      <div class="p-3 rounded-xl border transition-all ${isOk ? 'bg-[var(--bg)] border-[var(--border)] hover:border-emerald-500/50' : 'bg-rose-500/10 border-rose-500/40 shadow-rose-950/20'} flex flex-col justify-between">
+                        <div class="flex items-start justify-between gap-2">
+                          <div>
+                            <div class="flex items-center gap-1.5">
+                              <span class="text-xs font-mono font-bold text-[var(--ink)]">${cam.id}</span>
+                              <span class="text-[11px] text-[var(--muted)]">· Cám #${cam.num}</span>
+                            </div>
+                            <div class="text-xs font-semibold text-[var(--ink)] mt-0.5">${cam.pos}</div>
+                            <div class="text-[10px] text-[var(--muted)] mt-0.5 font-mono">${cam.cobertura}</div>
+                          </div>
+
+                          <!-- Luz indicadora verde/roja interactiva -->
+                          <button onclick="toggleCamEstado('${cam.id}')" title="Clic para alternar estado" class="flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-bold transition-all ${isOk ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'}">
+                            <span class="w-2.5 h-2.5 rounded-full ${isOk ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#ef4444] animate-ping'}"></span>
+                            <span>${isOk ? 'Buena' : 'En Falla'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+
+                <!-- Resumen de Operatividad del Pórtico -->
+                <div class="mt-3 p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-between text-xs font-mono">
+                  <span class="text-[var(--muted)]">Diagnóstico de Red de Cámaras:</span>
+                  <span class="${allCamsOk ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}">
+                    ${allCamsOk ? '✓ Todas las cámaras operativas - Cobertura 100%' : '⚠️ Atención: ' + (totalCams - camsBuenas) + ' cámara(s) en falla - Revisar pórtico'}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SECCIÓN 5: FOTOS E INSPECCIÓN DE LOS 6 NEUMÁTICOS -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+              <div>
+                <h2 class="text-lg font-bold text-[var(--ink)]">Inspección Fotográfica y Dimensional de Neumáticos</h2>
+                <p class="text-xs text-[var(--muted)] mt-0.5">Captura individual de los 6 neumáticos del ${simSelectedTruck} procesada por el arreglo CAM-101 a CAM-108</p>
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/30">
+                6 Posiciones OTR 59/80R63
+              </span>
+            </div>
+
+            <!-- Grilla con las 6 fotos / escaneos de neumáticos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              ${currentTruckTires.map(t => {
+                const z = zona(t.h);
+                const colBadge = z === 'rojo' ? 'text-rose-400 border-rose-500/30 bg-rose-500/10' : z === 'amarillo' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' : 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+                
+                // Mapeo de cámaras por posición
+                const camMap = {
+                  1: "CAM-108 & CAM-101",
+                  2: "CAM-101 & CAM-102",
+                  3: "CAM-106 & CAM-107",
+                  4: "CAM-107 & CAM-105",
+                  5: "CAM-103 & CAM-105",
+                  6: "CAM-104 & CAM-103"
+                };
+
+                return `
+                  <div class="bg-[var(--bg)] border border-[var(--border)] hover:border-blue-500/40 rounded-xl p-3.5 space-y-3 transition-all flex flex-col justify-between">
+                    <!-- Cabecera de Neumático -->
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-bold text-[var(--ink)]">P${t.pos} · ${t.posNombre.split(" ")[0]}</span>
+                          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--card)] text-blue-400 border border-[var(--border)]">${t.serial.slice(-8)}</span>
+                        </div>
+                        <div class="text-[10px] text-[var(--muted)] font-mono mt-0.5">Captura: ${camMap[t.pos] || 'CAM-101'}</div>
+                      </div>
+                      ${renderBadge(t.nivel)}
+                    </div>
+
+                    <!-- Representación Visual Fotográfica / Escaneo de Banda -->
+                    <div class="relative bg-slate-900 border border-slate-700/80 rounded-lg overflow-hidden shadow-inner">
+                      <svg viewBox="0 0 280 120" class="w-full h-auto block" role="img">
+                        <!-- Fondo de goma neumática -->
+                        <rect width="280" height="120" fill="#181b22"/>
+                        
+                        <!-- Patrón de surcos de banda OTR -->
+                        ${Array.from({length: 10}, (_, i) => `
+                          <rect x="${14 + i * 26}" y="12" width="12" height="96" rx="3" fill="#2d3340" opacity="0.9"/>
+                          <line x1="${20 + i * 26}" y1="12" x2="${20 + i * 26}" y2="108" stroke="#0e1116" stroke-width="2.5"/>
+                        `).join("")}
+
+                        <!-- Daño marcado si existe -->
+                        ${t.dmg.map(d => {
+                          const col = DAMAGE_COLORS[t.nivel];
+                          return `
+                            <rect x="90" y="30" width="100" height="60" fill="none" stroke="${col}" stroke-width="2.5" rx="4" stroke-dasharray="3 2"/>
+                            <rect x="90" y="14" width="100" height="16" fill="${col}" rx="3"/>
+                            <text x="94" y="26" font-family="'IBM Plex Sans', sans-serif" font-size="9" font-weight="700" fill="#ffffff">${d.t.slice(0, 16)}</text>
+                          `;
+                        }).join("")}
+
+                        <!-- Termografía en el flanco -->
+                        <text x="10" y="112" font-family="'IBM Plex Mono', monospace" font-size="8" fill="#94a3b8">Temp: ${t.temp}°C | Banda: ${f(t.mm)}mm</text>
+                      </svg>
+
+                      <div class="absolute bottom-1 right-1 text-[9px] font-mono bg-black/70 px-1.5 py-0.2 rounded text-slate-300">
+                        Pórtico P-100
+                      </div>
+                    </div>
+
+                    <!-- Métricas Dimensionales -->
+                    <div class="grid grid-cols-3 gap-1 text-center bg-[var(--card)] p-2 rounded-lg border border-[var(--border)] text-xs">
+                      <div>
+                        <div class="text-[10px] text-[var(--muted)]">Profundidad</div>
+                        <div class="font-mono font-bold text-[var(--ink)]">${f(t.mm)} mm</div>
+                      </div>
+                      <div>
+                        <div class="text-[10px] text-[var(--muted)]">Horas Rem.</div>
+                        <div class="font-mono font-bold ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${t.h} h</div>
+                      </div>
+                      <div>
+                        <div class="text-[10px] text-[var(--muted)]">Zona</div>
+                        <div class="font-mono font-bold uppercase text-[10px] ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${z}</div>
+                      </div>
+                    </div>
+
+                    <!-- Botón para ver Ficha -->
+                    <button onclick="navigate('#/n/${t.serial}')" class="w-full text-center py-1.5 rounded-lg text-xs font-semibold bg-[var(--card)] hover:bg-blue-600 hover:text-white text-[var(--ink)] border border-[var(--border)] transition-all">
+                      Ver Ficha Técnica ›
+                    </button>
+                  </div>
+                `;
+              }).join("")}
             </div>
           </div>
 
@@ -1494,16 +1770,15 @@
     function ejecutarPasadaPortico() {
       isSimulating = true;
       simLog = [
-        `[${new Date().toLocaleTimeString()}] Inicializando sincronización de pórtico para ${simSelectedTruck}...`,
-        `[${new Date().toLocaleTimeString()}] Velocidad detectada: 3.4 km/h (Dentro del rango óptimo 2-5 km/h)`,
-        `[${new Date().toLocaleTimeString()}] Sincronizando escáner 3D LiDAR y termografía de flanco...`
+        `[${new Date().toLocaleTimeString()}] Inicializando sincronización en PÓRTICO DIMENSIONAL P-100 para ${simSelectedTruck}...`,
+        `[${new Date().toLocaleTimeString()}] Velocidad detectada: 3.8 km/h (Dentro del rango óptimo 2 a 5 km/h)`,
+        `[${new Date().toLocaleTimeString()}] Arreglo de 8 cámaras (CAM-101 a CAM-108) sincronizado con escáner LiDAR 3D...`
       ];
       renderSimulator();
 
       setTimeout(() => {
         const truckIndex = state.trucks.findIndex(c => c[0] === simSelectedTruck);
         if (truckIndex >= 0) {
-          // Desgaste sintético simulado: reduce entre 0.1 y 0.3 mm la banda y recalculan horas
           const truckTires = state.trucks[truckIndex][3];
           for (let p = 0; p < 6; p++) {
             const key = (101 + truckIndex) + "-" + (p + 1);
@@ -1518,16 +1793,16 @@
         }
 
         simLog.push(
-          `[${new Date().toLocaleTimeString()}] ✓ 6 de 6 neumáticos escaneados con éxito.`,
-          `[${new Date().toLocaleTimeString()}] ✓ Nubes de puntos 3D integradas al historial dimensional.`,
-          `[${new Date().toLocaleTimeString()}] ✓ Horas remanentes recalculadas en base al modelo predictivo v1.3.`,
+          `[${new Date().toLocaleTimeString()}] ✓ 8 de 8 cámaras operativas (CAM-101 a CAM-108 procesaron imágenes).`,
+          `[${new Date().toLocaleTimeString()}] ✓ 6 de 6 neumáticos escaneados con nubes de puntos 3D.`,
+          `[${new Date().toLocaleTimeString()}] ✓ Paso validado por Pórtico P-100 y emitido a registro histórico.`,
           `[${new Date().toLocaleTimeString()}] Telemetría enviada al Tablero de Control del Turno.`
         );
 
         saveState();
         isSimulating = false;
         renderSimulator();
-        showToast(`Pasada de ${simSelectedTruck} procesada exitosamente en el pórtico`, "success");
+        showToast(`Pasada de ${simSelectedTruck} registrada con éxito en Pórtico P-100`, "success");
       }, 2000);
     }
 
