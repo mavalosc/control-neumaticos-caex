@@ -81,14 +81,14 @@
       background: var(--muted);
     }
 
-    /* Pulse animation for active portal sensor */
+    /* Laser sweep animation for CAEX scanner portal */
     @keyframes scan-laser {
-      0% { transform: translateY(0); opacity: 0.8; }
-      50% { transform: translateY(120px); opacity: 1; }
-      100% { transform: translateY(0); opacity: 0.8; }
+      0% { top: 0%; opacity: 0.75; }
+      50% { top: 96%; opacity: 1; }
+      100% { top: 0%; opacity: 0.75; }
     }
     .animate-laser {
-      animation: scan-laser 2.5s infinite ease-in-out;
+      animation: scan-laser 2s infinite ease-in-out;
     }
 
     /* Smooth transitions */
@@ -1485,52 +1485,50 @@
               </div>
             </div>
 
-            <!-- FOTO DEL CAMIÓN CON CÓDIGO DINÁMICO EN EL RECUADRO BLANCO LATERAL -->
-            <div class="relative w-full rounded-2xl overflow-hidden border border-[var(--border)] bg-slate-950 shadow-xl group">
+            <!-- FOTO DEL CAMIÓN (REDUCIDA AL 20% Y CENTRADA) CON CÓDIGO DINÁMICO Y ESCANEO LÁSER SUPERPUESTO -->
+            <div class="relative w-full max-w-[260px] mx-auto rounded-2xl overflow-hidden border-2 ${isSimulating ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.45)]' : 'border-[var(--border)]'} bg-slate-950 shadow-xl group transition-all duration-300">
               <img src="./assets/camion-caex.jpg" alt="Camión CAEX" class="w-full h-auto object-cover block">
               
               <!-- Texto con código del camión overlay en el panel blanco lateral de la tolva -->
               <div class="absolute flex items-center justify-center font-black font-mono tracking-wider select-none pointer-events-none"
                    style="top: 25%; left: 61.2%; width: 24.8%; height: 16.5%; transform: skewY(1.2deg) rotate(1deg);">
-                <span class="text-base sm:text-2xl md:text-3xl lg:text-4xl font-black text-slate-950 tracking-widest drop-shadow-sm">
+                <span class="text-[11px] sm:text-xs font-black text-slate-950 tracking-wider">
                   ${simSelectedTruck}
                 </span>
               </div>
 
+              <!-- ANIMACIÓN DE ESCANEO LÁSER DIRECTAMENTE SOBRE LA IMAGEN DEL CAMIÓN -->
+              ${isSimulating ? `
+                <!-- Línea láser verde en movimiento vertical constante -->
+                <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_15px_#10b981,0_0_30px_#10b981] animate-laser pointer-events-none z-20"></div>
+                <!-- Velo translúcido de escaneo óptico LiDAR/térmico -->
+                <div class="absolute inset-0 bg-emerald-500/15 pointer-events-none z-10 animate-pulse"></div>
+                <!-- HUD de estado en escaneo sobre la imagen -->
+                <div class="absolute top-2 left-2 z-20 bg-black/85 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1 border border-emerald-500/40">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span> ESCANEANDO P-100
+                </div>
+              ` : ''}
+
               <!-- Badge inferior sobre la foto -->
-              <div class="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/60 flex items-center gap-2 text-xs">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="font-mono text-slate-300">Unidad Evaluada: <strong class="text-white">${simSelectedTruck}</strong> (${truckData[1] || 'Cat 793F'})</span>
+              <div class="absolute bottom-2 left-2 bg-slate-950/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-slate-700/60 flex items-center gap-1 text-[10px] z-10">
+                <span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}"></span>
+                <span class="font-mono text-slate-300"><strong class="text-white">${simSelectedTruck}</strong></span>
               </div>
-              <div class="absolute top-3 right-3 bg-black/75 backdrop-blur px-3 py-1 rounded-xl text-[11px] font-mono text-amber-300 border border-amber-500/30">
-                RFID TAG: 915-EPC-${simSelectedTruck.replace('-', '')}
+              <div class="absolute top-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 border border-amber-500/30 z-10">
+                RFID P-100
               </div>
             </div>
 
             <!-- Panel de Estado del Pórtico Láser -->
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 relative min-h-[140px] flex flex-col justify-between overflow-hidden">
-              <div class="flex justify-between items-center text-xs font-mono text-emerald-400">
-                <span>ESTADO PÓRTICO P-100: ${isSimulating ? 'ESCANEANDO SENSORES 3D Y CÁMARAS' : 'CALIBRADO Y LISTO'}</span>
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span>
-                  SINCRONIZACIÓN GPS & BARRERA ÓPTICA
-                </span>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs font-mono">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}"></span>
+                <span class="text-emerald-400 font-bold">ESTADO PÓRTICO P-100:</span>
+                <span class="text-slate-200">${isSimulating ? 'ESCANEANDO SENSORES 3D Y CÁMARAS (EN PROCESO)' : 'CALIBRADO Y LISTO PARA DETECCIÓN'}</span>
               </div>
-
-              <div class="relative my-3 flex items-center justify-center">
-                <div class="w-full h-16 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center relative">
-                  <div class="text-xs font-bold font-mono text-slate-400 tracking-wider">
-                    ZONA DE MEDICIÓN LÁSER Y TÉRMICA PÓRTICO P-100 [P1 A P6]
-                  </div>
-                  ${isSimulating ? `
-                    <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_18px_#10b981] animate-laser"></div>
-                  ` : ''}
-                </div>
-              </div>
-
-              <div class="text-[11px] font-mono text-slate-500 flex justify-between">
-                <span>Precisión dimensional: ±0,5 mm</span>
-                <span>Termografía: Flancos exteriores e interiores</span>
+              <div class="flex items-center gap-4 text-[11px] text-slate-400">
+                <span>Precisión: ±0,5 mm</span>
+                <span>Termografía: P1 a P6</span>
               </div>
             </div>
           </div>
@@ -1803,7 +1801,7 @@
         isSimulating = false;
         renderSimulator();
         showToast(`Pasada de ${simSelectedTruck} registrada con éxito en Pórtico P-100`, "success");
-      }, 2000);
+      }, 2500);
     }
 
     // --- ENRUTADOR PRINCIPAL ---
