@@ -125,6 +125,11 @@ Durante el semestre se desarrollarán el tablero del planificador y el modelo de
 
 La meta de anticipación de 200 horas se ubica en *Después*, porque debe contrastarse con la evolución real de los neumáticos y sus fallas registradas. El prototipo permitirá evaluar el funcionamiento del flujo con datos sintéticos, pero no acreditar esa anticipación ni una reducción de fallas en operación.
 
+## Flujo de ramas
+
+- `dev`: desarrollo diario. Todo cambio se sube aquí (`actualizar.bat "mensaje"`).
+- `main`: producción. Solo recibe cambios mediante Pull Request desde `dev`; Vercel despliega `main` automáticamente.
+
 ## Estructura del repositorio
 
 ```
@@ -132,19 +137,25 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 ├── .gitignore               # Configuración de exclusión para Git
 ├── README.md                # Portada ejecutiva y documentación general
 ├── CHANGELOG.md             # Registro de versiones y avances
-├── src/                     # Código fuente principal (Frontend SPA)
-│   └── index.html           # Interfaz SPA interactiva con simulador y chasis 6x4
-├── frontend/                # Código del frontend (HTML / Tailwind / Vanilla JS)
-│   └── index.html           # Prototipo navegable listo para Vercel
+├── actualizar.bat           # Atajo Windows: commit y push a la rama dev
+├── src/                     # Código fuente vigente (SPA desplegada en Vercel)
+│   ├── index.html           # Interfaz: tablero, camiones 6x4, ficha, agenda, órdenes, simulador
+│   ├── config.js            # URL y clave anon (pública) de Supabase
+│   ├── db.js                # Capa de datos: lee y escribe en Supabase (respaldo local)
+│   └── assets/              # Imágenes del CAEX y del pórtico
+├── frontend/                # VERSIÓN ANTIGUA (Entrega 4), solo referencia histórica
+├── scripts/
+│   └── generar_seed.py      # Genera docs/seed.sql desde los datos del prototipo
 ├── backend/                 # Microservicio API en FastAPI (Python 3.11)
 │   ├── app/
-│   │   ├── main.py          # Endpoints REST alineados a la flota CAEX-101 a 106
+│   │   ├── main.py          # Endpoints REST (datos de ejemplo de la flota CAEX)
 │   │   └── proyeccion.py    # Algoritmo de regresión lineal y semáforo (200h / 500h)
 │   ├── tests/               # Pruebas unitarias de regresión y semáforo
 │   └── requirements.txt     # Dependencias de Python
 └── docs/                    # Documentación formal de la entrega
     ├── historias.md         # Historias de Usuario INVEST con escenarios Gherkin BDD
-    ├── schema.sql           # DDL relacional para Supabase (PostgreSQL) con triggers
+    ├── schema.sql           # DDL Supabase: tablas, triggers de cupos, vista y políticas RLS
+    ├── seed.sql             # Datos de demostración: 67 CAEX, 402 neumáticos, órdenes
     ├── ARQUITECTURA.md      # Arquitectura técnica desacoplada (Frontend/Backend/Supabase)
     ├── prompt-figma.md      # Especificación para Figma Make
     ├── wireframes/          # Wireframes anotados P1 a P5
@@ -153,11 +164,16 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 
 ## Cómo ejecutar
 
-1. **Frontend (Despliegue local y Vercel):**
-   Abrir `src/index.html` o `frontend/index.html` en el navegador, o conectar la rama `main` a Vercel.
+1. **Base de Datos (Supabase):** en el SQL Editor del proyecto ejecutar, en orden:
+   1. [`docs/schema.sql`](docs/schema.sql): tablas, enums, triggers de cupos, vista del tablero y políticas RLS.
+   2. [`docs/seed.sql`](docs/seed.sql): flota de demostración (67 CAEX, 402 neumáticos, ventanas y órdenes). Reinicia los datos cada vez que se ejecuta.
 
-2. **Base de Datos (Supabase):**
-   Ejecutar el script SQL de [`docs/schema.sql`](docs/schema.sql) en el SQL Editor de tu proyecto en Supabase para crear las tablas, enums, triggers de cupos y seed data inicial.
+   Si se cambian los datos iniciales en `src/index.html`, regenerar el seed con `python scripts/generar_seed.py`.
+
+2. **Frontend (local y Vercel):** completar `src/config.js` con la URL y la clave **anon** del proyecto (nunca la `service_role`).
+   Para probar en local: `cd src && python -m http.server 8000` y abrir http://localhost:8000.
+   El indicador de la barra superior muestra **Supabase** cuando lee y escribe en la base, o **modo local** si no hay conexión (en ese caso usa `localStorage`).
+   En Vercel, el *Root Directory* es `src` y la rama de producción es `main`.
 
 3. **Backend API (FastAPI):**
    ```bash

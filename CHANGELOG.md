@@ -1,6 +1,15 @@
 # Avances
 
-## v0.1 (actual)
+## v0.2 (14-10-2026)
+- [x] Flota ampliada a 67 CAEX (402 neumáticos) con paginación en Tablero y Camiones
+- [x] Prototipo conectado a Supabase (`src/config.js`, `src/db.js`): lectura de flota, ventanas y órdenes; escritura de órdenes, modificaciones, anulaciones, correcciones de daño y pasadas de pórtico
+- [x] `docs/schema.sql`: políticas RLS, trigger de cambio de ventana, vista con `security_invoker`
+- [x] `docs/seed.sql` generado desde el prototipo (`scripts/generar_seed.py`)
+- [x] `frontend/` marcado como versión antigua; `actualizar.bat` trabaja sobre `dev`
+- [x] `.env.example` sin credenciales reales
+
+
+## v0.1
 - [x] Wireframe de 4 pantallas definido
 - [x] Prototipo frontend navegable con datos de ejemplo (`frontend/index.html`)
 - [x] Backend base con datos de ejemplo: proyección lineal, semáforo, ventanas, creación de órdenes

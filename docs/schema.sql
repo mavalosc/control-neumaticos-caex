@@ -3,6 +3,7 @@
 -- Proyecto: Pórtico Dimensional Predictivo de Neumáticos CAEX
 -- Ecosistema DSD - Ingeniería Digital USACH · Equipo 3
 -- Compatible y Re-ejecutable (Idempotente) para SQL Editor de Supabase
+-- Orden de ejecución: 1) docs/schema.sql  2) docs/seed.sql (datos de demostración)
 -- =============================================================================
 
 -- 1. TIPOS ENUMERADOS (DOMINIO DEL NEGOCIO)
@@ -111,24 +112,33 @@ CREATE TABLE IF NOT EXISTS historial_ordenes (
     detalles JSONB
 );
 
+-- Columnas agregadas para la conexión del prototipo (ALTER idempotente: sirve
+-- también en una base donde las tablas ya existían).
+ALTER TABLE ventanas_taller ADD COLUMN IF NOT EXISTS reservable BOOLEAN NOT NULL DEFAULT TRUE; -- se ofrece al agendar
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS medicion_codigo VARCHAR(30); -- ej. 'med-2494'
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS origen_detalle TEXT;         -- ej. '22,9 mm, tasa observada'
+
 -- =============================================================================
 -- FUNCIONES Y TRIGGERS PARA CONTROL DE CAPACIDAD DE TALLER (CUPOS)
+-- SECURITY DEFINER: el trigger ajusta cupos aunque el usuario anon no tenga
+-- permiso directo de UPDATE sobre ventanas_taller.
 -- =============================================================================
 
 -- Disminuye cupo al programar una orden
 CREATE OR REPLACE FUNCTION decrementar_cupo_taller()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
     UPDATE ventanas_taller
     SET cupos_libres = cupos_libres - 1
     WHERE id = NEW.ventana_id AND cupos_libres > 0;
-    
+
     IF NOT FOUND THEN
         RAISE EXCEPTION 'La ventana de taller seleccionada no cuenta con cupos libres.';
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS trg_decrementar_cupo ON ordenes_trabajo;
 CREATE TRIGGER trg_decrementar_cupo
@@ -139,7 +149,8 @@ EXECUTE FUNCTION decrementar_cupo_taller();
 
 -- Libera cupo al anular una orden
 CREATE OR REPLACE FUNCTION liberar_cupo_taller_anulacion()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
     IF OLD.estado = 'programada' AND NEW.estado = 'anulada' THEN
         UPDATE ventanas_taller
@@ -148,7 +159,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS trg_liberar_cupo_anulacion ON ordenes_trabajo;
 CREATE TRIGGER trg_liberar_cupo_anulacion
@@ -156,32 +167,47 @@ AFTER UPDATE ON ordenes_trabajo
 FOR EACH ROW
 EXECUTE FUNCTION liberar_cupo_taller_anulacion();
 
+-- Mueve el cupo al cambiar la ventana de una orden programada (HU-08)
+CREATE OR REPLACE FUNCTION mover_cupo_cambio_ventana()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+    IF NEW.estado = 'programada' AND NEW.ventana_id IS DISTINCT FROM OLD.ventana_id THEN
+        UPDATE ventanas_taller
+        SET cupos_libres = cupos_libres - 1
+        WHERE id = NEW.ventana_id AND cupos_libres > 0;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'La nueva ventana de taller no cuenta con cupos libres.';
+        END IF;
+        UPDATE ventanas_taller
+        SET cupos_libres = LEAST(cupos_totales, cupos_libres + 1)
+        WHERE id = OLD.ventana_id;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_mover_cupo_cambio_ventana ON ordenes_trabajo;
+CREATE TRIGGER trg_mover_cupo_cambio_ventana
+AFTER UPDATE OF ventana_id ON ordenes_trabajo
+FOR EACH ROW
+EXECUTE FUNCTION mover_cupo_cambio_ventana();
+
 -- =============================================================================
--- DATOS INICIALES (SEED DATA DE LA FLOTA Y TURNO)
+-- VISTA: ÚLTIMA MEDICIÓN Y ÚLTIMO DAÑO DE CADA NEUMÁTICO MONTADO
+-- security_invoker: la vista respeta las políticas RLS de las tablas base.
 -- =============================================================================
-
-INSERT INTO camiones (codigo, modelo, horometro_h) VALUES
-('CAEX-101', 'Cat 793F', 16791),
-('CAEX-102', 'Cat 793F', 13622),
-('CAEX-103', 'Komatsu 930E-4', 21087),
-('CAEX-104', 'Cat 797F', 18450),
-('CAEX-105', 'Komatsu 930E-4', 14120),
-('CAEX-106', 'Cat 793F', 19830)
-ON CONFLICT (codigo) DO NOTHING;
-
-INSERT INTO ventanas_taller (id, dia, turno, cupos_totales, cupos_libres, horas_hasta_ventana) VALUES
-(1, '2026-09-29', 'turno B, 20:00 a 00:00', 3, 2, 36),
-(2, '2026-09-30', 'turno A, 08:00 a 12:00', 3, 1, 56),
-(3, '2026-10-01', 'turno B, 20:00 a 00:00', 3, 3, 84)
-ON CONFLICT (id) DO NOTHING;
-
--- VISTA: RESUMEN DE NEUMÁTICOS MONTADOS CON VIDA REMANENTE
-CREATE OR REPLACE VIEW vista_tablero_turno AS
-SELECT 
+DROP VIEW IF EXISTS vista_tablero_turno;
+CREATE VIEW vista_tablero_turno WITH (security_invoker = on) AS
+SELECT
     c.codigo AS caex_codigo,
+    c.modelo AS caex_modelo,
+    c.horometro_h,
+    n.id AS neumatico_id,
     n.posicion,
     n.serial AS neumatico_serial,
     n.marca,
+    m.codigo_medicion,
     m.profundidad_mm,
     m.tasa_desgaste_por_100h,
     m.tipo_tasa,
@@ -190,18 +216,50 @@ SELECT
     m.temperatura_flanco_c,
     COALESCE(d.severidad, '0') AS nivel_dano,
     COALESCE(d.descripcion, 'Sin daño') AS detalle_dano,
+    d.confianza_ia,
+    d.validado_por_humano,
     m.fecha_pasada
 FROM neumaticos n
 JOIN camiones c ON n.caex_id = c.id
 LEFT JOIN LATERAL (
-    SELECT * FROM mediciones 
-    WHERE neumatico_id = n.id 
-    ORDER BY fecha_pasada DESC 
+    SELECT * FROM mediciones
+    WHERE neumatico_id = n.id
+    ORDER BY fecha_pasada DESC
     LIMIT 1
 ) m ON TRUE
 LEFT JOIN LATERAL (
-    SELECT * FROM danos_neumaticos 
-    WHERE neumatico_id = n.id 
-    ORDER BY fecha_registro DESC 
+    SELECT * FROM danos_neumaticos
+    WHERE neumatico_id = n.id
+    ORDER BY fecha_registro DESC
     LIMIT 1
 ) d ON TRUE;
+
+-- =============================================================================
+-- SEGURIDAD: ROW LEVEL SECURITY (RLS)
+-- Supabase activa RLS en tablas nuevas; sin políticas, la clave anon no ve filas.
+-- Políticas de PROTOTIPO: el frontend (clave anon, pública) puede leer todo,
+-- registrar mediciones/daños/órdenes/historial y actualizar órdenes.
+-- No hay políticas DELETE: las órdenes se anulan, nunca se borran (trazabilidad).
+-- En producción estas políticas se restringirían a usuarios autenticados por rol.
+-- =============================================================================
+DO $$
+DECLARE t TEXT;
+BEGIN
+    FOREACH t IN ARRAY ARRAY['camiones','neumaticos','mediciones','danos_neumaticos',
+                             'ventanas_taller','ordenes_trabajo','historial_ordenes'] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS prototipo_lectura ON %I', t);
+        EXECUTE format('CREATE POLICY prototipo_lectura ON %I FOR SELECT TO anon, authenticated USING (true)', t);
+    END LOOP;
+
+    FOREACH t IN ARRAY ARRAY['mediciones','danos_neumaticos','ordenes_trabajo','historial_ordenes'] LOOP
+        EXECUTE format('DROP POLICY IF EXISTS prototipo_insercion ON %I', t);
+        EXECUTE format('CREATE POLICY prototipo_insercion ON %I FOR INSERT TO anon, authenticated WITH CHECK (true)', t);
+    END LOOP;
+END $$;
+
+DROP POLICY IF EXISTS prototipo_actualizacion ON ordenes_trabajo;
+CREATE POLICY prototipo_actualizacion ON ordenes_trabajo
+    FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+
+-- Los datos de demostración (67 camiones, 402 neumáticos, órdenes) están en docs/seed.sql.
