@@ -1,281 +1,280 @@
 # Historias de Usuario y Criterios de Aceptación (BDD / Gherkin)
 ## Proyecto: Pórtico Dimensional Predictivo de Neumáticos CAEX
-### Ingeniería Digital en Acción (Ecosistema DSD - USACH) · Unidad 1 · Equipo 3
+### Ingeniería Digital en Acción (Ecosistema DSD - USACH) · Equipo 3
 
-> **Estándar Metodológico:** Formulado bajo principios **INVEST** (Independiente, Negociable, Valiosa, Estimable, Pequeña, Testeable) con criterios de aceptación en sintaxis **BDD / Gherkin** (`Dado`, `Cuando`, `Entonces`). Vinculado con el Roadmap de Notion mediante códigos `HU-XX` y wireframes anotados en Figma (Pantallas P1 a P5).
-
----
-
-## Matriz de Trazabilidad de Historias de Usuario
-
-| Código | Historia de Usuario | Rol Primario | Pantalla Figma | Horizonte Notion | Estado Código |
-|---|---|---|---|---|---|
-| **HU-01** | Tablero de Turno y Priorización por Horas Remanentes | Planificador | P1 (Tablero) | Ahora | Implementado |
-| **HU-02** | Alerta Inmediata de Daño Crítico y Desvío a Despacho | Despachador / Planificador | P1 (Alerta) | Ahora / Próximo | Implementado |
-| **HU-03** | Visualización Matricial de Flota y Chasis 6x4 | Planificador | P2 (Camiones) | Ahora | Implementado |
-| **HU-04** | Ficha Técnica, Escáner 3D y Curva de Desgaste | Planificador | P3 (Ficha) | Ahora | Implementado |
-| **HU-05** | Validación y Reclasificación de Daños (Humano en el Bucle) | Planificador | P3 (Ficha) | Próximo | Implementado |
-| **HU-06** | Agendamiento en Ventana de Taller con Control de Cupos | Planificador | P4 (Agendar) | Ahora | Implementado |
-| **HU-07** | Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM | Planificador | P5 (Órdenes) | Ahora | Implementado |
-| **HU-08** | Modificación y Anulación de OT con Motivo Obligatorio | Planificador | P5 (Modal OT) | Próximo | Implementado |
+> **Estándar:** historias en formato **"Como… quiero… para…"**, revisadas con **INVEST**, y criterios de aceptación en **Gherkin en español** (`Característica`, `Escenario`, `Dado`, `Cuando`, `Entonces`, `Y`, `Pero`).
+> **Trazabilidad unívoca:** los códigos `HU-01` a `HU-08` son idénticos en el Roadmap de Notion (tablero *20261011 Roadmap*), en este documento y en los wireframes anotados de [`docs/wireframes/`](wireframes/README.md). Los campos citados están definidos en [`docs/datos.md`](datos.md).
 
 ---
 
-## Especificación Detallada de Historias de Usuario
+## Flujo principal
 
-### HU-01: Tablero de Turno y Priorización por Horas Remanentes
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** visualizar al inicio de cada turno la lista completa de neumáticos montados en la flota ordenada de menor a mayor horas de vida útil remanente y clasificada por semáforo de criticidad,  
-**para** priorizar inmediatamente las intervenciones más urgentes sin tener que inspeccionar camión por camión manualmente.
+La historia que sostiene el flujo central de la solución es **HU-07 · Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM**. Es el resultado que el Roadmap pone en *Ahora*: *"Que el planificador agende la intervención de una goma crítica y que la orden quede escrita con su trazabilidad a la medición que la originó"*.
 
-#### Criterios de Aceptación (BDD / Gherkin):
+El planificador llega a ella recorriendo cuatro historias, que corresponden a los wireframes W1 a W4:
+
+```
+HU-01 Tablero (W1) ──► HU-04 Ficha (W2) ──► HU-06 Agendar (W3) ──► ★ HU-07 Orden emitida (W4)
+                                                                         │
+                                                       HU-08 Modificar o anular (W5)
+```
+
+HU-02 (alerta crítica), HU-03 (vista de camiones) y HU-05 (reclasificación) son caminos alternativos que desembocan en la misma ficha (W2).
+
+---
+
+## Matriz de Trazabilidad
+
+| Código | Historia de Usuario | Rol | Wireframe | Horizonte Notion | Tablas Supabase | Estado |
+|---|---|---|---|---|---|---|
+| **HU-01** | Tablero del Turno y Priorización por Horas Remanentes | Planificador | W1 | Ahora | `vista_tablero_turno` | Implementado |
+| **HU-02** | Alerta Inmediata de Daño Crítico y Desvío a Despacho | Despachador / Planificador | W1 (banner) | Próximo | `danos_neumaticos` | Implementado |
+| **HU-03** | Visualización Matricial de Flota y Chasis 6x4 | Planificador | Camino alternativo a W2 | Ahora | `camiones`, `neumaticos` | Implementado |
+| **HU-04** | Ficha Técnica, Escáner 3D y Curva de Desgaste | Planificador | W2 | Ahora | `mediciones`, `danos_neumaticos` | Implementado |
+| **HU-05** | Validación y Reclasificación de Daños (Humano en el Bucle) | Planificador | W2 (panel) | Próximo | `danos_neumaticos` | Implementado |
+| **HU-06** | Agendamiento en Ventana de Taller con Control de Cupos | Planificador | W3 | Ahora | `ventanas_taller` | Implementado |
+| **HU-07** ★ | Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM | Planificador | W4 | Ahora | `ordenes_trabajo`, `historial_ordenes` | Implementado |
+| **HU-08** | Modificación y Anulación de OT con Motivo Obligatorio | Planificador | W5 | Próximo | `ordenes_trabajo`, `historial_ordenes` | Implementado |
+
+★ Flujo principal.
+
+---
+
+## Especificación de las Historias
+
+### HU-01: Tablero del Turno y Priorización por Horas Remanentes
+**Como** planificador de mantención de neumáticos,
+**quiero** ver al inicio del turno todos los neumáticos montados ordenados de menor a mayor horas de vida útil remanente y clasificados por zona de criticidad,
+**para** priorizar las intervenciones más urgentes sin revisar camión por camión.
 
 ```gherkin
-Escenario: Visualización y ordenamiento descendente de criticidad en el tablero (Camino Feliz)
-  Dado que existen mediciones procesadas para los 67 camiones CAEX-101 a CAEX-167
-  Cuando el planificador ingresa a la vista del "Tablero del turno"
-  Entonces el sistema muestra las tarjetas KPI de resumen:
-    | Zona      | Condición           |
-    | Rojo      | < 200 h remanentes  |
-    | Amarillo  | < 500 h remanentes  |
-    | Verde     | > 500 h remanentes  |
-    | Sin datos | 0 lecturas previas  |
-  Y la tabla lista todos los neumáticos ordenados ascendentemente por horas remanentes
-  Y cada fila muestra: Camión, Posición, Serial, Profundidad (mm), Tasa (mm/100h), Horas remanentes, Zona y Nivel de daño.
+# language: es
+Característica: Tablero del turno (HU-01)
 
-Escenario: Filtrado combinado por zona y búsqueda de texto
-  Dado que el planificador se encuentra en el "Tablero del turno"
-  Cuando selecciona el filtro de zona "rojo" y escribe "CAEX-102" en el buscador
-  Entonces la tabla se actualiza mostrando únicamente los neumáticos del CAEX-102 con horas remanentes inferiores a 200 h
-  Y se ocultan las filas pertenecientes a zonas amarilla o verde.
+  Escenario: Ver la flota ordenada por horas remanentes (camino feliz)
+    Dado que Supabase tiene mediciones para los 67 camiones CAEX-101 a CAEX-167
+    Cuando el planificador abre el "Tablero de Control del Turno"
+    Entonces ve cuatro tarjetas de resumen: "Zona Roja" (< 200 h), "Zona Amarilla" (< 500 h), "Zona Verde" (> 500 h) y "Sin Proyección"
+    Y la tabla lista los neumáticos ordenados de menor a mayor horas remanentes
+    Y cada fila muestra camión, posición, serial, profundidad (mm), tasa (mm/100 h), horas remanentes, zona y nivel de daño
+    Y el pie de la tabla indica "Mostrando 1 a 25 de 402 neumáticos (67 CAEX · 402 neumáticos)"
 
-Escenario Alternativo: Búsqueda sin coincidencias en el turno
-  Dado que el planificador ingresa un serial inexistente "5980R63-9999-9999" en el buscador
-  Cuando el sistema ejecuta el filtro en tiempo real
-  Entonces la tabla muestra el mensaje "Sin resultados. Limpia los filtros."
-  Y el contador de registros visibles indica 0.
+  Escenario: Búsqueda sin coincidencias (excepción)
+    Dado que el planificador está en el "Tablero de Control del Turno"
+    Cuando escribe el serial inexistente "5980R63-9999-9999" en el buscador
+    Entonces la tabla muestra el mensaje "No se encontraron neumáticos con los filtros seleccionados."
+    Y el pie de la tabla indica "Mostrando 0 a 0 de 0 neumáticos"
 ```
 
 ---
 
 ### HU-02: Alerta Inmediata de Daño Crítico y Desvío a Despacho
-**Como** Despachador de Mina / Planificador de Mantención,  
-**quiero** recibir una alerta visual prioritaria en el sistema cuando un neumático sea detectado con Daño Nivel 3 (corte profundo, sobrecalentamiento >95°C o riesgo de delaminación),  
-**para** desviar inmediatamente el camión del circuito de acarreo hacia el taller antes de que ocurra un reventón catastrófico en la rampa.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** despachador de mina o planificador,
+**quiero** recibir una alerta visual prioritaria cuando un neumático tenga daño nivel 3 (crítico),
+**para** sacar el camión del circuito de acarreo antes de un reventón en la rampa.
 
 ```gherkin
-Escenario: Detección de daño crítico y despliegue de banner prioritario (Camino Feliz)
-  Dado que el neumático serial "5980R63-2426-1348" en CAEX-102 posición P3 registra daño Nivel 3
-  Cuando el planificador o despachador abre el tablero principal
-  Entonces el sistema despliega un banner superior de alta prioridad con borde rojo y animación destacada
-  Y el mensaje indica: "Alerta de daño crítico · CAEX-102, posición 3: corte profundo en flanco. Sacar el CAEX del ciclo."
-  Y el botón "Avisar Despacho Mina" queda habilitado para registrar la derivación radial.
+# language: es
+Característica: Alerta de daño crítico (HU-02)
 
-Escenario: Confirmación de derivación a Despacho Mina
-  Dado que el banner de alerta crítica está visible en pantalla
-  Cuando el usuario presiona el botón "Avisar Despacho Mina"
-  Entonces se genera un registro en el log de auditoría con fecha, hora, ID del camión y serial
-  Y se muestra una notificación toast confirmando el aviso de desvío
-  Y el estado del camión en el sistema pasa a "En derivación a taller".
+  Escenario: Alerta y aviso al despacho (camino feliz)
+    Dado que el neumático "5980R63-2426-1348" del CAEX-102, posición P3, tiene daño nivel 3 "corte profundo en flanco"
+    Cuando el planificador abre el "Tablero de Control del Turno"
+    Entonces aparece sobre las tarjetas el banner rojo "Alerta de Seguridad Operacional Crítica" con el camión, la posición, el daño, su certeza y la temperatura
+    Y al presionar "Avisar Despacho Mina" aparece el aviso "ALERTA RADIAL: Se ha notificado al despachador de turno para desviar el CAEX-102…"
 
-Escenario Alternativo: Ausencia de daños críticos en la flota
-  Dado que todos los neumáticos monitoreados poseen Nivel de Daño 0, 1 o 2
-  Cuando se carga el tablero del turno
-  Entonces el banner de alerta crítica permanece oculto y la interfaz muestra el estado "Operación Normal".
+  Escenario: Flota sin daños críticos (excepción)
+    Dado que ningún neumático tiene daño nivel 3
+    Cuando el planificador abre el "Tablero de Control del Turno"
+    Entonces el banner "Alerta de Seguridad Operacional Crítica" no se muestra
+    Y el tablero comienza directamente con las tarjetas de zona
 ```
 
 ---
 
 ### HU-03: Visualización Matricial de Flota y Chasis 6x4
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** consultar una vista esquemática de la flota que represente el chasis de cada camión con sus 6 posiciones de neumáticos (P1 a P6),  
-**para** analizar visualmente el desgaste cruzado por eje y definir rotaciones oportunas entre ruedas delanteras y traseras duales.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** planificador de mantención de neumáticos,
+**quiero** ver cada camión con sus 6 posiciones (P1 a P6) coloreadas según su zona,
+**para** detectar desgaste desigual por eje y decidir rotaciones.
 
 ```gherkin
-Escenario: Inspección de chasis 6x4 por camión CAEX (Camino Feliz)
-  Dado que el planificador navega a la vista "Camiones"
-  Cuando se renderizan las tarjetas de flota
-  Entonces cada CAEX muestra:
-    | Identificador | Modelo       | Horómetro   | Neumáticos en Rojo |
-    | CAEX-101      | Cat 793F     | 16.791 h    | Cantidad en rojo   |
-  Y una matriz esquemática del camión con 6 tarjetas:
-    - Eje delantero: P1 (Delantero Izq), P2 (Delantero Der)
-    - Tándem trasero dual: P3 (Ext Izq), P4 (Int Izq), P5 (Int Der), P6 (Ext Der)
-  Y cada posición muestra sus horas remanentes coloreadas según su zona (verde, amarillo, rojo).
+# language: es
+Característica: Vista de camiones (HU-03)
 
-Escenario: Navegación directa desde una posición del camión a la ficha técnica
-  Dado que el camión CAEX-102 muestra la posición P3 en color rojo con 34 h
-  Cuando el planificador hace clic sobre la tarjeta de la posición P3
-  Entonces el sistema navega a la URL "#/n/5980R63-2426-1348" abriendo la ficha técnica del neumático.
+  Escenario: Revisar el chasis de un camión y abrir un neumático (camino feliz)
+    Dado que el planificador abre la vista "Camiones"
+    Cuando busca "CAEX-102"
+    Entonces ve la tarjeta del CAEX-102 con modelo, horómetro y sus 6 posiciones: P1 y P2 en el eje delantero, P3 a P6 en el tándem trasero dual
+    Y cada posición muestra sus horas remanentes con el color de su zona
+    Y al hacer clic en la posición P3 se abre la ficha del neumático "5980R63-2426-1348"
 
-Escenario Alternativo: Camión con neumáticos sin lecturas previas
-  Dado que el camión CAEX-104 tiene una posición sin historial dimensional
-  Cuando se dibuja el camión en la vista matricial
-  Entonces esa posición se muestra con estilo neutro "sin datos"
-  Y al hacer clic en ella permite registrar o simular la primera pasada de pórtico.
+  Escenario: Búsqueda de un camión inexistente (excepción)
+    Dado que el planificador está en la vista "Camiones"
+    Cuando busca "CAEX-999"
+    Entonces se muestra el mensaje "No se encontraron camiones con ese criterio."
 ```
 
 ---
 
 ### HU-04: Ficha Técnica, Escáner 3D y Curva de Desgaste
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** acceder a la ficha técnica individual del neumático para ver la nube de puntos/foto con daños delimitados, la termografía de flanco y la curva histórica de degradación frente al umbral de retiro,  
-**para** sustentar con evidencia objetiva la orden de retiro y contar con respaldo técnico ante el fabricante (Michelin, Bridgestone o BKT).
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** planificador de mantención de neumáticos,
+**quiero** abrir la ficha de un neumático con su foto con daños marcados, temperatura de flanco y curva de desgaste frente al umbral de retiro,
+**para** respaldar con evidencia la orden de retiro y el reclamo al fabricante.
 
 ```gherkin
-Escenario: Consulta de ficha técnica con curva de desgaste (Camino Feliz)
-  Dado que el planificador abre la ficha del neumático "5980R63-2426-1348"
-  Cuando se renderiza la vista técnica
-  Entonces se muestran las tarjetas métricas:
-    - Horas remanentes calculadas
-    - Profundidad de banda actual en mm contra el umbral crítico de 20,0 mm
-    - Tasa de desgaste observada (mm / 100 h)
-    - Temperatura de flanco en °C
-  Y un gráfico SVG temporal con las últimas 8 pasadas y la línea horizontal punteada de umbral de retiro en 20,0 mm
-  Y el panel de escáner 3D muestra el bounding box del daño con porcentaje de certeza (ej. "corte profundo en flanco 94%").
+# language: es
+Característica: Ficha del neumático (HU-04)
 
-Escenario Alternativo: Daño detectado con baja confianza algorítmica
-  Dado que el escáner detecta una irregularidad con confianza inferior al 70% (0.70)
-  Cuando se presenta la información en la tarjeta de daños
-  Entonces el daño se rotula explícitamente como "por confirmar"
-  Y el botón "Agendar intervención" solicita confirmación visual antes de proceder.
+  Escenario: Consultar la ficha de un neumático en riesgo (camino feliz)
+    Dado que el neumático "5980R63-2426-1348" está en zona roja
+    Cuando el planificador abre su ficha
+    Entonces ve las horas remanentes, la profundidad contra el umbral de 20,0 mm, la tasa de desgaste y la temperatura de flanco
+    Y ve el gráfico de las últimas pasadas con la línea punteada del umbral de retiro
+    Y ve el daño "corte profundo en flanco" con "Confianza IA: 94%"
+    Y el botón "Agendar Intervención en Taller" está habilitado
+
+  Escenario: Daño de baja confianza (excepción)
+    Dado que el modelo detectó un daño con confianza menor a 70 %
+    Cuando el planificador abre la ficha
+    Entonces el daño muestra la etiqueta "por confirmar" junto a su porcentaje de confianza
+
+  Escenario: Neumático sin necesidad de intervención (excepción)
+    Dado que el neumático está en zona verde y su daño es nivel 0 o 1
+    Cuando el planificador abre la ficha
+    Entonces la acción recomendada dice "Neumático en condiciones óptimas para continuar operación"
+    Y el botón "Agendar Intervención en Taller" está deshabilitado
 ```
 
 ---
 
 ### HU-05: Validación y Reclasificación de Daños (Humano en el Bucle)
-**Como** Planificador de Mantención de Neumáticos (Ecosistema Industria 5.0),  
-**quiero** corregir manualmente el nivel de severidad o el tipo de daño asignado por el modelo de visión artificial,  
-**para** que el juicio experto humano prevalezca sobre la inferencia de la máquina y se genere un registro auditable para reentrenamiento del modelo.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** planificador de mantención de neumáticos,
+**quiero** corregir el nivel de daño que asignó el modelo de visión,
+**para** que prevalezca el juicio experto y quede un registro auditable para reentrenar el modelo.
 
 ```gherkin
-Escenario: Reclasificación exitosa de daño por el planificador (Camino Feliz)
-  Dado que la ficha de un neumático indica Nivel 1 (Leve) por inferencia automática
-  Cuando el planificador selecciona la píldora "2 · Moderado" en el panel "Corregir clasificación"
-  Entonces el nivel de daño del neumático se actualiza inmediatamente a Nivel 2
-  Y el badge en la ficha cambia a color naranja
-  Y el sistema registra en la base de datos la fecha, hora y rol del usuario que efectuó el ajuste
-  Y el camión asociado actualiza su nivel máximo de severidad.
+# language: es
+Característica: Corrección de la clasificación de daño (HU-05)
 
-Escenario Alternativo: Reclasificación a Nivel 0 (Falso Positivo)
-  Dado que una mancha de lodo fue catalogada erróneamente por la IA como roca incrustada (Nivel 2)
-  Cuando el planificador presiona "0 · Sin daño"
-  Entonces se eliminan los bounding boxes de daño activo
-  Y la condición pasa a estado normal, liberando la sugerencia de intervención obligatoria.
+  Escenario: Subir la severidad de un daño (camino feliz)
+    Dado que la ficha del neumático "5980R63-2328-1590" muestra daño nivel 1 "Leve"
+    Cuando el planificador elige "Moderado" en el panel "Validación del Planificador (Industria 5.0)"
+    Entonces aparece el aviso "Clasificación actualizada de Leve a Moderado (registrado en auditoría)"
+    Y Supabase guarda una fila en danos_neumaticos con severidad "2", validado_por_humano = true y usuario_validador = "planificador"
+
+  Escenario: Descartar un falso positivo (excepción)
+    Dado que el modelo marcó un daño que el planificador reconoce como barro
+    Cuando el planificador elige "Sin daño"
+    Entonces la ficha muestra "No se detectaron cortes, rocas incrustadas ni delaminaciones en la última pasada."
+    Y Supabase guarda una fila en danos_neumaticos con severidad "0"
 ```
 
 ---
 
 ### HU-06: Agendamiento en Ventana de Taller con Control de Cupos
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** seleccionar una ventana de taller disponible (turnos A o B) que cuente con cupos libres y verificar si la intervención se ejecutará antes de que el neumático cruce el umbral de falla,  
-**para** asegurar la capacidad del taller y evitar que el neumático falle en faena antes de ingresar al servicio.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** planificador de mantención de neumáticos,
+**quiero** elegir una ventana de taller con cupos libres y saber si llega antes de que el neumático cruce el umbral,
+**para** asegurar capacidad del taller y evitar que el neumático falle en faena.
 
 ```gherkin
-Escenario: Reserva de ventana con cupo disponible y margen de horas favorable (Camino Feliz)
-  Dado que el neumático tiene 150 h remanentes de vida útil
-  Y la ventana "29-09-2026, turno B" está proyectada para dentro de 36 h con 2 de 3 cupos libres
-  Cuando el planificador selecciona dicha ventana en la pantalla "Agendar intervención"
-  Entonces el sistema resalta la opción seleccionada con borde distintivo
-  Y muestra el mensaje de validación: "La ventana elegida cae dentro del margen (quedan 114 h de margen de seguridad)"
-  Y el botón "Confirmar y emitir orden" queda habilitado.
+# language: es
+Característica: Agendar intervención (HU-06)
 
-Escenario Alternativo: Ventana con capacidad de cupos agotada
-  Dado que una ventana de taller tiene 0 de 3 cupos libres
-  Cuando se renderiza la lista de ventanas en la vista de agendamiento
-  Entonces la tarjeta de esa ventana se muestra deshabilitada (opacidad reducida)
-  Y no permite ser seleccionada para emisión de orden.
+  Escenario: Elegir una ventana oportuna (camino feliz)
+    Dado que el neumático tiene 150 h remanentes
+    Y la ventana "29-09-2026 · turno B, 20:00 a 00:00" llega en 36 h y tiene "2 de 3 cupos libres"
+    Cuando el planificador selecciona esa ventana
+    Entonces la ventana queda resaltada
+    Y aparece el mensaje "✓ Ventana oportuna: La intervención se ejecutará con 114 h de margen antes del cruce de umbral."
+    Y el botón "Confirmar y Emitir Orden en SAP PM" queda habilitado
 
-Escenario de Advertencia: Ventana posterior al punto probable de falla
-  Dado que un neumático tiene 34 h remanentes
-  Cuando el planificador selecciona una ventana programada para dentro de 56 h
-  Entonces el sistema muestra una advertencia en color rojo: "La ventana llega tarde: el neumático cruza el umbral antes"
-  Y recomienda seleccionar la ventana más inmediata.
+  Escenario: Ventana sin cupos (excepción)
+    Dado que una ventana tiene "0 de 3 cupos libres"
+    Cuando el planificador intenta seleccionarla
+    Entonces la ventana se ve atenuada y no se selecciona
+    Y el botón "Confirmar y Emitir Orden en SAP PM" sigue deshabilitado
+
+  Escenario: Ventana que llega tarde (excepción)
+    Dado que el neumático tiene 34 h remanentes
+    Cuando el planificador selecciona una ventana que llega en 56 h
+    Entonces aparece el mensaje "⚠️ Advertencia de riesgo: El neumático cruzará el umbral 22 h antes de esta ventana."
 ```
 
 ---
 
-### HU-07: Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** que al confirmar la reserva se genere automáticamente la Orden de Trabajo (OT) con trazabilidad a la medición dimensional, versión del modelo y serial de reemplazo de bodega,  
-**para** enviar el trabajo al taller y contar con respaldo inmutable para la reunión semanal y el reclamo de garantía ante el proveedor.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+### HU-07 ★: Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM
+**Como** planificador de mantención de neumáticos,
+**quiero** que al confirmar la ventana se emita la orden de trabajo con su trazabilidad a la medición que la originó,
+**para** enviar el trabajo al taller y tener respaldo para la reunión semanal y el reclamo de garantía.
 
 ```gherkin
-Escenario: Emisión de orden de trabajo con trazabilidad completa (Camino Feliz)
-  Dado que el planificador presiona "Confirmar y emitir orden" para el serial "5980R63-2531-1596"
-  Cuando el sistema procesa la solicitud
-  Entonces se crea una nueva OT con correlativo único (ej. "ot-0069")
-  Y el cupo libre de la ventana seleccionada se decrementa en 1 (ej. de 2 a 1)
-  Y la orden almacena:
-    - Serial montado y posición en el CAEX
-    - Tipo de intervención ("retiro" o "rotación")
-    - Medición de origen (ej. "med-2496, 22,9 mm, tasa observada")
-    - Serial de bodega asignado para reemplazo ("5980R63-B-544")
-    - Versión del modelo predictivo ("v1.3")
-    - Estado inicial: "programada"
-  Y el usuario es redirigido a la vista de Órdenes con una notificación de confirmación.
+# language: es
+Característica: Emisión de la orden de trabajo (HU-07, flujo principal)
 
-Escenario Alternativo: Visualización y filtro en el listado de órdenes
-  Dado que existen órdenes en estados "programada", "ejecutada" y "anulada"
-  Cuando el usuario filtra por estado "programada"
-  Entonces el listado muestra únicamente las órdenes pendientes con el botón "Modificar o anular" habilitado.
+  Escenario: Emitir la orden (camino feliz)
+    Dado que el planificador eligió una ventana con cupo para el neumático "5980R63-2531-1596"
+    Cuando presiona "Confirmar y Emitir Orden en SAP PM"
+    Entonces aparece el aviso "Orden ot-XXXX emitida con éxito en ERP. Taller notificado."
+    Y la vista "Órdenes de Trabajo" muestra la orden en estado "programada" con su nota, la medición de origen y la ventana
+    Y Supabase guarda la orden en ordenes_trabajo, con su medicion_codigo y una fila "creacion" en historial_ordenes
+    Y el cupo de la ventana en ventanas_taller baja en 1
+
+  Escenario: La ventana se llenó antes de confirmar (excepción)
+    Dado que otro usuario ocupó el último cupo de la ventana elegida
+    Cuando el planificador presiona "Confirmar y Emitir Orden en SAP PM"
+    Entonces la base rechaza la orden con "La ventana de taller seleccionada no cuenta con cupos libres."
+    Y aparece el aviso "No se pudo guardar en Supabase: …"
+    Y la orden no queda registrada en ordenes_trabajo
 ```
 
 ---
 
 ### HU-08: Modificación y Anulación de OT con Motivo Obligatorio
-**Como** Planificador de Mantención de Neumáticos,  
-**quiero** tener la capacidad de cambiar la ventana, editar la nota o anular una Orden de Trabajo en estado programada exigiendo un motivo mandatorio,  
-**para** reasignar o liberar cupos del taller garantizando una auditoría inalterable del historial de cambios.
-
-#### Criterios de Aceptación (BDD / Gherkin):
+**Como** planificador de mantención de neumáticos,
+**quiero** cambiar la ventana o la nota de una orden programada, o anularla, indicando siempre un motivo,
+**para** reasignar o liberar cupos del taller con un historial de cambios auditable.
 
 ```gherkin
-Escenario: Modificación de ventana de taller y justificación obligatoria (Camino Feliz)
-  Dado que la orden "ot-0068" está en estado "programada"
-  Cuando el planificador presiona "Modificar o anular"
-  Y selecciona una nueva ventana con cupo disponible
-  Y escribe el motivo: "Postergación por prioridad de mantención de pala"
-  Y presiona "Guardar cambios"
-  Entonces la orden actualiza su fecha y turno
-  Y el cupo de la ventana anterior se incrementa en +1
-  Y el cupo de la nueva ventana se decrementa en -1
-  Y el historial de la orden anexa: "[Fecha Hora] · planificador · ventana modificada · motivo: Postergación por prioridad..."
+# language: es
+Característica: Modificar o anular una orden (HU-08)
 
-Escenario: Anulación de orden con motivo y liberación de cupo
-  Dado que el planificador selecciona la orden programada "ot-0067"
-  Cuando hace clic en "Anular orden", elige el motivo "El neumático ya se rotó" y confirma la anulación
-  Entonces la orden cambia su estado a "anulada" (sin borrarse de la base de datos)
-  Y el cupo del taller asociado se libera automáticamente (+1)
-  Y el motivo queda registrado de forma permanente en el historial de trazabilidad.
+  Escenario: Cambiar la ventana de una orden (camino feliz)
+    Dado que la orden "ot-0068" está "programada"
+    Cuando el planificador presiona "Modificar" en la orden, elige otra ventana con cupo y escribe el motivo "Postergación por prioridad de mantención de pala"
+    Y presiona "Guardar Modificaciones"
+    Entonces aparece el aviso "Orden ot-0068 actualizada correctamente"
+    Y la ventana nueva tiene un cupo libre menos
+    Y el historial de la orden agrega "planificador · modificación de orden · motivo: Postergación por prioridad de mantención de pala"
 
-Escenario Excepción: Intento de guardar cambios sin motivo obligatorio
-  Dado que el planificador cambia la nota de la orden
-  Pero deja el campo "Motivo del cambio" en blanco
-  Cuando evalúa la interfaz
-  Entonces el botón "Guardar cambios" permanece deshabilitado (disabled)
-  Y el sistema impide el envío hasta que se ingrese un texto válido.
+  Escenario: Anular una orden con motivo (camino feliz)
+    Dado que la orden "ot-0067" está "programada"
+    Cuando el planificador elige el motivo "El neumático ya se rotó" y confirma con "Sí, anular"
+    Entonces la orden queda en estado "anulada" y sigue visible en la lista
+    Y el cupo de su ventana se libera
+    Y el historial registra "orden anulada · motivo: El neumático ya se rotó"
+
+  Escenario: Guardar sin motivo (excepción)
+    Dado que el planificador editó la nota de una orden programada
+    Pero dejó vacío el campo "Motivo del Cambio"
+    Cuando revisa el formulario
+    Entonces ve el mensaje "El motivo del cambio es obligatorio."
+    Y el botón "Guardar Modificaciones" está deshabilitado
+
+  Escenario: Anular sin motivo (excepción)
+    Dado que el planificador abrió el panel "Anular esta Orden"
+    Pero no eligió un "Motivo de Anulación"
+    Entonces el botón para anular está deshabilitado
 ```
 
 ---
 
-## Criterios de Revisión INVEST Aplicados
+## Revisión INVEST
 
-1. **Independent (Independientes):** Las historias pueden desarrollarse y desplegarse de manera incremental (ej. HU-01 Tablero puede operar antes de HU-08 Modificación de OT).
-2. **Negotiable (Negociables):** Las interfaces y umbrales (200h, 500h) están parametrizados y son ajustables según el feedback del cliente minero.
-3. **Valuable (Valiosas):** Cada historia entrega valor directo en disponibilidad de flota, reducción de costos de neumáticos o trazabilidad frente a proveedores (US$40M en juego).
-4. **Estimable (Estimables):** Cada historia tiene fronteras técnicas acotadas a las tablas de datos y componentes visuales correspondientes.
-5. **Small (Pequeñas):** Cada historia corresponde a un flujo de interacción de una pantalla o modal específico dentro de un sprint de 1 a 2 semanas.
-6. **Testable (Testeables):** Todas cuentan con escenarios en sintaxis Gherkin verificables mediante pruebas unitarias y de integración end-to-end.
+| Criterio | Cómo se cumple |
+|---|---|
+| **Independiente** | Cada historia se puede construir y desplegar por separado. Por ejemplo, HU-01 funciona sin HU-08. |
+| **Negociable** | Describe el resultado esperado, no la tecnología. Los umbrales de 200 h y 500 h son parámetros ajustables. |
+| **Valiosa** | Cada historia mejora la disponibilidad de la flota, reduce fallas en faena o deja trazabilidad frente al proveedor. |
+| **Estimable** | Cada historia toca una pantalla y un conjunto acotado de tablas (ver la matriz). |
+| **Pequeña** | Cada historia cabe en un sprint de una a dos semanas. |
+| **Testeable** | Cada historia tiene al menos un escenario feliz y uno de excepción con resultados observables en pantalla o en Supabase. |

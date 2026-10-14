@@ -118,6 +118,11 @@ ALTER TABLE ventanas_taller ADD COLUMN IF NOT EXISTS reservable BOOLEAN NOT NULL
 ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS medicion_codigo VARCHAR(30); -- ej. 'med-2494'
 ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS origen_detalle TEXT;         -- ej. '22,9 mm, tasa observada'
 
+-- Auditoría temporal uniforme (Tidy Data, regla 3): toda tabla registra cuándo se creó la fila.
+ALTER TABLE mediciones        ADD COLUMN IF NOT EXISTS creado_en TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE danos_neumaticos  ADD COLUMN IF NOT EXISTS creado_en TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE historial_ordenes ADD COLUMN IF NOT EXISTS creado_en TIMESTAMPTZ NOT NULL DEFAULT now();
+
 -- =============================================================================
 -- FUNCIONES Y TRIGGERS PARA CONTROL DE CAPACIDAD DE TALLER (CUPOS)
 -- SECURITY DEFINER: el trigger ajusta cupos aunque el usuario anon no tenga

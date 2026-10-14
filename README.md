@@ -1,20 +1,49 @@
 # Pórtico dimensional predictivo de neumáticos CAEX
 
+Pórtico instrumentado que mide cada CAEX en tránsito, mantiene la historia dimensional de cada neumático por su serial y proyecta sus horas de vida útil remanente. Con eso, el planificador programa el retiro **antes** de que el neumático falle en faena y cada orden de trabajo queda trazada a la medición que la originó.
+
+**Beneficiarios:** el planificador de mantención de neumáticos (usuario principal), el despachador de mina (alertas de daño crítico), el taller de neumáticos (órdenes con cupo asegurado) y la gerencia de mantenimiento (respaldo para reclamos de garantía ante el proveedor).
+
+| Enlace | |
+|---|---|
+| Prototipo en producción (Vercel, rama `main`) | https://control-neumaticos-caex-frontend.vercel.app |
+| Base de datos | Supabase, proyecto `vwustghenvatlfwankqo` |
+| Gestión (Roadmap y Kanban en Notion) | [Grupo 3](https://field-lillipilli-c3d.notion.site/Grupo-3-b76498f17d47839d8bf701014eb9d394) |
+
+## Estado actual en la escala de madurez
+
+**Semana 4: Prototipo de alta fidelidad conectado a datos (camino hacia la PoC de la Semana 8).**
+
+| Hito | Estado |
+|---|---|
+| Desafío (Semana 1) | ✅ Avance 1 |
+| Solución / Hipótesis (Semana 2) | ✅ Avance 2 |
+| Ambiente integrado y datos (Semana 3) | ✅ GitHub (`dev` → `main` por Pull Request), Vercel con despliegue continuo y Supabase con [modelo de datos](docs/datos.md) |
+| Historias, BDD y wireframes (Semana 4) | ✅ [`docs/historias.md`](docs/historias.md) y [`docs/wireframes/`](docs/wireframes/README.md) |
+| Prueba de concepto (Semana 8) | ⏳ Validar la proyección de horas remanentes con datos sintéticos de pasadas |
+| MVP (Semana 12) | ⏳ Validación con planificadores reales |
+
+El prototipo trabaja con **datos sintéticos** (67 CAEX, 402 neumáticos); el hardware del pórtico queda fuera del semestre (horizonte *Después* del roadmap).
+
 Documentación de los avances del proyecto:
 
 - **Avance 1:** propuesta de valor
 - **Avance 2:** propuesta de solución, caso de uso principal, maqueta preliminar y roadmap inicial
+- **Entrega 3:** ambiente integrado, [bitácora de IA](docs/bitacora-ia.md) y [modelo de datos](docs/datos.md)
+- **Entrega 4:** [historias de usuario y criterios BDD](docs/historias.md), y [wireframes anotados](docs/wireframes/README.md)
 
 Ingeniería Digital en Acción: Datos con IA, MVP · Unidad 1 · Equipo 3
 Universidad de Santiago de Chile
 
 ## Equipo
 
-- Francisco Opazo
-- Héctor Medina
-- Manuel Ávalos Castillo
-- Nicolás Echeverría
-- Rodrigo Erazo
+| Integrante | Rol |
+|---|---|
+| Francisco Opazo | _por definir_ |
+| Héctor Medina | _por definir_ |
+| Manuel Ávalos Castillo | _por definir_ |
+| Nicolás Echeverría | _por definir_ |
+| Rodrigo Erazo | _por definir_ |
 
 ## Avance 1: propuesta de valor
 
@@ -97,9 +126,9 @@ Cuatro pantallas del flujo principal. Los pasos 1 a 4 del escenario son procesos
 
 | 1. Tablero del turno | 2. Ficha del neumático |
 |---|---|
-| ![Pantalla 1](docs/img/pantalla-1.png) | ![Pantalla 2](docs/img/pantalla-2.png) |
+| ![Pantalla 1](docs/historico/pantalla-1.png) | ![Pantalla 2](docs/historico/pantalla-2.png) |
 | **3. Agendar intervención** | **4. Orden emitida** |
-| ![Pantalla 3](docs/img/pantalla-3.png) | ![Pantalla 4](docs/img/pantalla-4.png) |
+| ![Pantalla 3](docs/historico/pantalla-3.png) | ![Pantalla 4](docs/historico/pantalla-4.png) |
 
 Versión navegable en Figma: [Maqueta de sistema de mantenimiento](https://www.figma.com/make/EDZNEzovnKPwBaUDV0GySq/Maqueta-de-sistema-de-mantenimiento)
 
@@ -145,7 +174,8 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 │   └── assets/              # Imágenes del CAEX y del pórtico
 ├── frontend/                # VERSIÓN ANTIGUA (Entrega 4), solo referencia histórica
 ├── scripts/
-│   └── generar_seed.py      # Genera docs/seed.sql desde los datos del prototipo
+│   ├── generar_seed.py      # Genera docs/seed.sql desde los datos del prototipo
+│   └── wireframes/          # Genera los wireframes anotados desde el prototipo
 ├── backend/                 # Microservicio API en FastAPI (Python 3.11)
 │   ├── app/
 │   │   ├── main.py          # Endpoints REST (datos de ejemplo de la flota CAEX)
@@ -153,16 +183,35 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 │   ├── tests/               # Pruebas unitarias de regresión y semáforo
 │   └── requirements.txt     # Dependencias de Python
 └── docs/                    # Documentación formal de la entrega
-    ├── historias.md         # Historias de Usuario INVEST con escenarios Gherkin BDD
+    ├── historias.md         # Historias HU-01 a HU-08 (INVEST) con escenarios Gherkin
+    ├── datos.md             # Diccionario de datos y reglas Tidy Data
+    ├── bitacora-ia.md       # Uso auditado de asistentes de IA
+    ├── historico/           # Versiones reemplazadas (solo referencia)
     ├── schema.sql           # DDL Supabase: tablas, triggers de cupos, vista y políticas RLS
     ├── seed.sql             # Datos de demostración: 67 CAEX, 402 neumáticos, órdenes
     ├── ARQUITECTURA.md      # Arquitectura técnica desacoplada (Frontend/Backend/Supabase)
     ├── prompt-figma.md      # Especificación para Figma Make
-    ├── wireframes/          # Wireframes anotados P1 a P5
+    ├── wireframes/          # Wireframes anotados W1 a W5 (PNG con marcas [1] a [4])
     └── img/                 # Diagramas y capturas de interfaz
 ```
 
-## Cómo ejecutar
+## Cómo ejecutar en local
+
+El prototipo es HTML, CSS y JavaScript sin compilación: **no requiere `npm install` ni `npm run dev`**. Basta un servidor web estático.
+
+**Requisitos:** Git, Python 3 (solo para el servidor local) y un navegador.
+
+```bash
+git clone https://github.com/mavalosc/control-neumaticos-caex.git
+cd control-neumaticos-caex
+git checkout dev                      # trabajar siempre en dev
+cp .env.example .env                  # variables locales (no se suben a GitHub)
+cd src && python -m http.server 8000  # abrir http://localhost:8000
+```
+
+Variables de entorno: `.env.example` documenta qué se necesita. El navegador lee la URL y la clave **anon** desde `src/config.js`. La clave `service_role` solo va en `.env` local y **nunca** en el código.
+
+Pasos de configuración completos:
 
 1. **Base de Datos (Supabase):** en el SQL Editor del proyecto ejecutar, en orden:
    1. [`docs/schema.sql`](docs/schema.sql): tablas, enums, triggers de cupos, vista del tablero y políticas RLS.
@@ -186,9 +235,10 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 
 Documentación formal:
 - Historias de Usuario INVEST y BDD: [`docs/historias.md`](docs/historias.md)
-- Esquema Relacional de Base de Datos: [`docs/schema.sql`](docs/schema.sql)
+- Modelo y Diccionario de Datos: [`docs/datos.md`](docs/datos.md) (implementado en [`docs/schema.sql`](docs/schema.sql))
+- Bitácora de uso de IA: [`docs/bitacora-ia.md`](docs/bitacora-ia.md)
 - Arquitectura del Sistema: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Wireframes Anotados de Flujo: [`docs/wireframes/README.md`](docs/wireframes/README.md)
-- Hoja de Ruta en Notion: [Roadmap del Proyecto](https://app.notion.com/p/3e427b7d1769817985a9f585a449b5d6)
+- Roadmap y Kanban en Notion: [Grupo 3](https://field-lillipilli-c3d.notion.site/Grupo-3-b76498f17d47839d8bf701014eb9d394)
 - Maqueta Navegable en Figma: [Prototipo Figma](https://www.figma.com/make/EDZNEzovnKPwBaUDV0GySq/Maqueta-de-sistema-de-mantenimiento)
 

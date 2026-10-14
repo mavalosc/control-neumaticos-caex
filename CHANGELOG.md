@@ -1,5 +1,15 @@
 # Avances
 
+## v0.3 (14-10-2026) · Entregas 3 y 4 según rúbrica
+- [x] `docs/bitacora-ia.md`: 7 interacciones con IA (Contexto, Intención, Restricciones, Verificación)
+- [x] `docs/datos.md`: diccionario de las 7 tablas, diagrama ER, reglas Tidy Data y matriz RLS
+- [x] `docs/historias.md`: Gherkin válido (`Característica`/`Escenario`), flujo principal HU-07 ★, un escenario feliz y uno de excepción por historia, alineado con Notion
+- [x] `docs/wireframes/W1-W5.png`: wireframes anotados [1] a [4] generados desde el prototipo real
+- [x] Prototipo: motivo obligatorio al modificar una OT (HU-08), etiqueta «por confirmar» (HU-04), mensaje sin resultados en Camiones (HU-03)
+- [x] `schema.sql`: `creado_en` en mediciones, daños e historial
+- [x] Material reemplazado movido a `docs/historico/`; README con escala de madurez, beneficiarios y guía local
+
+
 ## v0.2 (14-10-2026)
 - [x] Flota ampliada a 67 CAEX (402 neumáticos) con paginación en Tablero y Camiones
 - [x] Prototipo conectado a Supabase (`src/config.js`, `src/db.js`): lectura de flota, ventanas y órdenes; escritura de órdenes, modificaciones, anulaciones, correcciones de daño y pasadas de pórtico

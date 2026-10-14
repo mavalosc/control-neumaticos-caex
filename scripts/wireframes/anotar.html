@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!--
+  Genera los wireframes anotados de docs/wireframes/ a partir del prototipo real (src/index.html).
+  Cada pantalla se carga en un iframe; se ubican sus elementos por texto y se dibujan las
+  anotaciones [1] Origen HU, [2] Datos, [3] Verificación BDD y [4] Navegación.
+  Uso: ver scripts/wireframes/generar.sh
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Wireframe anotado</title>
+<style>
+  :root { --c1: #2563eb; --c2: #059669; --c3: #db2777; --c4: #d97706; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f3f4f6; font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: #111827; }
+  header { padding: 14px 24px; background: #111827; color: #fff; display: flex; align-items: baseline; gap: 16px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header span { color: #9ca3af; font-size: 13px; }
+  .lienzo { display: flex; gap: 20px; padding: 20px 24px; }
+  .marco { position: relative; width: 1280px; height: 900px; flex: none; border: 2px solid #9ca3af; border-radius: 8px; overflow: hidden; background: #fff; }
+  iframe { width: 1280px; height: 900px; border: 0; display: block; }
+  .capa { position: absolute; inset: 0; pointer-events: none; }
+  .caja { position: absolute; border: 3px solid; border-radius: 6px; }
+  .num { position: absolute; width: 30px; height: 30px; border-radius: 50%; color: #fff; font: 700 15px/30px system-ui; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+  aside { width: 400px; flex: none; display: flex; flex-direction: column; gap: 12px; }
+  .nota { background: #fff; border-left: 6px solid; border-radius: 6px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .nota h2 { margin: 0 0 6px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  .nota h2 b { display: inline-block; width: 24px; height: 24px; border-radius: 50%; color: #fff; text-align: center; line-height: 24px; font-size: 13px; }
+  .nota ul { margin: 0; padding-left: 18px; }
+  .nota li { margin: 2px 0; }
+  code { background: #f3f4f6; padding: 0 4px; border-radius: 3px; font-size: 12.5px; }
+  .flujo { font-size: 12px; color: #4b5563; background: #fff; border-radius: 6px; padding: 8px 12px; }
+  .flujo strong { color: #111827; }
+</style>
+</head>
+<body>
+<header><h1 id="titulo"></h1><span id="sub"></span></header>
+<div class="lienzo">
+  <div class="marco"><iframe id="app"></iframe><div class="capa" id="capa"></div></div>
+  <aside id="notas"></aside>
+</div>
+<script>
+const COLORES = ["", "var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)"];
+const TITULOS = ["", "Origen (HU-XX)", "Datos: campo de UI → columna en Supabase", "Verificación del «Entonces» (BDD)", "Navegación y rutas de excepción"];
+const FLUJO = "<strong>Flujo principal:</strong> W1 Tablero (HU-01) → W2 Ficha (HU-04) → W3 Agendar (HU-06) → <strong>W4 Orden emitida (HU-07 ★)</strong> → W5 Modificar o anular (HU-08)";
+
+// Cada marca: n (1 a 4) y el texto visible del elemento que se encierra.
+const PANTALLAS = {
+  1: {
+    titulo: "W1 · Tablero del turno", ruta: "#/",
+    marcas: [
+      { n: 1, texto: "Tablero de Control del Turno" },
+      { n: 2, texto: "Horas Rem.", fila: true },
+      { n: 3, texto: "5980R63-2426-1348", tag: "TD", fila: true },
+      { n: 4, texto: "Ver Ficha" }
+    ],
+    notas: {
+      1: ["<b>HU-01</b> Tablero del Turno y Priorización por Horas Remanentes", "<b>HU-02</b> Alerta Inmediata de Daño Crítico (banner rojo)"],
+      2: ["Serial → <code>neumaticos.serial</code>", "Profundidad → <code>mediciones.profundidad_mm</code>", "Tasa → <code>mediciones.tasa_desgaste_por_100h</code>", "Horas rem. → <code>mediciones.horas_remanentes_calculadas</code>", "Zona → <code>mediciones.zona_calculada</code>", "Daño → <code>danos_neumaticos.severidad</code>", "Todo se lee desde <code>vista_tablero_turno</code>"],
+      3: ["HU-01: la primera fila es el neumático con menos horas remanentes (34 h) y el pie de la tabla dice «Mostrando 1 a 25 de 402 neumáticos (67 CAEX · 402 neumáticos)»", "HU-02: el banner «Alerta de Seguridad Operacional Crítica» aparece si hay daño nivel 3"],
+      4: ["Éxito: clic en una fila o en «Ver Ficha» → <b>W2 Ficha</b>", "«Avisar Despacho Mina» → aviso «ALERTA RADIAL…»", "Excepción: búsqueda sin resultados → «No se encontraron neumáticos con los filtros seleccionados.»", "Excepción: sin daño nivel 3 → el banner no aparece"]
+    }
+  },
+  2: {
+    titulo: "W2 · Ficha del neumático", ruta: "#/n/5980R63-2426-1348",
+    marcas: [
+      { n: 1, texto: "5980R63-2426-1348", tag: "H1" },
+      { n: 2, texto: "Daños Registrados por Algoritmo de Visión:", subir: 1 },
+      { n: 3, texto: "Confianza IA:", subir: 1 },
+      { n: 4, texto: "Agendar Intervención en Taller", subir: 1 }
+    ],
+    notas: {
+      1: ["<b>HU-04</b> Ficha Técnica, Escáner 3D y Curva de Desgaste", "<b>HU-05</b> Validación y Reclasificación de Daños (panel «Validación del Planificador»)"],
+      2: ["Horas remanentes → <code>mediciones.horas_remanentes_calculadas</code>", "Profundidad → <code>mediciones.profundidad_mm</code> vs <code>neumaticos.umbral_retiro_mm</code>", "Temperatura → <code>mediciones.temperatura_flanco_c</code>", "Daño y confianza → <code>danos_neumaticos.descripcion</code>, <code>confianza_ia</code>", "Corrección → nueva fila en <code>danos_neumaticos</code> con <code>validado_por_humano = true</code>"],
+      3: ["HU-04: se ve «corte profundo en flanco» con «Confianza IA: 94%» y el botón de agendar habilitado", "HU-05: al corregir aparece «Clasificación actualizada de … a … (registrado en auditoría)»"],
+      4: ["Éxito: «Agendar Intervención en Taller» → <b>W3 Agendar</b>", "Excepción: confianza menor a 70 % → etiqueta «por confirmar»", "Excepción: zona verde y daño bajo → botón deshabilitado y «Neumático en condiciones óptimas…»"]
+    }
+  },
+  3: {
+    titulo: "W3 · Agendar intervención", ruta: "#/a/5980R63-2531-1596",
+    preparar: "selectedWindowId = 1; renderSchedule('5980R63-2531-1596');",
+    marcas: [
+      { n: 1, texto: "Agendar Intervención", tag: "H1" },
+      { n: 2, texto: "cupos libres", subir: 4 },
+      { n: 3, texto: "Ventana oportuna", subir: 0 },
+      { n: 4, texto: "Confirmar y Emitir Orden en SAP PM", subir: 1 }
+    ],
+    notas: {
+      1: ["<b>HU-06</b> Agendamiento en Ventana de Taller con Control de Cupos"],
+      2: ["Día y turno → <code>ventanas_taller.dia</code>, <code>turno</code>", "«X de 3 cupos libres» → <code>cupos_libres</code> / <code>cupos_totales</code>", "«dentro de N horas» → <code>horas_hasta_ventana</code>", "Margen → <code>horas_remanentes_calculadas</code> − <code>horas_hasta_ventana</code>"],
+      3: ["Al elegir la ventana aparece «✓ Ventana oportuna: La intervención se ejecutará con N h de margen…» y se habilita el botón de confirmar"],
+      4: ["Éxito: «Confirmar y Emitir Orden en SAP PM» → <b>W4 Órdenes</b>", "Excepción: ventana con 0 cupos → atenuada, no seleccionable", "Excepción: ventana tardía → «⚠️ Advertencia de riesgo: El neumático cruzará el umbral…»"]
+    }
+  },
+  4: {
+    titulo: "W4 · Orden de trabajo emitida  ★ flujo principal", ruta: "#/o",
+    preparar: "showToast('Orden ot-0069 emitida con éxito en ERP. Taller notificado.', 'success');",
+    marcas: [
+      { n: 1, texto: "Órdenes de Trabajo", tag: "H1" },
+      { n: 2, texto: "Orden", tag: "TH", fila: true },
+      { n: 3, texto: "emitida con éxito en ERP", subir: 1 },
+      { n: 4, texto: "Modificar", tag: "BUTTON" }
+    ],
+    notas: {
+      1: ["<b>HU-07 ★</b> Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM (historia del flujo principal)"],
+      2: ["Orden → <code>ordenes_trabajo.codigo</code>, <code>fecha_emision</code>", "Neumático → <code>neumaticos.serial</code> (vía <code>neumatico_id</code>)", "Nota → <code>justificacion_nota</code>", "Programada → <code>ventanas_taller.dia</code>, <code>turno</code> (vía <code>ventana_id</code>)", "Horas al emitir → <code>horas_remanentes_emision</code>", "Origen → <code>medicion_codigo</code>, <code>origen_detalle</code>", "Estado → <code>estado</code>; historial → <code>historial_ordenes</code>"],
+      3: ["Aviso «Orden ot-XXXX emitida con éxito en ERP. Taller notificado.» (en la imagen, ot-0069 es un ejemplo)", "La orden aparece «programada» y el cupo de la ventana baja en 1 (trigger en Supabase)"],
+      4: ["Éxito: botón «Modificar» → <b>W5</b>; clic en el serial → <b>W2 Ficha</b>", "Excepción: la ventana se llenó → «No se pudo guardar en Supabase: La ventana de taller seleccionada no cuenta con cupos libres.» y la orden no se registra"]
+    }
+  },
+  5: {
+    titulo: "W5 · Modificar o anular una orden", ruta: "#/e/ot-0068",
+    marcas: [
+      { n: 1, texto: "ot-0068", tag: "H1" },
+      { n: 2, texto: "Motivo del Cambio (Requerido para auditoría):", subir: 1 },
+      { n: 3, texto: "El motivo del cambio es obligatorio.", subir: 0 },
+      { n: 4, texto: "Guardar Modificaciones", subir: 0 }
+    ],
+    notas: {
+      1: ["<b>HU-08</b> Modificación y Anulación de OT con Motivo Obligatorio"],
+      2: ["Ventana → <code>ordenes_trabajo.ventana_id</code>", "Justificación de la nota → <code>justificacion_nota</code>", "Motivo del cambio → <code>historial_ordenes.motivo</code> (acción <code>modificacion</code>)", "Motivo de anulación → <code>historial_ordenes.motivo</code> y <code>estado = 'anulada'</code>"],
+      3: ["Excepción visible: sin motivo aparece «El motivo del cambio es obligatorio.» y «Guardar Modificaciones» queda deshabilitado", "Éxito: «Orden ot-0068 actualizada correctamente» y una nueva línea en «Historial de Trazabilidad»"],
+      4: ["Éxito: «Guardar Modificaciones» o «Sí, anular» → <b>W4 Órdenes</b>", "La anulación pide confirmación («¿Confirmar anulación definitiva?») y libera el cupo", "Excepción: sin motivo de anulación, el botón para anular queda deshabilitado"]
+    }
+  }
+};
+
+const w = new URLSearchParams(location.search).get("w") || "1";
+const P = PANTALLAS[w];
+document.getElementById("titulo").textContent = P.titulo;
+document.getElementById("sub").textContent = "Wireframe anotado sobre el prototipo real · Control de Neumáticos CAEX · Equipo 3";
+document.getElementById("notas").innerHTML = [1, 2, 3, 4].map(n => `
+  <div class="nota" style="border-color:${COLORES[n]}">
+    <h2><b style="background:${COLORES[n]}">${n}</b>${TITULOS[n]}</h2>
+    <ul>${P.notas[n].map(x => `<li>${x}</li>`).join("")}</ul>
+  </div>`).join("") + `<div class="flujo">${FLUJO}</div>`;
+
+// Busca el elemento más pequeño cuyo texto contiene `texto`.
+function buscar(doc, m) {
+  const todos = [...doc.querySelectorAll(m.tag || "body *")].filter(e => e.offsetParent !== null || e.tagName === "TH");
+  const cand = todos.filter(e => e.textContent.includes(m.texto))
+    .sort((a, b) => a.textContent.length - b.textContent.length);
+  let el = cand[0];
+  if (!el) return null;
+  for (let i = 0; i < (m.subir || 0) && el.parentElement; i++) el = el.parentElement;
+  if (m.fila) el = el.closest("tr") || el;
+  return el;
+}
+
+function dibujar() {
+  const doc = document.getElementById("app").contentDocument;
+  const capa = document.getElementById("capa");
+  capa.innerHTML = "";
+  P.marcas.forEach(m => {
+    const el = buscar(doc, m);
+    if (!el) { console.warn("No se encontró", m.texto); return; }
+    const r = el.getBoundingClientRect();
+    const c = COLORES[m.n];
+    capa.insertAdjacentHTML("beforeend",
+      `<div class="caja" style="border-color:${c};left:${r.left - 4}px;top:${r.top - 4}px;width:${r.width + 8}px;height:${r.height + 8}px"></div>
+       <div class="num" style="background:${c};left:${Math.max(2, r.left - 18)}px;top:${Math.max(2, r.top - 18)}px">${m.n}</div>`);
+  });
+  document.body.dataset.listo = "1";
+}
+
+const frame = document.getElementById("app");
+frame.addEventListener("load", () => {
+  // Espera a que el prototipo cargue los datos (Supabase o local) y dibuje la pantalla.
+  setTimeout(() => {
+    if (P.preparar) frame.contentWindow.eval(P.preparar);
+    setTimeout(dibujar, 600);
+  }, 3500);
+});
+frame.src = "../../src/index.html" + P.ruta;
+</script>
+</body>
+</html>
