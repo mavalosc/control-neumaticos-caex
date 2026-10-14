@@ -32,7 +32,7 @@
 
 ```gherkin
 Escenario: Visualización y ordenamiento descendente de criticidad en el tablero (Camino Feliz)
-  Dado que existen mediciones procesadas para los camiones CAEX-101 a CAEX-106
+  Dado que existen mediciones procesadas para los 67 camiones CAEX-101 a CAEX-167
   Cuando el planificador ingresa a la vista del "Tablero del turno"
   Entonces el sistema muestra las tarjetas KPI de resumen:
     | Zona      | Condición           |

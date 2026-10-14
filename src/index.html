@@ -9,6 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <!-- Conexión a Supabase (ver docs/schema.sql y docs/seed.sql) -->
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="db.js"></script>
   
   <style>
     :root {
@@ -141,6 +145,7 @@
 
       <!-- Right Actions: Theme Toggle & Reset Data -->
       <div class="flex items-center gap-2">
+        <span id="db-estado" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] text-xs font-mono" title="Origen de los datos">conectando…</span>
         <button onclick="toggleTheme()" class="p-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] text-xs flex items-center justify-center transition-all" title="Alternar tema claro/oscuro">
           <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           <svg id="theme-icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
@@ -162,19 +167,80 @@
   <!-- SCRIPT ENGINE -->
   <script>
     // --- ESTADO Y CONFIGURACIÓN INICIAL DEL PROTOTIPO ---
-    const STORAGE_KEY = "caex_neumaticos_v1";
+    const STORAGE_KEY = "caex_neumaticos_v2_67";
 
     const DAMAGE_NAMES = ["Sin daño", "Leve", "Moderado", "Crítico"];
     const DAMAGE_COLORS = ["var(--success)", "var(--warning)", "#f97316", "var(--danger)"];
     const DAMAGE_BG = ["var(--success-bg)", "var(--warning-bg)", "rgba(249,115,22,0.15)", "var(--danger-bg)"];
 
-    const INITIAL_TRUCKS = [
+const INITIAL_TRUCKS = [
       ["CAEX-101", "Cat 793F", "16.791 h", [1687, 3365, 1548, 3971, 6571, 7741]],
       ["CAEX-102", "Cat 793F", "13.622 h", [1285, 4359, 34, 3206, 2247, 441]],
       ["CAEX-103", "Komatsu 930E-4", "21.087 h", [1597, 3624, 4566, 2390, 392, 4121]],
       ["CAEX-104", "Cat 797F", "18.450 h", [2100, 480, 3300, 1850, 2760, 4020]],
       ["CAEX-105", "Komatsu 930E-4", "14.120 h", [1320, 168, 2410, 3050, 106, 1980]],
-      ["CAEX-106", "Cat 793F", "19.830 h", [2210, 95, 1740, 150, 143, 3320]]
+      ["CAEX-106", "Cat 793F", "19.830 h", [2210, 95, 1740, 150, 143, 3320]],
+      ["CAEX-107", "Cat 793F", "21.801 h", [1509, 3258, 237, 2956, 2155, 484]],
+      ["CAEX-108", "Cat 793F", "22.044 h", [2076, 4212, 1898, 3564, 4100, 5236]],
+      ["CAEX-109", "Cat 793F", "22.287 h", [133, 3866, 2439, 3092, 395, 1918]],
+      ["CAEX-110", "Cat 793F", "22.530 h", [1940, 380, 2230, 4120, 3310, 2800]],
+      ["CAEX-111", "Cat 793F", "22.773 h", [3067, 4794, 5221, 2948, 3755, 4582]],
+      ["CAEX-112", "Cat 793F", "23.016 h", [89, 88, 1662, 3156, 2820, 3864]],
+      ["CAEX-113", "Cat 793F", "23.259 h", [2441, 3122, 393, 4184, 2865, 416]],
+      ["CAEX-114", "Cat 793F", "23.502 h", [1708, 4076, 1894, 3812, 490, 3448]],
+      ["CAEX-115", "Cat 793F", "23.745 h", [2895, 5150, 3385, 4840, 5575, 6230]],
+      ["CAEX-116", "Cat 793F", "23.988 h", [1532, 2804, 171, 3048, 2440, 3812]],
+      ["CAEX-117", "Cat 793F", "24.231 h", [1399, 3158, 147, 2876, 2085, 424]],
+      ["CAEX-118", "Cat 793F", "24.474 h", [2086, 4232, 1808, 3604, 4150, 5176]],
+      ["CAEX-119", "Cat 793F", "24.717 h", [143, 3886, 2349, 3132, 445, 1858]],
+      ["CAEX-120", "Cat 793F", "24.960 h", [1830, 280, 2140, 4040, 3240, 2740]],
+      ["CAEX-121", "Cat 793F", "25.203 h", [3077, 4814, 5251, 2868, 3805, 4642]],
+      ["CAEX-122", "Cat 793F", "25.446 h", [99, 108, 1692, 3196, 2750, 3924]],
+      ["CAEX-123", "Cat 793F", "25.689 h", [2451, 3142, 423, 4224, 2915, 476]],
+      ["CAEX-124", "Cat 793F", "25.932 h", [1718, 4096, 1924, 3852, 420, 3388]],
+      ["CAEX-125", "Cat 793F", "26.175 h", [2905, 5050, 3415, 4760, 5625, 6170]],
+      ["CAEX-126", "Cat 793F", "26.418 h", [1542, 2824, 201, 3088, 2370, 3752]],
+      ["CAEX-127", "Cat 793F", "11.261 h", [1409, 3178, 177, 2916, 2135, 484]],
+      ["CAEX-128", "Cat 793F", "11.504 h", [2096, 4252, 1838, 3644, 4080, 5236]],
+      ["CAEX-129", "Cat 793F", "11.747 h", [153, 3906, 2379, 3052, 495, 1918]],
+      ["CAEX-130", "Cat 793F", "11.990 h", [1840, 300, 2170, 4080, 3290, 2800]],
+      ["CAEX-131", "Cat 793F", "12.233 h", [3087, 4834, 5161, 2908, 3855, 4582]],
+      ["CAEX-132", "Cat 793F", "12.476 h", [109, 128, 1602, 3236, 2800, 3864]],
+      ["CAEX-133", "Cat 793F", "12.719 h", [2341, 3042, 333, 4144, 2845, 416]],
+      ["CAEX-134", "Cat 793F", "12.962 h", [1728, 4116, 1954, 3772, 470, 3448]],
+      ["CAEX-135", "Cat 793F", "13.205 h", [2915, 5070, 3445, 4800, 5555, 6230]],
+      ["CAEX-136", "Komatsu 930E-4", "13.448 h", [1552, 2844, 231, 3128, 2420, 3812]],
+      ["CAEX-137", "Komatsu 930E-4", "13.691 h", [1419, 3198, 207, 2956, 2065, 424]],
+      ["CAEX-138", "Komatsu 930E-4", "13.934 h", [2106, 4152, 1868, 3564, 4130, 5176]],
+      ["CAEX-139", "Komatsu 930E-4", "14.177 h", [163, 3926, 2409, 3092, 425, 1858]],
+      ["CAEX-140", "Komatsu 930E-4", "14.420 h", [1850, 320, 2200, 4120, 3340, 2740]],
+      ["CAEX-141", "Komatsu 930E-4", "14.663 h", [3097, 4854, 5191, 2948, 3785, 4642]],
+      ["CAEX-142", "Komatsu 930E-4", "14.906 h", [119, 148, 1632, 3156, 2850, 3924]],
+      ["CAEX-143", "Komatsu 930E-4", "15.149 h", [2351, 3062, 363, 4184, 2895, 476]],
+      ["CAEX-144", "Komatsu 930E-4", "15.392 h", [1738, 4136, 1864, 3812, 400, 3388]],
+      ["CAEX-145", "Komatsu 930E-4", "15.635 h", [2925, 5090, 3355, 4840, 5605, 6170]],
+      ["CAEX-146", "Komatsu 930E-4", "15.878 h", [1442, 2744, 141, 3048, 2350, 3752]],
+      ["CAEX-147", "Komatsu 930E-4", "16.121 h", [1429, 3218, 237, 2876, 2115, 484]],
+      ["CAEX-148", "Komatsu 930E-4", "16.364 h", [2116, 4172, 1898, 3604, 4060, 5236]],
+      ["CAEX-149", "Komatsu 930E-4", "16.607 h", [173, 3946, 2439, 3132, 475, 1918]],
+      ["CAEX-150", "Komatsu 930E-4", "16.850 h", [1860, 340, 2230, 4040, 3270, 2800]],
+      ["CAEX-151", "Komatsu 930E-4", "17.093 h", [3107, 4754, 5221, 2868, 3835, 4582]],
+      ["CAEX-152", "Komatsu 930E-4", "17.336 h", [129, 168, 1662, 3196, 2780, 3864]],
+      ["CAEX-153", "Komatsu 930E-4", "17.579 h", [2361, 3082, 393, 4224, 2945, 416]],
+      ["CAEX-154", "Komatsu 930E-4", "17.822 h", [1748, 4156, 1894, 3852, 450, 3448]],
+      ["CAEX-155", "Komatsu 930E-4", "18.065 h", [2935, 5110, 3385, 4760, 5655, 6230]],
+      ["CAEX-156", "Cat 797F", "18.308 h", [1452, 2764, 171, 3088, 2400, 3812]],
+      ["CAEX-157", "Cat 797F", "18.551 h", [1439, 3238, 147, 2916, 2045, 424]],
+      ["CAEX-158", "Cat 797F", "18.794 h", [2126, 4192, 1808, 3644, 4110, 5176]],
+      ["CAEX-159", "Cat 797F", "19.037 h", [63, 3846, 2349, 3052, 405, 1858]],
+      ["CAEX-160", "Cat 797F", "19.280 h", [1870, 360, 2140, 4080, 3320, 2740]],
+      ["CAEX-161", "Cat 797F", "19.523 h", [3117, 4774, 5251, 2908, 3765, 4642]],
+      ["CAEX-162", "Cat 797F", "19.766 h", [139, 188, 1692, 3236, 2830, 3924]],
+      ["CAEX-163", "Cat 797F", "20.009 h", [2371, 3102, 423, 4144, 2875, 476]],
+      ["CAEX-164", "Cat 797F", "20.252 h", [1758, 4056, 1924, 3772, 500, 3388]],
+      ["CAEX-165", "Cat 797F", "20.495 h", [2945, 5130, 3415, 4800, 5585, 6170]],
+      ["CAEX-166", "Cat 797F", "20.738 h", [1462, 2784, 201, 3128, 2450, 3752]],
+      ["CAEX-167", "Cat 797F", "20.981 h", [1449, 3258, 177, 2956, 2095, 484]]
     ];
 
     const INITIAL_KNOWN_TIRES = {
@@ -183,13 +249,27 @@
       "105-5": ["5980R63-2345-1534", 21.2, 1.14, "20-09-2026", 79],
       "106-5": ["5980R63-2618-1611", 22.3, 1.61, "21-09-2026", 88],
       "106-4": ["5980R63-2531-1596", 22.9, 1.94, "21-09-2026", 85],
-      "105-2": ["5980R63-2312-1561", 24.1, 2.44, "20-09-2026 (obs.)", 92]
+      "105-2": ["5980R63-2312-1561", 24.1, 2.44, "20-09-2026 (obs.)", 92],
+      "112-2": ["5980R63-2745-1682", 20.9, 1.65, "25-09-2026", 98],
+      "122-1": ["5980R63-2890-1740", 20.5, 1.82, "26-09-2026", 101],
+      "142-1": ["5980R63-3110-1895", 20.7, 1.74, "26-09-2026", 97],
+      "162-1": ["5980R63-3350-2040", 20.3, 1.91, "27-09-2026", 103]
     };
 
     const INITIAL_DAMAGES = {
       "102-3": [3, "corte profundo en flanco", 0.94],
       "106-4": [2, "roca incrustada en la banda", 0.88],
-      "106-2": [1, "desgaste irregular", 0.76]
+      "106-2": [1, "desgaste irregular", 0.76],
+      "112-1": [2, "corte superficial en banda", 0.85],
+      "112-2": [3, "corte profundo en flanco", 0.93],
+      "119-1": [2, "roca incrustada en la banda", 0.86],
+      "122-1": [3, "corte profundo en flanco", 0.95],
+      "129-2": [1, "desgaste irregular", 0.78],
+      "135-2": [2, "corte superficial en hombro", 0.84],
+      "142-1": [3, "corte profundo en flanco", 0.91],
+      "149-1": [2, "roca incrustada en la banda", 0.87],
+      "156-3": [1, "desgaste irregular", 0.75],
+      "162-1": [3, "corte profundo en flanco", 0.96]
     };
 
     const INITIAL_ORDERS = [
@@ -227,8 +307,10 @@
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (!parsed.cameras || !parsed.cameras.length) parsed.cameras = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
-          return parsed;
+          if (parsed && parsed.trucks && parsed.trucks.length >= 67) {
+            if (!parsed.cameras || !parsed.cameras.length) parsed.cameras = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+            return parsed;
+          }
         }
       } catch(e) { console.error("Error loading state", e); }
       return {
@@ -248,19 +330,57 @@
       } catch(e) { console.error("Error saving state", e); }
     }
 
+    // Ejecuta una escritura en Supabase y vuelve a cargar el estado desde la base.
+    // En modo local (sin Supabase) no hace nada: el cambio ya quedó en `state`.
+    async function persistir(escritura) {
+      if (!DB.activo) return true;
+      try {
+        await escritura();
+        await sincronizarDesdeBase();
+        return true;
+      } catch (e) {
+        console.error(e);
+        showToast(`No se pudo guardar en Supabase: ${e.message}`, "danger");
+        await sincronizarDesdeBase().catch(() => {});
+        return false;
+      } finally {
+        route();
+      }
+    }
+
+    async function sincronizarDesdeBase() {
+      const datos = await DB.cargar();
+      Object.assign(state, datos);
+      saveState();
+    }
+
+    function marcarOrigenDatos(texto, color) {
+      const el = document.getElementById("db-estado");
+      if (el) el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${color}"></span>${texto}`;
+    }
+
+    const siguienteCodigoOrden = () =>
+      "ot-" + String(Math.max(0, ...state.orders.map(o => +o[0].slice(3) || 0)) + 1).padStart(4, "0");
+
     function resetPrototypeData() {
-      if (confirm("¿Deseas restaurar los datos del prototipo a su estado original?")) {
+      if (DB.activo) {
+        persistir(async () => {}).then(ok => ok && showToast("Datos recargados desde Supabase. Para reiniciar la demo, ejecuta docs/seed.sql en el SQL Editor.", "info"));
+        return;
+      }
+      if (confirm("¿Deseas restaurar los datos del prototipo a la flota completa de 67 camiones?")) {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("caex_neumaticos_v1");
         state = {
           trucks: INITIAL_TRUCKS,
           orders: INITIAL_ORDERS,
           windows: INITIAL_WINDOWS,
           knownTires: INITIAL_KNOWN_TIRES,
           damages: INITIAL_DAMAGES,
-          dispatchAlerts: []
+          dispatchAlerts: [],
+          cameras: JSON.parse(JSON.stringify(DEFAULT_CAMERAS))
         };
         saveState();
-        showToast("Datos restaurados a valores de fábrica", "info");
+        showToast("Datos restaurados: Flota de 67 camiones (402 neumáticos)", "info");
         route();
       }
     }
@@ -269,7 +389,7 @@
     function getTires() {
       return state.trucks.flatMap((c, ci) => c[3].map((h, k) => {
         const p = k + 1;
-        const key = (101 + ci) + "-" + p;
+        const key = c[0].split("-")[1] + "-" + p;
         const kn = state.knownTires[key];
         const d = state.damages[key];
         const rate = kn ? kn[2] : 1.1;
@@ -370,6 +490,8 @@
     let filterZone = "todas";
     let filterRate = "cualquier";
     let searchQuery = "";
+    let dashCurrentPage = 1;
+    let dashPageSize = 25;
 
     function renderDashboard() {
       updateActiveNav("nav-tablero");
@@ -383,6 +505,11 @@
         const matchText = (t.serial + t.cx + t.pos + t.modelo).toLowerCase().includes(searchQuery.toLowerCase());
         return matchZone && matchRate && matchText;
       }).sort((a, b) => a.h - b.h);
+
+      const totalDashPages = Math.ceil(filtered.length / dashPageSize) || 1;
+      if (dashCurrentPage > totalDashPages) dashCurrentPage = totalDashPages;
+      const startDashIndex = (dashCurrentPage - 1) * dashPageSize;
+      const pagedTires = filtered.slice(startDashIndex, startDashIndex + dashPageSize);
 
       const criticalDamageTire = tires.find(t => t.nivel === 3);
 
@@ -481,14 +608,14 @@
           <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)]">
             <div class="relative flex-1">
               <svg class="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <input id="search-box" type="text" placeholder="Buscar por serial, camión (CAEX-102) o posición..." value="${searchQuery}" oninput="searchQuery=this.value; renderDashboard(); document.getElementById('search-box').focus();" class="w-full pl-10 pr-4 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <input id="search-box" type="text" placeholder="Buscar por serial, camión (CAEX-102) o posición..." value="${searchQuery}" oninput="searchQuery=this.value; dashCurrentPage=1; renderDashboard(); document.getElementById('search-box').focus();" class="w-full pl-10 pr-4 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
             </div>
 
             <!-- Botones Filtro Zona -->
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-xs font-semibold text-[var(--muted)] mr-1 hidden sm:inline">Zona:</span>
               ${["todas", "rojo", "amarillo", "verde"].map(z => `
-                <button onclick="filterZone='${z}'; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterZone === z ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                <button onclick="filterZone='${z}'; dashCurrentPage=1; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterZone === z ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
                   ${z.charAt(0).toUpperCase() + z.slice(1)}
                 </button>
               `).join("")}
@@ -498,7 +625,7 @@
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-xs font-semibold text-[var(--muted)] mr-1 hidden sm:inline">Tasa:</span>
               ${["cualquier", "tasa observada", "tasa nominal"].map(t => `
-                <button onclick="filterRate='${t}'; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterRate === t ? 'bg-amber-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                <button onclick="filterRate='${t}'; dashCurrentPage=1; renderDashboard()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filterRate === t ? 'bg-amber-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
                   ${t === "cualquier" ? "Todas" : t.replace("tasa ", "")}
                 </button>
               `).join("")}
@@ -524,7 +651,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--border)]">
-                  ${filtered.length ? filtered.map(t => {
+                  ${filtered.length ? pagedTires.map(t => {
                     const z = zona(t.h);
                     const isUrgent = z === "rojo";
                     return `
@@ -574,9 +701,24 @@
                 </tbody>
               </table>
             </div>
-            <div class="p-3 bg-[var(--bg)]/30 border-t border-[var(--border)] text-xs text-[var(--muted)] flex justify-between items-center">
-              <span>Mostrando ${filtered.length} de ${tires.length} neumáticos en operación</span>
-              <span>Pórtico calibrado a ±0,5 mm de precisión</span>
+            <div class="p-3 bg-[var(--bg)]/30 border-t border-[var(--border)] text-xs text-[var(--muted)] flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div>
+                Mostrando <strong>${filtered.length ? startDashIndex + 1 : 0}</strong> a <strong>${Math.min(startDashIndex + dashPageSize, filtered.length)}</strong> de <strong>${filtered.length}</strong> neumáticos (${state.trucks.length} CAEX · ${tires.length} neumáticos)
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px]">Por página:</span>
+                <select onchange="dashPageSize=+this.value; dashCurrentPage=1; renderDashboard();" class="bg-[var(--card)] border border-[var(--border)] rounded px-1.5 py-0.5 text-xs text-[var(--ink)]">
+                  <option value="25" ${dashPageSize === 25 ? 'selected' : ''}>25</option>
+                  <option value="50" ${dashPageSize === 50 ? 'selected' : ''}>50</option>
+                  <option value="100" ${dashPageSize === 100 ? 'selected' : ''}>100</option>
+                  <option value="402" ${dashPageSize >= 402 ? 'selected' : ''}>Todos (${tires.length})</option>
+                </select>
+                <div class="flex items-center gap-1 ml-2">
+                  <button onclick="if(dashCurrentPage>1){dashCurrentPage--; renderDashboard();}" ${dashCurrentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg bg-[var(--card)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] text-xs font-semibold">‹ Ant</button>
+                  <span class="px-2 font-mono text-[11px]">${dashCurrentPage} / ${totalDashPages}</span>
+                  <button onclick="if(dashCurrentPage<totalDashPages){dashCurrentPage++; renderDashboard();}" ${dashCurrentPage === totalDashPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg bg-[var(--card)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] text-xs font-semibold">Sig ›</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -593,13 +735,31 @@
     }
 
     // --- PANTALLA 2: VISTA DE CAMIONES (CHASIS Y RUEDAS 6X4) ---
+    let truckFilterStatus = "todos"; // todos, rojo, amarillo, verde
+    let trucksCurrentPage = 1;
+    let trucksPageSize = 12; // 12 por página
+
     function renderTrucks() {
       updateActiveNav("nav-camiones");
       const tires = getTires();
       const filteredTrucks = state.trucks.filter(c => {
         const text = (c[0] + c[1] + c[2]).toLowerCase();
-        return text.includes(searchQuery.toLowerCase());
+        const matchText = text.includes(searchQuery.toLowerCase());
+        if (!matchText) return false;
+        if (truckFilterStatus === "todos") return true;
+        const truckTires = tires.filter(t => t.cx === c[0]);
+        const reds = truckTires.filter(t => zona(t.h) === "rojo").length;
+        const yellows = truckTires.filter(t => zona(t.h) === "amarillo").length;
+        if (truckFilterStatus === "rojo") return reds > 0;
+        if (truckFilterStatus === "amarillo") return yellows > 0;
+        if (truckFilterStatus === "verde") return reds === 0 && yellows === 0;
+        return true;
       });
+
+      const totalTruckPages = Math.ceil(filteredTrucks.length / trucksPageSize) || 1;
+      if (trucksCurrentPage > totalTruckPages) trucksCurrentPage = totalTruckPages;
+      const startTruck = (trucksCurrentPage - 1) * trucksPageSize;
+      const pagedTrucks = filteredTrucks.slice(startTruck, startTruck + trucksPageSize);
 
       $.innerHTML = `
         <div class="space-y-6">
@@ -609,12 +769,41 @@
               <p class="text-sm text-[var(--muted)] mt-1">Esquema 6x4 de posiciones de neumático: Dirección delantera (P1, P2) y tándem trasero dual (P3 a P6).</p>
             </div>
             <div class="w-full sm:w-72">
-              <input id="truck-search" type="text" placeholder="Filtrar camión o modelo..." value="${searchQuery}" oninput="searchQuery=this.value; renderTrucks(); document.getElementById('truck-search').focus();" class="w-full px-4 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <input id="truck-search" type="text" placeholder="Buscar CAEX (ej. CAEX-145) o modelo..." value="${searchQuery}" oninput="searchQuery=this.value; trucksCurrentPage=1; renderTrucks(); document.getElementById('truck-search').focus();" class="w-full px-4 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            </div>
+          </div>
+
+          <!-- Barra de Filtros Rápidos y Paginación Superior -->
+          <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)] shadow-sm">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-semibold text-[var(--muted)] mr-1">Filtrar Estado:</span>
+              ${[
+                ["todos", `Todos (${state.trucks.length})`],
+                ["rojo", `⚠️ Con Zona Roja`],
+                ["amarillo", `En Zona Amarilla`],
+                ["verde", `✓ 100% Verdes`]
+              ].map(([st, label]) => `
+                <button onclick="truckFilterStatus='${st}'; trucksCurrentPage=1; renderTrucks()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${truckFilterStatus === st ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                  ${label}
+                </button>
+              `).join("")}
+            </div>
+
+            <div class="flex items-center gap-2 self-end md:self-auto text-xs">
+              <span class="text-[var(--muted)]">Mostrar:</span>
+              <select onchange="trucksPageSize=+this.value; trucksCurrentPage=1; renderTrucks();" class="bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs text-[var(--ink)]">
+                <option value="12" ${trucksPageSize === 12 ? 'selected' : ''}>12 por pág</option>
+                <option value="24" ${trucksPageSize === 24 ? 'selected' : ''}>24 por pág</option>
+                <option value="67" ${trucksPageSize >= 67 ? 'selected' : ''}>Ver Todos (${state.trucks.length})</option>
+              </select>
+              <button onclick="if(trucksCurrentPage>1){trucksCurrentPage--; renderTrucks();}" ${trucksCurrentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg bg-[var(--bg)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] font-semibold">‹ Ant</button>
+              <span class="font-mono">${trucksCurrentPage} / ${totalTruckPages}</span>
+              <button onclick="if(trucksCurrentPage<totalTruckPages){trucksCurrentPage++; renderTrucks();}" ${trucksCurrentPage === totalTruckPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg bg-[var(--bg)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] font-semibold">Sig ›</button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            ${filteredTrucks.map(truck => {
+            ${pagedTrucks.map(truck => {
               const truckTires = tires.filter(t => t.cx === truck[0]);
               const reds = truckTires.filter(t => zona(t.h) === "rojo").length;
               const yellows = truckTires.filter(t => zona(t.h) === "amarillo").length;
@@ -696,6 +885,19 @@
               `;
             }).join("")}
           </div>
+
+          <!-- Paginación Inferior de Camiones -->
+          <div class="p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[var(--muted)] shadow-sm">
+            <div>
+              Mostrando camiones <strong>${filteredTrucks.length ? startTruck + 1 : 0}</strong> a <strong>${Math.min(startTruck + trucksPageSize, filteredTrucks.length)}</strong> de <strong>${filteredTrucks.length}</strong> (${state.trucks.length} camiones en flota)
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="if(trucksCurrentPage>1){trucksCurrentPage--; renderTrucks();}" ${trucksCurrentPage === 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl bg-[var(--bg)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] font-semibold text-[var(--ink)]">‹ Anterior</button>
+              <span class="px-3 py-1.5 font-mono text-[var(--ink)] font-bold">Página ${trucksCurrentPage} de ${totalTruckPages}</span>
+              <button onclick="if(trucksCurrentPage<totalTruckPages){trucksCurrentPage++; renderTrucks();}" ${trucksCurrentPage === totalTruckPages ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl bg-[var(--bg)] hover:bg-[var(--card-hover)] disabled:opacity-30 border border-[var(--border)] font-semibold text-[var(--ink)]">Siguiente ›</button>
+            </div>
+          </div>
+
         </div>
       `;
     }
@@ -984,6 +1186,8 @@
       saveState();
       showToast(`Clasificación actualizada de ${DAMAGE_NAMES[prevLevel]} a ${DAMAGE_NAMES[newLevel]} (registrado en auditoría)`, "info");
       renderTireDetail(serial);
+      const desc = state.damages[t.cx.split("-")[1] + "-" + t.pos]?.[1];
+      persistir(() => DB.registrarDano(serial, newLevel, desc));
     }
 
     // --- PANTALLA 4: AGENDAR INTERVENCIÓN EN TALLER ---
@@ -1081,7 +1285,7 @@
       if (!t || !w) return;
 
       w.libres--;
-      const newId = "ot-00" + (69 + state.orders.filter(o => +o[0].slice(3) > 68).length);
+      const newId = siguienteCodigoOrden();
       const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
 
       const newOrder = [
@@ -1105,6 +1309,9 @@
       selectedWindowId = null;
       showToast(`Orden ${newId} emitida con éxito en ERP. Taller notificado.`, "success");
       navigate("#/o");
+      persistir(() => DB.emitirOrden({
+        codigo: newId, serial, ventanaId: w.id, tipo: "retiro", nota: newOrder[4], horas: t.h, origen: newOrder[9]
+      }));
     }
 
     // --- PANTALLA 5: ÓRDENES DE TRABAJO ---
@@ -1388,7 +1595,10 @@
       const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
       const newWin = state.windows.find(w => w.id === editState.w);
 
-      if (newWin && (!curWin || curWin.id !== newWin.id)) {
+      const cambiaVentana = !!(newWin && (!curWin || curWin.id !== newWin.id));
+      const motivo = editState.motivo || 'actualización operacional';
+      const nota = editState.nota;
+      if (cambiaVentana) {
         if (curWin) curWin.libres++;
         newWin.libres--;
         o[5] = newWin.dia;
@@ -1402,6 +1612,7 @@
       editState = null;
       showToast(`Orden ${orderId} actualizada correctamente`, "success");
       navigate("#/o");
+      persistir(() => DB.modificarOrden(orderId, { ventanaId: cambiaVentana ? newWin.id : null, nota, motivo }));
     }
 
     function confirmarAnulacion(orderId) {
@@ -1412,13 +1623,15 @@
       const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
       if (curWin) curWin.libres++;
 
+      const motivo = editState.motivoAnulacion;
       o[10] = "anulada";
-      o[11] = (o[11] || []).concat(`${nowStr} · planificador · orden anulada · motivo: ${editState.motivoAnulacion}`);
+      o[11] = (o[11] || []).concat(`${nowStr} · planificador · orden anulada · motivo: ${motivo}`);
 
       saveState();
       editState = null;
       showToast(`Orden ${orderId} anulada y cupo en taller liberado`, "info");
       navigate("#/o");
+      persistir(() => DB.anularOrden(orderId, motivo));
     }
 
     // --- PANTALLA 7: SIMULADOR DE PASADA POR PÓRTICO (DEMO DE CAPTURA P-100) ---
@@ -1788,7 +2001,7 @@
         if (truckIndex >= 0) {
           const truckTires = state.trucks[truckIndex][3];
           for (let p = 0; p < 6; p++) {
-            const key = (101 + truckIndex) + "-" + (p + 1);
+            const key = simSelectedTruck.split("-")[1] + "-" + (p + 1);
             const deltaHours = Math.floor(Math.random() * 25) + 15;
             truckTires[p] = Math.max(20, truckTires[p] - deltaHours);
 
@@ -1810,6 +2023,10 @@
         isSimulating = false;
         renderSimulator();
         showToast(`Pasada de ${simSelectedTruck} registrada con éxito en Pórtico P-100`, "success");
+        const horometro = parseInt((state.trucks[truckIndex]?.[2] || "0").replace(/\D/g, ""), 10) || 0;
+        const lecturas = getTires().filter(t => t.cx === simSelectedTruck)
+          .map(t => ({ serial: t.serial, h: t.h, mm: t.mm, rate: t.rate, temp: t.temp, horometro }));
+        persistir(() => DB.registrarPasada(lecturas));
       }, 2500);
     }
 
@@ -1839,7 +2056,21 @@
     }
 
     window.addEventListener("hashchange", route);
-    window.addEventListener("DOMContentLoaded", () => {
+    window.addEventListener("DOMContentLoaded", async () => {
+      if (DB.activo) {
+        marcarOrigenDatos("cargando Supabase…", "bg-amber-400");
+        try {
+          await sincronizarDesdeBase();
+          marcarOrigenDatos("Supabase", "bg-emerald-400");
+        } catch (e) {
+          console.error(e);
+          DB.activo = false;
+          marcarOrigenDatos("modo local", "bg-slate-400");
+          showToast(`Sin conexión a Supabase (${e.message}). Se usan los datos locales.`, "danger");
+        }
+      } else {
+        marcarOrigenDatos("modo local", "bg-slate-400");
+      }
       route();
     });
   </script>
