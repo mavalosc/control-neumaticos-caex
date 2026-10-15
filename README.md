@@ -37,13 +37,14 @@ Universidad de Santiago de Chile
 
 ## Equipo
 
-| Integrante | Rol |
-|---|---|
-| Francisco Opazo | _por definir_ |
-| Héctor Medina | _por definir_ |
-| Manuel Ávalos Castillo | _por definir_ |
-| Nicolás Echeverría | _por definir_ |
-| Rodrigo Erazo | _por definir_ |
+| Integrante | Rol | Responsabilidades |
+|---|---|---|
+| Manuel Ávalos Castillo | Desarrollo e integración | Programa el prototipo con asistencia de IA (registrada en [`docs/bitacora-ia.md`](docs/bitacora-ia.md)); administra GitHub, Supabase, Vercel y Notion; abre los Pull Requests desde `dev` |
+| Héctor Medina | Pruebas (QA) | Prueba los flujos del prototipo contra los escenarios de [`docs/historias.md`](docs/historias.md) y revisa los Pull Requests |
+| Francisco Opazo | _por asignar_ | |
+| Nicolás Echeverría | _por asignar_ | |
+
+Rodrigo Erazo participó en los avances 1 y 2 y dejó el curso.
 
 ## Avance 1: propuesta de valor
 
