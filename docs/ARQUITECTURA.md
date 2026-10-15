@@ -24,7 +24,7 @@ El sistema implementa una arquitectura desacoplada y orientada a la nube, diseñ
 1. **Frontend:** Single Page Application (HTML5 / Tailwind CSS / Vanilla JS & React-ready) desplegada en **Vercel** con integración CI/CD automática desde la rama `main` de GitHub.
 2. **Backend API:** Microservicio en **FastAPI (Python 3.11)** encargado del cálculo matemático de degradación dimensional y proyecciones de vida remanente.
 3. **Persistencia:** **Supabase (PostgreSQL en la nube)** con soporte para constraints relacionales, triggers de liberación de cupos en taller y Row Level Security (RLS).
-4. **Gestión y Seguimiento:** **Notion** (Kanban diario y Roadmap de Horizontes vinculado con historias `HU-01` a `HU-08`) y **Figma** (Wireframes anotados P1 a P5).
+4. **Gestión y Seguimiento:** **Notion** (Kanban diario y Roadmap de Horizontes vinculado con historias `HU-01` a `HU-08`) y **wireframes anotados W1 a W5** en [`docs/wireframes/`](wireframes/README.md) (la maqueta preliminar sigue en Figma).
 
 ---
 

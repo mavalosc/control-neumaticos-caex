@@ -84,6 +84,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Los códigos HU deben ser idénticos a los del Roadmap de Notion. Cada escenario Gherkin debe describir lo que el prototipo **hace realmente** (sin funciones inventadas). Los wireframes deben salir del prototipo real. |
 | **Verificación** | Se leyó el Roadmap de Notion: HU-01 a HU-08 coinciden en nombre con `historias.md`. Cada «Entonces» se contrastó con el texto real de la interfaz en `src/index.html`. **Defecto detectado y corregido:** HU-08 exigía un motivo obligatorio, pero el prototipo guardaba con «actualización operacional» por defecto. Ahora el botón queda deshabilitado y aparece «El motivo del cambio es obligatorio.». También se agregaron la etiqueta «por confirmar» (HU-04) y el mensaje sin resultados en Camiones (HU-03). Los wireframes W1 a W5 se generaron con Chrome headless sobre el prototipo y se revisaron visualmente: una marca [4] de W4 no apareció porque el botón se llama «Modificar» y no «Modificar o anular»; se corrigió. |
 
+## IA-08 · Ordenar el espacio de Notion según la rúbrica
+**Herramienta:** Claude Code con la API de Notion · **Fecha:** 14-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | El Kanban "Registro de tareas" tenía las 3 tareas de ejemplo de la plantilla. Faltaban roles, problema y próximo hito; había dos repositorios enlazados y filas vacías en el Roadmap. |
+| **Intención** | «Me ayudas con esto, yo no se como hacerlo, te puedo conseguir una apikey y lo haces tu? necesito que me digas como conseguir la apikey» |
+| **Restricciones** | Clave de integración guardada solo en `.env` local (nunca en el chat ni en GitHub); permisos limitados a la página del grupo; no inventar roles (los no definidos quedan «por asignar»); mostrar un plan antes de aplicar cambios. |
+| **Verificación** | El script corrió primero en modo plan y se revisó la lista de 45 cambios antes de aplicarlos. Después se leyó Notion de vuelta: 4 integrantes con rol, un solo repositorio y 15 tareas `[HU-XX]`/`[E3]`/`[E4]` con responsable. **Hallazgo:** la integración solo veía una copia de la página, no la publicada originalmente; el equipo decidió usar y publicar la copia, y se actualizó el enlace en el README. **Límite de la API:** los estados del Kanban (Por hacer, Haciendo, Hecho, Bloqueado) se renombraron a mano. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
