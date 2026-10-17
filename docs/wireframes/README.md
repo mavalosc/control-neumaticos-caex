@@ -1,41 +1,70 @@
 # Wireframes anotados del flujo principal
 
-Cuatro pantallas del escenario principal de éxito. Imágenes en [`../img/`](../img/) (`pantalla-1.png` a `pantalla-4.png`) y prototipo navegable en [`../../frontend/index.html`](../../frontend/index.html). Cada pantalla declara su historia, sus datos, el criterio que verifica y su navegación.
+Cinco pantallas del flujo principal, capturadas del **prototipo real** ([`src/index.html`](../../src/index.html)) con datos de Supabase. Cada imagen lleva las cuatro anotaciones que pide la pauta:
 
-## P1 · Tablero del turno (HU-01)
-- **Datos que muestra:** `id_camion`, `nivel_dano_camion` (0 a 3), `cantidad_neumaticos_criticos`, `fecha_ultima_pasada`
-- **Criterio que verifica:** HU-01, flota ordenada del más grave al menos grave, con nivel y color; «sin medición reciente» si falta la pasada
-- **Navegación:** tocar un camión → **P2**
+| Marca | Significado |
+|---|---|
+| **[1] Origen** (azul) | Código `HU-XX` que justifica la pantalla (igual en Notion y en [`historias.md`](../historias.md)) |
+| **[2] Datos** (verde) | Campos de la interfaz → columnas de [`datos.md`](../datos.md) y Supabase |
+| **[3] Verificación** (rosado) | Elemento donde se comprueba el «Entonces» del escenario Gherkin |
+| **[4] Navegación** (naranjo) | Paso a la siguiente pantalla y manejo de excepciones |
 
-## P2 · Ficha del neumático (HU-02, HU-08)
-- **Datos que muestra:** `serial`, `posicion`, `foto_url`, `tipo_dano`, `nivel_dano`, `confianza`, `fecha_pasada`, `modelo_version`, historial de pasadas
-- **Criterio que verifica:** HU-02, foto con cada daño marcado y daños de baja confianza como «por confirmar»; HU-08, corrección con autor y fecha
-- **Navegación:** «Agendar intervención» → **P3**; «Corregir clasificación» abre el formulario de corrección (camino alternativo, al margen)
+**Flujo principal:** W1 Tablero (HU-01) → W2 Ficha (HU-04) → W3 Agendar (HU-06) → **W4 Orden emitida (HU-07 ★)** → W5 Modificar o anular (HU-08)
 
-## P3 · Agendar intervención (HU-04)
-- **Datos que muestra:** `ventana_id`, `dia`, `turno`, `cupos_libres`
-- **Criterio que verifica:** HU-04, solo se reserva una ventana con cupos; sin cupos se propone la siguiente
-- **Navegación:** «Confirmar» → **P4**
+---
 
-## P4 · Orden emitida (HU-05)
-- **Datos que muestra:** `codigo_orden`, `serial`, `posicion`, `ventana`, `fecha_pasada`, `modelo_version`
-- **Criterio que verifica:** HU-05, código de orden, vínculo a la medición y a la versión del modelo; si el ERP rechaza, se muestra el motivo y la orden queda pendiente
-- **Navegación:** «Volver al tablero» → **P1**
+## W1 · Tablero del turno (HU-01, HU-02)
+![W1 Tablero del turno](W1.png)
 
-## Camino alternativo (alerta crítica, HU-03)
-Cuando un neumático queda en nivel 3, la alerta llega al despachador y al planificador y lleva directo a la ficha de **P2**. Se anota al margen y no se dibuja como pantalla aparte.
+- **[1]** HU-01 Tablero del Turno; HU-02 Alerta de Daño Crítico (banner rojo).
+- **[2]** Serial → `neumaticos.serial` · Profundidad → `mediciones.profundidad_mm` · Tasa → `mediciones.tasa_desgaste_por_100h` · Horas rem. → `mediciones.horas_remanentes_calculadas` · Zona → `mediciones.zona_calculada` · Daño → `danos_neumaticos.severidad` (todo vía `vista_tablero_turno`).
+- **[3]** La primera fila es la de menos horas remanentes (34 h). El pie dice «Mostrando 1 a 25 de 402 neumáticos».
+- **[4]** Clic en una fila o en «Ver Ficha» → **W2**. Excepción: «No se encontraron neumáticos con los filtros seleccionados.»
 
-## Pantallas actuales de la interfaz
-Capturas de la interfaz construida, que alimentan las historias de [`../historias-frontend.md`](../historias-frontend.md).
+## W2 · Ficha del neumático (HU-04, HU-05)
+![W2 Ficha del neumático](W2.png)
 
-| Pantalla | Historias | Navegación |
-|---|---|---|
-| Tablero del turno ([captura](../img/ui-tablero.jpg)) | HU-F01, HU-F02, HU-F06 | Clic en una fila → ficha del neumático |
-| Camiones ([captura](../img/ui-camiones.jpg)) | HU-F03, HU-F06 | Clic en una posición → ficha del neumático |
-| Órdenes de trabajo ([captura](../img/ui-ordenes.jpg)) | HU-F07, HU-F08 | Clic en el serial → ficha del neumático |
+- **[1]** HU-04 Ficha Técnica y Curva de Desgaste; HU-05 Reclasificación (panel «Validación del Planificador»).
+- **[2]** Horas, profundidad y temperatura → `mediciones`; daño y confianza → `danos_neumaticos.descripcion`, `confianza_ia`; la corrección crea una fila en `danos_neumaticos` con `validado_por_humano = true`.
+- **[3]** Se ve «corte profundo en flanco» con «Confianza IA: 94%».
+- **[4]** «Agendar Intervención en Taller» → **W3**. Excepción: confianza < 70 % → «por confirmar»; zona verde → botón deshabilitado.
 
-### Pantalla nueva: Modificar o anular una orden
-Se abre desde el botón «Modificar o anular» de cada orden programada (HU-F09, HU-F10).
-- **Datos que muestra:** `codigo_orden`, `serial`, `ventana_actual`, ventanas con `cupos_libres`, `nota`, `motivo`, `historial`
-- **Criterio que verifica:** el motivo es obligatorio; la anulación pide confirmación; la orden anulada se conserva con su motivo
-- **Navegación:** «Guardar cambios» o «Sí, anular» → Órdenes de trabajo con un aviso de confirmación; «Volver» → Órdenes sin cambios
+## W3 · Agendar intervención (HU-06)
+![W3 Agendar intervención](W3.png)
+
+- **[1]** HU-06 Agendamiento en Ventana de Taller con Control de Cupos.
+- **[2]** `ventanas_taller.dia`, `turno`, `cupos_libres` / `cupos_totales`, `horas_hasta_ventana`.
+- **[3]** «✓ Ventana oportuna: La intervención se ejecutará con 114 h de margen antes del cruce de umbral.»
+- **[4]** «Confirmar y Emitir Orden en SAP PM» → **W4**. Excepción: ventana sin cupos atenuada; ventana tardía → «⚠️ Advertencia de riesgo…».
+
+## W4 · Orden de trabajo emitida (HU-07 ★ flujo principal)
+![W4 Orden emitida](W4.png)
+
+- **[1]** HU-07 Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM.
+- **[2]** `ordenes_trabajo.codigo`, `fecha_emision`, `justificacion_nota`, `horas_remanentes_emision`, `medicion_codigo`, `origen_detalle`, `estado`; ventana vía `ventana_id`; historial en `historial_ordenes`.
+- **[3]** Aviso «Orden ot-XXXX emitida con éxito en ERP. Taller notificado.» y la orden en estado «programada». En la imagen, `ot-0069` es un ejemplo.
+- **[4]** Botón «Modificar» → **W5**; clic en el serial → **W2**. Excepción: ventana llena → «No se pudo guardar en Supabase: La ventana de taller seleccionada no cuenta con cupos libres.»
+
+## W5 · Modificar o anular una orden (HU-08)
+![W5 Modificar o anular](W5.png)
+
+- **[1]** HU-08 Modificación y Anulación de OT con Motivo Obligatorio.
+- **[2]** Ventana → `ordenes_trabajo.ventana_id`; nota → `justificacion_nota`; motivo → `historial_ordenes.motivo`; anulación → `estado = 'anulada'`.
+- **[3]** Sin motivo aparece «El motivo del cambio es obligatorio.» y «Guardar Modificaciones» queda deshabilitado.
+- **[4]** «Guardar Modificaciones» o «Sí, anular» → **W4**. La anulación pide confirmación y libera el cupo.
+
+---
+
+## Camino alternativo: vista de camiones (HU-03)
+Desde «Camiones», un clic en una posición P1 a P6 abre la misma ficha de **W2**. No se dibuja como pantalla aparte porque no forma parte del flujo principal.
+
+## Cómo regenerar las imágenes
+Con el prototipo conectado a Supabase, desde la raíz del repositorio en Git Bash:
+
+```bash
+bash scripts/wireframes/generar.sh
+```
+
+El script abre [`scripts/wireframes/anotar.html`](../../scripts/wireframes/anotar.html) en Chrome headless. Esa página carga cada pantalla del prototipo, ubica los elementos por su texto y dibuja las marcas.
+
+Las maquetas de baja fidelidad de la Entrega 2 se conservan en [`../historico/`](../historico/).
