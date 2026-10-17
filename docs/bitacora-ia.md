@@ -94,6 +94,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Clave de integración guardada solo en `.env` local (nunca en el chat ni en GitHub); permisos limitados a la página del grupo; no inventar roles (los no definidos quedan «por asignar»); mostrar un plan antes de aplicar cambios. |
 | **Verificación** | El script corrió primero en modo plan y se revisó la lista de 45 cambios antes de aplicarlos. Después se leyó Notion de vuelta: 4 integrantes con rol, un solo repositorio y 15 tareas `[HU-XX]`/`[E3]`/`[E4]` con responsable. **Hallazgo:** la integración solo veía una copia de la página, no la publicada originalmente; el equipo la usó en un primer momento. **Decisión final:** la página oficial del equipo está en un espacio donde el integrante no tiene permiso para crear integraciones (Notion: *You don't have permission to create internal connections*). Por eso la IA generó `Kanban.csv`, `Roadmap.csv` y el texto de las secciones, y el integrante los importó y pegó a mano. Después se verificó la página publicada: tabla de roles, Kanban con 4 estados y vista de tablero, Roadmap con HU-01 a HU-08, enlaces a las entregas 3 y 4, sin Roadmap duplicado ni errores de tipeo. El README enlaza solo a esa página. |
 
+## IA-09 · Hallazgo humano: los buscadores escribían al revés
+**Herramienta:** Claude Code · **Fecha:** 17-10-2026 · **Autor:** Manuel Ávalos (detección en prueba manual)
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Prototipo publicado en Vercel. Al probarlo a mano, el integrante escribió «165» en el buscador de Camiones y apareció «561». El error venía del código base original del equipo (`oninput="…; document.getElementById('q').focus();"`) y la IA lo conservó al generar el prototipo (IA-01). **Ninguna revisión con IA lo detectó** (IA-05, IA-07): las pruebas automáticas asignaban el texto completo de una vez, en lugar de teclearlo carácter por carácter como lo hace una persona. |
+| **Intención** | «en el prototipo montado en vercel, el buscador de camiones, escribe de derecha a izquierda, cuando digito 165, en el formulario aparece 561» |
+| **Restricciones** | Corregir la causa en todos los buscadores, no solo en el reportado; no cambiar el comportamiento de filtrado; comprobar con una prueba que reproduzca el tecleo real. |
+| **Verificación** | **Causa:** cada tecla vuelve a dibujar la pantalla y `focus()` devolvía el cursor a la posición 0, así que cada carácter nuevo quedaba delante del anterior. Afectaba a los 3 buscadores (Tablero, Camiones y Órdenes). **Corrección:** nueva función `enfocarAlFinal()` que deja el cursor al final del texto. **Segundo defecto encontrado al probar:** Tablero y Camiones compartían la variable `searchQuery`, así que lo buscado en una vista aparecía en la otra; Camiones ahora usa `truckSearchQuery`. **Prueba:** página de prueba que teclea «1», «6», «5» en la posición del cursor en cada buscador. Antes daba «561»; después da «165» en los tres, sin errores de consola (commit `0c10148`). **Aprendizaje:** las pruebas de interfaz deben simular la interacción real del usuario; probar a mano el sitio publicado sigue siendo necesario. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
@@ -104,6 +114,7 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 |---|---|
 | `src/index.html` | Cómo `getTires()` arma los 402 neumáticos desde `state`; el enrutador `route()` por `#/`; la función `zona()` con sus umbrales de 200 h y 500 h. |
 | `src/db.js` | `cargar()` lee `vista_tablero_turno`, `ventanas_taller` y `ordenes_trabajo` y los convierte al formato de `state`; cada escritura inserta o actualiza una tabla y agrega una fila en `historial_ordenes`. |
+| `src/index.html`, función `enfocarAlFinal()` | Por qué los buscadores redibujan la pantalla en cada tecla y por qué hay que devolver el cursor al final (hallazgo IA-09). |
 | `src/index.html`, función `persistir()` | Patrón optimista: primero cambia la pantalla, luego escribe en Supabase y recarga. Si falla, muestra el error y vuelve al dato de la base. |
 | `docs/schema.sql` | Para qué sirve cada trigger de cupos; por qué las funciones son `SECURITY DEFINER`; qué permite cada política RLS y por qué no existe `DELETE`. |
 | `scripts/generar_seed.py` | Lee las constantes `INITIAL_*` del prototipo y genera `docs/seed.sql`, para que la base y el modo local tengan los mismos datos. |

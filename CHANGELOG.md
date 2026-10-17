@@ -1,5 +1,11 @@
 # Avances
 
+## v0.3.1 (17-10-2026)
+- [x] Buscadores de Tablero, Camiones y Órdenes: el texto ya no se escribe al revés (cursor al final tras redibujar)
+- [x] Camiones con búsqueda propia, independiente del Tablero
+- [x] Hallazgo registrado en `docs/bitacora-ia.md` (IA-09)
+
+
 ## v0.3 (14-10-2026) · Entregas 3 y 4 según rúbrica
 - [x] `docs/bitacora-ia.md`: 7 interacciones con IA (Contexto, Intención, Restricciones, Verificación)
 - [x] `docs/datos.md`: diccionario de las 7 tablas, diagrama ER, reglas Tidy Data y matriz RLS
