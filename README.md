@@ -39,10 +39,10 @@ Universidad de Santiago de Chile
 
 | Integrante | Rol | Responsabilidades |
 |---|---|---|
-| Manuel Ávalos Castillo | Desarrollo e integración | Programa el prototipo con asistencia de IA (registrada en [`docs/bitacora-ia.md`](docs/bitacora-ia.md)); administra GitHub, Supabase, Vercel y Notion; abre los Pull Requests desde `dev` |
-| Héctor Medina | Pruebas (QA) | Prueba los flujos del prototipo contra los escenarios de [`docs/historias.md`](docs/historias.md) y revisa los Pull Requests |
-| Francisco Opazo | _por asignar_ | |
-| Nicolás Echeverría | _por asignar_ | |
+| Manuel Ávalos Castillo | Técnico (programación) | Programa el prototipo con asistencia de IA (registrada en [`docs/bitacora-ia.md`](docs/bitacora-ia.md)); administra el repositorio, Vercel, Supabase y las credenciales; abre los Pull Requests desde `dev` |
+| Héctor Medina | QA/QC y documentación | Prueba los flujos contra los escenarios de [`docs/historias.md`](docs/historias.md), revisa y aprueba los Pull Requests, y mantiene README, `docs/` y Notion |
+| Francisco Opazo | Funcional | Valida la solución con el planificador de neumáticos y conduce la prueba de la Semana 7 |
+| Nicolás Echeverría | _por definir_ | |
 
 Rodrigo Erazo participó en los avances 1 y 2 y dejó el curso.
 
