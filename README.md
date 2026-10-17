@@ -8,7 +8,7 @@ Pórtico instrumentado que mide cada CAEX en tránsito, mantiene la historia dim
 |---|---|
 | Prototipo en producción (Vercel, rama `main`) | https://control-neumaticos-caex-frontend.vercel.app |
 | Base de datos | Supabase, proyecto `vwustghenvatlfwankqo` |
-| Gestión (Roadmap y Kanban en Notion) | [Pórtico dimensional predictivo de neumáticos CAEX](https://app.notion.com/p/3e427b7d1769817985a9f585a449b5d6) |
+| Gestión (Roadmap y Kanban en Notion) | [Grupo 3 (página del curso)](https://app.notion.com/p/Grupo-3-b76498f17d47839d8bf701014eb9d394) |
 
 ## Estado actual en la escala de madurez
 
@@ -147,7 +147,7 @@ Versión navegable en Figma: [Maqueta de sistema de mantenimiento](https://www.f
 
 ### Roadmap inicial
 
-El roadmap reúne ocho resultados esperados distribuidos en **Ahora, Próximo y Después** ([página del proyecto en Notion](https://app.notion.com/p/3e427b7d1769817985a9f585a449b5d6)).
+El roadmap reúne ocho resultados esperados distribuidos en **Ahora, Próximo y Después** ([página del proyecto en Notion](https://app.notion.com/p/Grupo-3-b76498f17d47839d8bf701014eb9d394)).
 
 ![Roadmap](docs/img/roadmap.png)
 
@@ -240,6 +240,6 @@ Documentación formal:
 - Bitácora de uso de IA: [`docs/bitacora-ia.md`](docs/bitacora-ia.md)
 - Arquitectura del Sistema: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Wireframes Anotados de Flujo: [`docs/wireframes/README.md`](docs/wireframes/README.md)
-- Roadmap y Kanban en Notion: [Pórtico dimensional predictivo de neumáticos CAEX](https://app.notion.com/p/3e427b7d1769817985a9f585a449b5d6)
+- Roadmap y Kanban en Notion: [Grupo 3 (página del curso)](https://app.notion.com/p/Grupo-3-b76498f17d47839d8bf701014eb9d394)
 - Maqueta Navegable en Figma: [Prototipo Figma](https://www.figma.com/make/EDZNEzovnKPwBaUDV0GySq/Maqueta-de-sistema-de-mantenimiento)
 
