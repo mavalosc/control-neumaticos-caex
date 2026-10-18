@@ -1,5 +1,12 @@
 # Avances
 
+## v0.4 (18-10-2026) · PoC del modelo de desgaste
+- [x] `docs/modelo.md`: variables, fuentes de datos, TKPH, desgaste vs daño, método y plan de validación
+- [x] `modelo/`: datos sintéticos con efectos conocidos, regresión, Gradient Boosting + SHAP y supervivencia (Cox)
+- [x] Validación en camiones no vistos: error de horas remanentes a 30 mm de 65 h (método actual: 222 h)
+- [x] Registro IA-10 en la bitácora
+
+
 ## v0.3.1 (17-10-2026)
 - [x] Buscadores de Tablero, Camiones y Órdenes: el texto ya no se escribe al revés (cursor al final tras redibujar)
 - [x] Camiones con búsqueda propia, independiente del Tablero

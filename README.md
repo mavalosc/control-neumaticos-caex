@@ -20,7 +20,7 @@ Pórtico instrumentado que mide cada CAEX en tránsito, mantiene la historia dim
 | Solución / Hipótesis (Semana 2) | ✅ Avance 2 |
 | Ambiente integrado y datos (Semana 3) | ✅ GitHub (`dev` → `main` por Pull Request), Vercel con despliegue continuo y Supabase con [modelo de datos](docs/datos.md) |
 | Historias, BDD y wireframes (Semana 4) | ✅ [`docs/historias.md`](docs/historias.md) y [`docs/wireframes/`](docs/wireframes/README.md) |
-| Prueba de concepto (Semana 8) | ⏳ Validar la proyección de horas remanentes con datos sintéticos de pasadas |
+| Prueba de concepto (Semana 8) | 🔄 Método validado con datos sintéticos ([`docs/modelo.md`](docs/modelo.md)); falta integrarlo al prototipo y validarlo con datos reales |
 | MVP (Semana 12) | ⏳ Validación con planificadores reales |
 
 El prototipo trabaja con **datos sintéticos** (67 CAEX, 402 neumáticos); el hardware del pórtico queda fuera del semestre (horizonte *Después* del roadmap).
@@ -174,6 +174,10 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 │   ├── db.js                # Capa de datos: lee y escribe en Supabase (respaldo local)
 │   └── assets/              # Imágenes del CAEX y del pórtico
 ├── frontend/                # VERSIÓN ANTIGUA (Entrega 4), solo referencia histórica
+├── modelo/                  # PoC del modelo de desgaste y vida útil remanente (Python)
+│   ├── generar_datos.py     # Datos sintéticos con efectos conocidos
+│   ├── entrenar.py          # Regresión, Gradient Boosting + SHAP, supervivencia (Cox) y validación
+│   └── resultados/          # REPORTE.md, métricas y gráficos
 ├── scripts/
 │   ├── generar_seed.py      # Genera docs/seed.sql desde los datos del prototipo
 │   └── wireframes/          # Genera los wireframes anotados desde el prototipo
@@ -187,6 +191,7 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
     ├── historias.md         # Historias HU-01 a HU-08 (INVEST) con escenarios Gherkin
     ├── datos.md             # Diccionario de datos y reglas Tidy Data
     ├── bitacora-ia.md       # Uso auditado de asistentes de IA
+    ├── modelo.md            # Metodología del modelo de desgaste y RUL (PoC Semana 8)
     ├── historico/           # Versiones reemplazadas (solo referencia)
     ├── schema.sql           # DDL Supabase: tablas, triggers de cupos, vista y políticas RLS
     ├── seed.sql             # Datos de demostración: 67 CAEX, 402 neumáticos, órdenes
@@ -238,6 +243,7 @@ Documentación formal:
 - Historias de Usuario INVEST y BDD: [`docs/historias.md`](docs/historias.md)
 - Modelo y Diccionario de Datos: [`docs/datos.md`](docs/datos.md) (implementado en [`docs/schema.sql`](docs/schema.sql))
 - Bitácora de uso de IA: [`docs/bitacora-ia.md`](docs/bitacora-ia.md)
+- Modelo de desgaste y vida útil remanente: [`docs/modelo.md`](docs/modelo.md) · [resultados de la PoC](modelo/resultados/REPORTE.md)
 - Arquitectura del Sistema: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Wireframes Anotados de Flujo: [`docs/wireframes/README.md`](docs/wireframes/README.md)
 - Roadmap y Kanban en Notion: [Grupo 3 (página del curso)](https://app.notion.com/p/Grupo-3-b76498f17d47839d8bf701014eb9d394)

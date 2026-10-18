@@ -104,6 +104,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Corregir la causa en todos los buscadores, no solo en el reportado; no cambiar el comportamiento de filtrado; comprobar con una prueba que reproduzca el tecleo real. |
 | **Verificación** | **Causa:** cada tecla vuelve a dibujar la pantalla y `focus()` devolvía el cursor a la posición 0, así que cada carácter nuevo quedaba delante del anterior. Afectaba a los 3 buscadores (Tablero, Camiones y Órdenes). **Corrección:** nueva función `enfocarAlFinal()` que deja el cursor al final del texto. **Segundo defecto encontrado al probar:** Tablero y Camiones compartían la variable `searchQuery`, así que lo buscado en una vista aparecía en la otra; Camiones ahora usa `truckSearchQuery`. **Prueba:** página de prueba que teclea «1», «6», «5» en la posición del cursor en cada buscador. Antes daba «561»; después da «165» en los tres, sin errores de consola (commit `0c10148`). **Aprendizaje:** las pruebas de interfaz deben simular la interacción real del usuario; probar a mano el sitio publicado sigue siendo necesario. |
 
+## IA-10 · Metodología y PoC del modelo de desgaste y vida útil remanente
+**Herramienta:** Claude Code · **Fecha:** 18-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | El equipo propuso identificar las variables que influyen en el desgaste (presión, temperatura, carga, velocidad, terreno, pendiente, posición, frenadas, entre otras) con un modelo de Deep Learning cuyos coeficientes alimentarían una regresión multivariable. No había datos ni código del modelo. |
+| **Intención** | La propuesta completa del equipo («Identificación de variables que influyen en el desgaste de neumáticos… Modelo de Deep Learning para extracción de patrones… Modelo predictivo para toma de decisiones») y luego «ejecuta la opciones 1 y 3» (documento de metodología y PoC con datos sintéticos). |
+| **Restricciones** | Datos sintéticos con efectos **conocidos** para comprobar si el método los recupera; modelos interpretables; separación de prueba por camión completo; comparación con el método actual del backend; resultados reproducibles con semilla fija; no presentar recomendaciones como causales. |
+| **Verificación** | La IA revisó la propuesta y la ajustó: modelos interpretables con SHAP antes que Deep Learning (pocos datos), separación de desgaste y daño, censura e indicador TKPH. **Calibración humana del simulador:** la primera versión daba 58 % de fallas por daño; se recalibró a 28 %, cercano al ~30 % de la industria. **Resultados en 14 camiones no vistos:** error de horas remanentes a 30 mm de 65 h (método actual: 222 h), con 95 % de estimaciones dentro de ±200 h y 3 % optimistas (método actual: 27,5 %). **Errores corregidos antes de publicar:** la tabla mostraba el TKPH como elasticidad (confuso) y se cambió a «+10 % de TKPH»; el documento atribuía el falso efecto de las frenadas a una correlación con el terreno, pero al revisar los datos la correlación era nula y se corrigió la explicación. **Hallazgo:** SHAP pone la temperatura del neumático en tercer lugar aunque no causa desgaste, lo que confirma que importancia no es causalidad. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
@@ -118,4 +128,6 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `src/index.html`, función `persistir()` | Patrón optimista: primero cambia la pantalla, luego escribe en Supabase y recarga. Si falla, muestra el error y vuelve al dato de la base. |
 | `docs/schema.sql` | Para qué sirve cada trigger de cupos; por qué las funciones son `SECURITY DEFINER`; qué permite cada política RLS y por qué no existe `DELETE`. |
 | `scripts/generar_seed.py` | Lee las constantes `INITIAL_*` del prototipo y genera `docs/seed.sql`, para que la base y el modo local tengan los mismos datos. |
+| `modelo/generar_datos.py` | Qué efectos verdaderos usa el simulador (constantes `VERDAD_*`) y por qué la temperatura del neumático es consecuencia y no causa. |
+| `modelo/entrenar.py` | Por qué se agrupa en ventanas de ~200 h, qué mide SHAP, qué es la censura en el modelo de Cox y cómo se calcula la horas remanentes (`(profundidad − 20) / tasa × 100`). |
 | `backend/app/proyeccion.py` | Regresión lineal de la profundidad contra las horas de operación para proyectar el cruce del umbral de 20 mm. |

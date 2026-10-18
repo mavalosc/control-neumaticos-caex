@@ -1,0 +1,55 @@
+{
+  "ventanas": 23585,
+  "camiones_prueba": 14,
+  "mae_tasa_mm_100h": {
+    "Promedio de flota": 0.401,
+    "Regresión multivariable": 0.102,
+    "Gradient Boosting": 0.08
+  },
+  "piso_ruido_medicion": 0.141,
+  "rul": {
+    "a_45_mm": {
+      "recta": {
+        "mae_h": 363.0,
+        "dentro_200h_pct": 31.7,
+        "optimista_pct": 37.7
+      },
+      "modelo": {
+        "mae_h": 180.0,
+        "dentro_200h_pct": 62.9,
+        "optimista_pct": 15.0
+      },
+      "n": 167
+    },
+    "a_30_mm": {
+      "recta": {
+        "mae_h": 222.0,
+        "dentro_200h_pct": 48.5,
+        "optimista_pct": 27.5
+      },
+      "modelo": {
+        "mae_h": 65.0,
+        "dentro_200h_pct": 95.2,
+        "optimista_pct": 3.0
+      },
+      "n": 167
+    }
+  },
+  "c_index_dano": 0.707,
+  "importancia_shap": {
+    "Terreno: % roca suelta": 0.1024,
+    "Pendiente de la ruta (%)": 0.0823,
+    "Temperatura del neumático (°C)": 0.069,
+    "Posición delantera (P1-P2)": 0.0582,
+    "Presión de inflado (% vs nominal)": 0.0465,
+    "Frenadas y aceleraciones fuertes (/h)": 0.0388,
+    "TKPH (carga x velocidad)": 0.0312,
+    "Velocidad de operación (km/h)": 0.0211,
+    "Terreno: % barro": 0.0142,
+    "Distancia recorrida (km)": 0.0116,
+    "Nivel de desgaste: profundidad (mm)": 0.0071,
+    "Horas de uso del neumático": 0.0068,
+    "Carga transportada (t)": 0.0043,
+    "Temperatura ambiente (°C)": 0.0021
+  }
+}
