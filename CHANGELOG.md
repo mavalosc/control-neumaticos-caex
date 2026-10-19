@@ -1,5 +1,13 @@
 # Avances
 
+## v0.5 (18-10-2026) · Telemetría en el simulador del pórtico (en evaluación)
+- [x] Vista `#/sim`: chasis 6x4 con semáforo por posición y alertas de la pasada
+- [x] Secciones TPMS (PSI/bar, estado del sensor), temperatura (flanco e interna, 3 niveles) y carga/velocidad/TKPH
+- [x] Vista Operador / Ingeniería, secciones plegables y contador de datos en pantalla para evaluar densidad
+- [ ] Decidir con el equipo qué vista se publica por defecto
+- [ ] Llevar TPMS, carga y TKPH al modelo de datos de Supabase si se aprueba la vista
+
+
 ## v0.4 (18-10-2026) · PoC del modelo de desgaste
 - [x] `docs/modelo.md`: variables, fuentes de datos, TKPH, desgaste vs daño, método y plan de validación
 - [x] `modelo/`: datos sintéticos con efectos conocidos, regresión, Gradient Boosting + SHAP y supervivencia (Cox)

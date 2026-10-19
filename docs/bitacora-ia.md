@@ -114,6 +114,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Datos sintéticos con efectos **conocidos** para comprobar si el método los recupera; modelos interpretables; separación de prueba por camión completo; comparación con el método actual del backend; resultados reproducibles con semilla fija; no presentar recomendaciones como causales. |
 | **Verificación** | La IA revisó la propuesta y la ajustó: modelos interpretables con SHAP antes que Deep Learning (pocos datos), separación de desgaste y daño, censura e indicador TKPH. **Calibración humana del simulador:** la primera versión daba 58 % de fallas por daño; se recalibró a 28 %, cercano al ~30 % de la industria. **Resultados en 14 camiones no vistos:** error de horas remanentes a 30 mm de 65 h (método actual: 222 h), con 95 % de estimaciones dentro de ±200 h y 3 % optimistas (método actual: 27,5 %). **Errores corregidos antes de publicar:** la tabla mostraba el TKPH como elasticidad (confuso) y se cambió a «+10 % de TKPH»; el documento atribuía el falso efecto de las frenadas a una correlación con el terreno, pero al revisar los datos la correlación era nula y se corrigió la explicación. **Hallazgo:** SHAP pone la temperatura del neumático en tercer lugar aunque no causa desgaste, lo que confirma que importancia no es causalidad. |
 
+## IA-11 · Telemetría TPMS, temperatura y control de densidad en el simulador del pórtico
+**Herramienta:** Claude Code · **Fecha:** 18-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | La vista `#/sim` mostraba la foto del CAEX, las 8 cámaras y la inspección fotográfica. El modelo de datos tenía una sola temperatura (termografía del flanco, `mediciones.temperatura_flanco_c`) con un único umbral crítico de 95 °C, y no existían presión, TPMS, carga ni TKPH en el prototipo. |
+| **Intención** | «Necesito expandir esta pantalla integrando la telemetría completa de cada neumático y las variables del sistema según el modelo de datos existente, antes de publicar, para evaluar si la densidad de información es excesiva o si requiere filtros/colapsos.» Con secciones de TPMS por posición (presión en PSI/bar y estado del sensor) y de temperatura con niveles Normal/Advertencia/Crítico. |
+| **Restricciones** | Trabajar en la rama `dev` sin abrir PR; conservar la identidad visual oscura/industrial; usar las variables y umbrales del proyecto; agregar controles para comparar la vista resumida con la detallada. |
+| **Verificación** | Se revisó primero el código: la vibración no existe en el modelo y no se inventó. Se mantuvo el umbral crítico de 95 °C y se agregó un nivel de advertencia (85 °C) declarado como supuesto, igual que la presión nominal de 102 psi. Los valores TPMS, carga y TKPH son **simulados y deterministas** (no cambian entre renders). **Error de la IA corregido en la prueba:** el contador de densidad marcaba 123 datos en la vista Operador porque contaba valores dentro de secciones plegadas; corregido, muestra 23 (Operador) frente a 125 (Ingeniería). **Prueba funcional:** el sensor recorre Operativo → Sin señal → Falla sin alterar la presión de los otros neumáticos; sin consola de errores en ambas vistas. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
