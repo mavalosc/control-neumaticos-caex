@@ -1689,7 +1689,8 @@ const INITIAL_TRUCKS = [
       sin_dato: { txt: "Sin dato", cls: "text-slate-400", chip: "bg-slate-500/15 text-slate-300 border-slate-500/40", orden: 1 }
     };
 
-    let simVista = "operador";            // "operador" (resumen) o "ingenieria" (detalle)
+    const SIM_VISTA_PREDETERMINADA = "operador";  // decisión del equipo: la pasada se muestra resumida
+    let simVista = SIM_VISTA_PREDETERMINADA;     // "operador" (resumen) o "ingenieria" (detalle)
     let simAbiertas = {};                 // secciones plegables abiertas en la vista actual
 
     // Generador pseudoaleatorio con semilla (mulberry32) para que los valores no cambien en cada render
@@ -2393,6 +2394,8 @@ const INITIAL_TRUCKS = [
     }
 
     // --- ENRUTADOR PRINCIPAL ---
+    let rutaAnterior = null;
+
     function route() {
       const hash = location.hash || "#/";
       const [path, param] = hash.replace("#", "").split("/").filter(Boolean);
@@ -2411,10 +2414,15 @@ const INITIAL_TRUCKS = [
       } else if (path === "e" && param) {
         renderEditOrder(param);
       } else if (path === "sim") {
+        if (rutaAnterior !== "sim") {             // al entrar al simulador siempre parte en la vista predeterminada
+          simVista = SIM_VISTA_PREDETERMINADA;
+          simAbiertas = {};
+        }
         renderSimulator();
       } else {
         renderDashboard();
       }
+      rutaAnterior = path || "";
     }
 
     window.addEventListener("hashchange", route);

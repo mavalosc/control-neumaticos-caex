@@ -4,7 +4,7 @@
 - [x] Vista `#/sim`: chasis 6x4 con semáforo por posición y alertas de la pasada
 - [x] Secciones TPMS (PSI/bar, estado del sensor), temperatura (flanco e interna, 3 niveles) y carga/velocidad/TKPH
 - [x] Vista Operador / Ingeniería, secciones plegables y contador de datos en pantalla para evaluar densidad
-- [ ] Decidir con el equipo qué vista se publica por defecto
+- [x] Vista Operador como predeterminada: el simulador siempre parte resumido al entrar (decisión del 19-10-2026)
 - [ ] Llevar TPMS, carga y TKPH al modelo de datos de Supabase si se aprueba la vista
 
 
