@@ -124,6 +124,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Trabajar en la rama `dev` sin abrir PR; conservar la identidad visual oscura/industrial; usar las variables y umbrales del proyecto; agregar controles para comparar la vista resumida con la detallada. |
 | **Verificación** | Se revisó primero el código: la vibración no existe en el modelo y no se inventó. Se mantuvo el umbral crítico de 95 °C y se agregó un nivel de advertencia (85 °C) declarado como supuesto, igual que la presión nominal de 102 psi. Los valores TPMS, carga y TKPH son **simulados y deterministas** (no cambian entre renders). **Error de la IA corregido en la prueba:** el contador de densidad marcaba 123 datos en la vista Operador porque contaba valores dentro de secciones plegadas; corregido, muestra 23 (Operador) frente a 125 (Ingeniería). **Prueba funcional:** el sensor recorre Operativo → Sin señal → Falla sin alterar la presión de los otros neumáticos; sin consola de errores en ambas vistas. **Decisión humana (19-10-2026):** tras revisar el prototipo en local, el equipo fijó la Vista Operador como predeterminada; se verificó que el simulador vuelve a ella cada vez que se entra a `#/sim`, sin reiniciarse al guardar en Supabase. |
 
+## IA-12 · Explorador de datos y página explicativa de los modelos
+**Herramienta:** Claude Code · **Fecha:** 19-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Los datos de los neumáticos solo se podían ver en el Table Editor de Supabase, con acceso de administrador. La explicación de los modelos estaba solo en `docs/modelo.md`, en GitHub. |
+| **Intención** | «¿Dónde puedo ver los datos que se están generando de los neumáticos? Necesito una interfase que me permita ver la tabla completa. De todos los datos. Necesito también una página que me diga cómo trabajan esos modelos predictivos y de aprendizaje.» |
+| **Restricciones** | Leer con la clave anon (solo lectura según RLS); mostrar todas las filas, no una muestra; funcionar también en modo local; explicar los modelos sin jerga y dejando claro qué está en uso y qué es prueba de concepto con datos sintéticos. |
+| **Verificación** | Prueba en Chrome headless contra Supabase: las 8 tablas cargan completas (por ejemplo, 414 mediciones, 405 neumáticos y 402 filas de la vista), con búsqueda, orden por columna y descarga CSV; sin errores de consola. La página de modelos lee las métricas desde `assets/modelo/metricas.json`, que `modelo/entrenar.py` actualiza en cada ejecución, para que las cifras no queden desactualizadas. **Falso error investigado:** una prueba mostró 0 filas en la vista del tablero; al aislarla, la página cargaba las 402 filas y el problema estaba en los tiempos de la prueba. **Ajuste visual:** la barra superior no cabía con los dos botones nuevos y pasaron a ser solo íconos bajo 1.536 px. |
+
 ---
 
 ## Qué debe saber explicar cada integrante

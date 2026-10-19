@@ -245,6 +245,11 @@ def main():
                 "importancia_shap": {k: round(float(v), 4) for k, v in imp.sort_values(ascending=False).items()}}
     (RES / "metricas.json").write_text(json.dumps(metricas, ensure_ascii=False, indent=2), encoding="utf-8")
     escribir_reporte(metricas, rec, hr, vidas)
+    # copia gráficos y métricas al prototipo (página "Modelos", src/index.html#/modelos)
+    publico = RAIZ.parent / "src" / "assets" / "modelo"
+    publico.mkdir(parents=True, exist_ok=True)
+    for archivo in ("importancia_shap.png", "rul_30mm.png", "recuperacion_efectos.png", "metricas.json"):
+        (publico / archivo).write_bytes((RES / archivo).read_bytes())
     print(json.dumps(metricas, ensure_ascii=False, indent=1))
 
 

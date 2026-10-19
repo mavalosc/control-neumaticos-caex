@@ -121,5 +121,34 @@
     }))));
   }
 
-  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada };
+  // Explorador de datos: lee una tabla completa (por bloques de 1.000 filas) con datos legibles de sus relaciones.
+  const RELACIONES = {
+    neumaticos: "*, camiones(codigo)",
+    mediciones: "*, neumaticos(serial, posicion, camiones(codigo))",
+    danos_neumaticos: "*, neumaticos(serial), mediciones(codigo_medicion)",
+    ordenes_trabajo: "*, neumaticos(serial), ventanas_taller(dia, turno)",
+    historial_ordenes: "*, ordenes_trabajo(codigo)"
+  };
+
+  // { neumaticos: { serial: "x", camiones: { codigo: "y" } } } -> { "neumaticos.serial": "x", "neumaticos.camiones.codigo": "y" }
+  function aplanar(fila, prefijo = "", out = {}) {
+    for (const [k, v] of Object.entries(fila)) {
+      const clave = prefijo + k;
+      if (v && typeof v === "object" && !Array.isArray(v)) aplanar(v, clave + ".", out);
+      else out[clave] = v;
+    }
+    return out;
+  }
+
+  async function leerTabla(nombre) {
+    const filas = [];
+    for (let desde = 0; ; desde += 1000) {
+      const bloque = revisar(await cliente.from(nombre).select(RELACIONES[nombre] || "*").range(desde, desde + 999));
+      filas.push(...bloque.map(f => aplanar(f)));
+      if (bloque.length < 1000) break;
+    }
+    return filas;
+  }
+
+  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla };
 })();

@@ -169,7 +169,7 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 ├── CHANGELOG.md             # Registro de versiones y avances
 ├── actualizar.bat           # Atajo Windows: commit y push a la rama dev
 ├── src/                     # Código fuente vigente (SPA desplegada en Vercel)
-│   ├── index.html           # Interfaz: tablero, camiones 6x4, ficha, agenda, órdenes, simulador
+│   ├── index.html           # Interfaz: tablero, camiones 6x4, ficha, agenda, órdenes, simulador, datos y modelos
 │   ├── config.js            # URL y clave anon (pública) de Supabase
 │   ├── db.js                # Capa de datos: lee y escribe en Supabase (respaldo local)
 │   └── assets/              # Imágenes del CAEX y del pórtico

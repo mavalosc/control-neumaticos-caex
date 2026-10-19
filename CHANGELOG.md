@@ -1,5 +1,11 @@
 # Avances
 
+## v0.6 (19-10-2026) · Datos y modelos visibles en el prototipo
+- [x] `#/datos`: explorador de las 8 tablas de Supabase (completas), con búsqueda, orden y descarga CSV
+- [x] `#/modelos`: cómo funcionan la proyección actual y los modelos de aprendizaje, con resultados de la PoC
+- [x] `modelo/entrenar.py` publica gráficos y métricas en `src/assets/modelo/`
+
+
 ## v0.5 (18-10-2026) · Telemetría en el simulador del pórtico (en evaluación)
 - [x] Vista `#/sim`: chasis 6x4 con semáforo por posición y alertas de la pasada
 - [x] Secciones TPMS (PSI/bar, estado del sensor), temperatura (flanco e interna, 3 niveles) y carga/velocidad/TKPH
