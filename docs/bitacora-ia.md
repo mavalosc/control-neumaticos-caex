@@ -104,6 +104,36 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Corregir la causa en todos los buscadores, no solo en el reportado; no cambiar el comportamiento de filtrado; comprobar con una prueba que reproduzca el tecleo real. |
 | **Verificación** | **Causa:** cada tecla vuelve a dibujar la pantalla y `focus()` devolvía el cursor a la posición 0, así que cada carácter nuevo quedaba delante del anterior. Afectaba a los 3 buscadores (Tablero, Camiones y Órdenes). **Corrección:** nueva función `enfocarAlFinal()` que deja el cursor al final del texto. **Segundo defecto encontrado al probar:** Tablero y Camiones compartían la variable `searchQuery`, así que lo buscado en una vista aparecía en la otra; Camiones ahora usa `truckSearchQuery`. **Prueba:** página de prueba que teclea «1», «6», «5» en la posición del cursor en cada buscador. Antes daba «561»; después da «165» en los tres, sin errores de consola (commit `0c10148`). **Aprendizaje:** las pruebas de interfaz deben simular la interacción real del usuario; probar a mano el sitio publicado sigue siendo necesario. |
 
+## IA-10 · Metodología y PoC del modelo de desgaste y vida útil remanente
+**Herramienta:** Claude Code · **Fecha:** 18-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | El equipo propuso identificar las variables que influyen en el desgaste (presión, temperatura, carga, velocidad, terreno, pendiente, posición, frenadas, entre otras) con un modelo de Deep Learning cuyos coeficientes alimentarían una regresión multivariable. No había datos ni código del modelo. |
+| **Intención** | La propuesta completa del equipo («Identificación de variables que influyen en el desgaste de neumáticos… Modelo de Deep Learning para extracción de patrones… Modelo predictivo para toma de decisiones») y luego «ejecuta la opciones 1 y 3» (documento de metodología y PoC con datos sintéticos). |
+| **Restricciones** | Datos sintéticos con efectos **conocidos** para comprobar si el método los recupera; modelos interpretables; separación de prueba por camión completo; comparación con el método actual del backend; resultados reproducibles con semilla fija; no presentar recomendaciones como causales. |
+| **Verificación** | La IA revisó la propuesta y la ajustó: modelos interpretables con SHAP antes que Deep Learning (pocos datos), separación de desgaste y daño, censura e indicador TKPH. **Calibración humana del simulador:** la primera versión daba 58 % de fallas por daño; se recalibró a 28 %, cercano al ~30 % de la industria. **Resultados en 14 camiones no vistos:** error de horas remanentes a 30 mm de 65 h (método actual: 222 h), con 95 % de estimaciones dentro de ±200 h y 3 % optimistas (método actual: 27,5 %). **Errores corregidos antes de publicar:** la tabla mostraba el TKPH como elasticidad (confuso) y se cambió a «+10 % de TKPH»; el documento atribuía el falso efecto de las frenadas a una correlación con el terreno, pero al revisar los datos la correlación era nula y se corrigió la explicación. **Hallazgo:** SHAP pone la temperatura del neumático en tercer lugar aunque no causa desgaste, lo que confirma que importancia no es causalidad. |
+
+## IA-11 · Telemetría TPMS, temperatura y control de densidad en el simulador del pórtico
+**Herramienta:** Claude Code · **Fecha:** 18-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | La vista `#/sim` mostraba la foto del CAEX, las 8 cámaras y la inspección fotográfica. El modelo de datos tenía una sola temperatura (termografía del flanco, `mediciones.temperatura_flanco_c`) con un único umbral crítico de 95 °C, y no existían presión, TPMS, carga ni TKPH en el prototipo. |
+| **Intención** | «Necesito expandir esta pantalla integrando la telemetría completa de cada neumático y las variables del sistema según el modelo de datos existente, antes de publicar, para evaluar si la densidad de información es excesiva o si requiere filtros/colapsos.» Con secciones de TPMS por posición (presión en PSI/bar y estado del sensor) y de temperatura con niveles Normal/Advertencia/Crítico. |
+| **Restricciones** | Trabajar en la rama `dev` sin abrir PR; conservar la identidad visual oscura/industrial; usar las variables y umbrales del proyecto; agregar controles para comparar la vista resumida con la detallada. |
+| **Verificación** | Se revisó primero el código: la vibración no existe en el modelo y no se inventó. Se mantuvo el umbral crítico de 95 °C y se agregó un nivel de advertencia (85 °C) declarado como supuesto, igual que la presión nominal de 102 psi. Los valores TPMS, carga y TKPH son **simulados y deterministas** (no cambian entre renders). **Error de la IA corregido en la prueba:** el contador de densidad marcaba 123 datos en la vista Operador porque contaba valores dentro de secciones plegadas; corregido, muestra 23 (Operador) frente a 125 (Ingeniería). **Prueba funcional:** el sensor recorre Operativo → Sin señal → Falla sin alterar la presión de los otros neumáticos; sin consola de errores en ambas vistas. **Decisión humana (19-10-2026):** tras revisar el prototipo en local, el equipo fijó la Vista Operador como predeterminada; se verificó que el simulador vuelve a ella cada vez que se entra a `#/sim`, sin reiniciarse al guardar en Supabase. |
+
+## IA-12 · Explorador de datos y página explicativa de los modelos
+**Herramienta:** Claude Code · **Fecha:** 19-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Los datos de los neumáticos solo se podían ver en el Table Editor de Supabase, con acceso de administrador. La explicación de los modelos estaba solo en `docs/modelo.md`, en GitHub. |
+| **Intención** | «¿Dónde puedo ver los datos que se están generando de los neumáticos? Necesito una interfase que me permita ver la tabla completa. De todos los datos. Necesito también una página que me diga cómo trabajan esos modelos predictivos y de aprendizaje.» |
+| **Restricciones** | Leer con la clave anon (solo lectura según RLS); mostrar todas las filas, no una muestra; funcionar también en modo local; explicar los modelos sin jerga y dejando claro qué está en uso y qué es prueba de concepto con datos sintéticos. |
+| **Verificación** | Prueba en Chrome headless contra Supabase: las 8 tablas cargan completas (por ejemplo, 414 mediciones, 405 neumáticos y 402 filas de la vista), con búsqueda, orden por columna y descarga CSV; sin errores de consola. La página de modelos lee las métricas desde `assets/modelo/metricas.json`, que `modelo/entrenar.py` actualiza en cada ejecución, para que las cifras no queden desactualizadas. **Falso error investigado:** una prueba mostró 0 filas en la vista del tablero; al aislarla, la página cargaba las 402 filas y el problema estaba en los tiempos de la prueba. **Ajuste visual:** la barra superior no cabía con los dos botones nuevos y pasaron a ser solo íconos bajo 1.536 px. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
@@ -118,4 +148,6 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `src/index.html`, función `persistir()` | Patrón optimista: primero cambia la pantalla, luego escribe en Supabase y recarga. Si falla, muestra el error y vuelve al dato de la base. |
 | `docs/schema.sql` | Para qué sirve cada trigger de cupos; por qué las funciones son `SECURITY DEFINER`; qué permite cada política RLS y por qué no existe `DELETE`. |
 | `scripts/generar_seed.py` | Lee las constantes `INITIAL_*` del prototipo y genera `docs/seed.sql`, para que la base y el modo local tengan los mismos datos. |
+| `modelo/generar_datos.py` | Qué efectos verdaderos usa el simulador (constantes `VERDAD_*`) y por qué la temperatura del neumático es consecuencia y no causa. |
+| `modelo/entrenar.py` | Por qué se agrupa en ventanas de ~200 h, qué mide SHAP, qué es la censura en el modelo de Cox y cómo se calcula la horas remanentes (`(profundidad − 20) / tasa × 100`). |
 | `backend/app/proyeccion.py` | Regresión lineal de la profundidad contra las horas de operación para proyectar el cruce del umbral de 20 mm. |

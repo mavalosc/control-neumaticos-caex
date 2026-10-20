@@ -58,3 +58,6 @@ Thumbs.db
 *.sqlite3
 *.db
 
+
+# Modelo: datos sintéticos regenerables con modelo/generar_datos.py
+modelo/datos/

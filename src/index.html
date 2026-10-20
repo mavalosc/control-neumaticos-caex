@@ -137,6 +137,14 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           <span>Órdenes</span>
         </button>
+        <button id="nav-datos" onclick="navigate('#/datos')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Explorador de datos">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+          <span class="hidden 2xl:inline">Datos</span>
+        </button>
+        <button id="nav-modelos" onclick="navigate('#/modelos')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Cómo funcionan los modelos">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          <span class="hidden 2xl:inline">Modelos</span>
+        </button>
         <button id="nav-portico" onclick="navigate('#/sim')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Simulador Pórtico</span>
@@ -455,7 +463,7 @@ const INITIAL_TRUCKS = [
     }
 
     function updateActiveNav(activeId) {
-      ["nav-tablero", "nav-camiones", "nav-ordenes", "nav-portico"].forEach(id => {
+      ["nav-tablero", "nav-camiones", "nav-ordenes", "nav-datos", "nav-modelos", "nav-portico"].forEach(id => {
         const btn = document.getElementById(id);
         if (!btn) return;
         if (id === activeId) {
@@ -1664,6 +1672,278 @@ const INITIAL_TRUCKS = [
       }
     }
 
+    // --- TELEMETRÍA DE LA PASADA (TPMS, TEMPERATURA, CARGA) ---
+    // Datos SIMULADOS y deterministas: el mismo neumático muestra los mismos valores hasta la siguiente pasada.
+    // Umbrales en un solo lugar para poder ajustarlos con el equipo.
+    const UMBRAL_TEMP = { advertencia: 85, critico: 95 };      // °C · el crítico (>95 °C) es el que ya usa el proyecto
+    const PRESION_NOMINAL_PSI = 102;                           // 59/80R63 en frío (supuesto; ajustar por fabricante)
+    const PSI_A_BAR = 0.0689476;
+    const UMBRAL_PRESION = { advertencia: 5, critico: 10 };    // % de desviación respecto de la nominal
+    const TKPH_REFERENCIA = 900;                               // el mismo supuesto de docs/modelo.md
+    const MODELOS_CAEX = {                                     // peso vacío y carga nominal (t)
+      "Cat 793F": { vacio: 160, nominal: 227 },
+      "Komatsu 930E-4": { vacio: 200, nominal: 290 },
+      "Cat 797F": { vacio: 260, nominal: 363 }
+    };
+    const ESTADOS_SENSOR = {
+      operativo: { txt: "Operativo", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", dot: "bg-emerald-400" },
+      sin_senal: { txt: "Sin señal", cls: "bg-slate-500/15 text-slate-300 border-slate-500/40", dot: "bg-slate-400" },
+      falla: { txt: "Falla / calibración", cls: "bg-amber-500/15 text-amber-400 border-amber-500/40", dot: "bg-amber-400" }
+    };
+    const NIVEL = {
+      normal: { txt: "Normal", cls: "text-emerald-400", chip: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", orden: 0 },
+      advertencia: { txt: "Advertencia", cls: "text-amber-400", chip: "bg-amber-500/15 text-amber-400 border-amber-500/30", orden: 1 },
+      critico: { txt: "Crítico", cls: "text-rose-400", chip: "bg-rose-500/15 text-rose-400 border-rose-500/40", orden: 2 },
+      sin_dato: { txt: "Sin dato", cls: "text-slate-400", chip: "bg-slate-500/15 text-slate-300 border-slate-500/40", orden: 1 }
+    };
+
+    const SIM_VISTA_PREDETERMINADA = "operador";  // decisión del equipo: la pasada se muestra resumida
+    let simVista = SIM_VISTA_PREDETERMINADA;     // "operador" (resumen) o "ingenieria" (detalle)
+    let simAbiertas = {};                 // secciones plegables abiertas en la vista actual
+
+    // Generador pseudoaleatorio con semilla (mulberry32) para que los valores no cambien en cada render
+    function aleatorio(semillaTexto) {
+      let h = 1779033703;
+      for (const ch of semillaTexto) h = Math.imul(h ^ ch.charCodeAt(0), 3432918353);
+      return () => {
+        h = (h + 0x6D2B79F5) | 0;
+        let t = Math.imul(h ^ (h >>> 15), 1 | h);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const nivelTemp = c => c == null ? "sin_dato" : c > UMBRAL_TEMP.critico ? "critico" : c >= UMBRAL_TEMP.advertencia ? "advertencia" : "normal";
+    const nivelPresion = desv => desv == null ? "sin_dato"
+      : Math.abs(desv) > UMBRAL_PRESION.critico ? "critico" : Math.abs(desv) > UMBRAL_PRESION.advertencia ? "advertencia" : "normal";
+    const GRAVEDAD = { normal: 0, sin_dato: 1, advertencia: 2, critico: 3 };
+    const peorNivel = (...n) => n.reduce((a, b) => GRAVEDAD[b] > GRAVEDAD[a] ? b : a, "normal");
+
+    function telemetriaPasada(truck, tires) {
+      const pasada = (state.simPasadas || {})[truck[0]] || 0;
+      const r = aleatorio(`${truck[0]}#${pasada}`);
+      const modelo = MODELOS_CAEX[truck[1]] || MODELOS_CAEX["Cat 793F"];
+      const carga = modelo.nominal * (0.94 + r() * 0.14);       // pesaje del CAEX en el último ciclo
+      const velOperacion = 17 + r() * 8;                        // km/h media del último ciclo (despacho)
+      const velPasada = 2.4 + r() * 2.4;                        // km/h al cruzar el pórtico
+      const pesoMedio = modelo.vacio + carga / 2;
+      const neumaticos = tires.map(t => {
+        const rt = aleatorio(`${t.serial}#${pasada}`);
+        const delantera = t.pos <= 2;
+        const qNeumatico = pesoMedio * (delantera ? 0.33 / 2 : 0.67 / 4);
+        const [rEstado, rDesv, rInterna, rHoras] = [rt(), rt(), rt(), rt()];  // siempre en el mismo orden
+        const estadoSensor = (state.tpmsSensores || {})[t.serial]
+          || (rEstado < 0.08 ? "sin_senal" : rEstado < 0.13 ? "falla" : "operativo");
+        const desv = -9 + rDesv * 15 + (t.temp - 80) * 0.15;      // la presión en caliente sube con la temperatura
+        const psi = PRESION_NOMINAL_PSI * (1 + desv / 100);
+        const leePresion = estadoSensor === "operativo";
+        return {
+          ...t,
+          estadoSensor,
+          psi: leePresion ? psi : null,
+          bar: leePresion ? psi * PSI_A_BAR : null,
+          desvPresion: leePresion ? desv : null,
+          tempInterna: estadoSensor === "sin_senal" ? null : t.temp - 6 - rInterna * 5,  // sensor TPMS en la válvula
+          tempExterna: t.temp,                                    // termografía del pórtico (flanco)
+          ultimaLectura: leePresion ? "en esta pasada" : `hace ${Math.round(2 + rHoras * 40)} h`,
+          tkph: qNeumatico * velOperacion,
+          cargaNeumatico: qNeumatico
+        };
+      });
+      neumaticos.forEach(n => {
+        n.nivelPresion = estadoSensorSinDato(n) ? "sin_dato" : nivelPresion(n.desvPresion);
+        n.nivelTemp = nivelTemp(n.tempExterna);
+        n.nivelZona = { rojo: "critico", amarillo: "advertencia", verde: "normal", gris: "sin_dato" }[zona(n.h)];
+        n.nivelGeneral = peorNivel(n.nivelPresion, n.nivelTemp, n.nivelZona, n.nivel >= 3 ? "critico" : n.nivel === 2 ? "advertencia" : "normal");
+      });
+      return { carga, cargaNominal: modelo.nominal, velOperacion, velPasada, neumaticos };
+    }
+    const estadoSensorSinDato = n => n.estadoSensor !== "operativo";
+
+    function alertasPasada(tel) {
+      const a = [];
+      tel.neumaticos.forEach(n => {
+        const p = `P${n.pos}`;
+        if (n.nivelTemp === "critico") a.push(["critico", `${p}: ${n.tempExterna} °C en el flanco (sobre ${UMBRAL_TEMP.critico} °C)`]);
+        else if (n.nivelTemp === "advertencia") a.push(["advertencia", `${p}: ${n.tempExterna} °C en el flanco (sobre ${UMBRAL_TEMP.advertencia} °C)`]);
+        if (n.nivelPresion === "critico") a.push(["critico", `${p}: presión ${n.desvPresion > 0 ? "alta" : "baja"} (${f(n.desvPresion.toFixed(1))} % vs nominal)`]);
+        else if (n.nivelPresion === "advertencia") a.push(["advertencia", `${p}: presión ${n.desvPresion > 0 ? "alta" : "baja"} (${f(n.desvPresion.toFixed(1))} % vs nominal)`]);
+        if (n.estadoSensor !== "operativo") a.push(["advertencia", `${p}: sensor TPMS ${ESTADOS_SENSOR[n.estadoSensor].txt.toLowerCase()}, presión sin lectura`]);
+        if (n.nivel >= 3) a.push(["critico", `${p}: daño crítico (${n.dmg[0]?.t || "nivel 3"})`]);
+        if (zona(n.h) === "rojo") a.push(["critico", `${p}: ${n.h} h remanentes (zona roja)`]);
+      });
+      if (tel.velPasada > 5 || tel.velPasada < 2) a.push(["advertencia", `Velocidad de pasada ${f(tel.velPasada.toFixed(1))} km/h fuera del rango de captura (2 a 5 km/h)`]);
+      if (tel.carga > tel.cargaNominal * 1.05) a.push(["advertencia", `Sobrecarga: ${Math.round(tel.carga)} t (${f(((tel.carga / tel.cargaNominal - 1) * 100).toFixed(1))} % sobre la nominal)`]);
+      return a.sort((x, y) => GRAVEDAD[y[0]] - GRAVEDAD[x[0]]);
+    }
+
+    function toggleSensorTPMS(serial) {
+      const orden = ["operativo", "sin_senal", "falla"];
+      const tel = telemetriaPasada(state.trucks.find(c => c[0] === simSelectedTruck), getTires().filter(t => t.cx === simSelectedTruck));
+      const actual = tel.neumaticos.find(n => n.serial === serial).estadoSensor;
+      state.tpmsSensores = { ...(state.tpmsSensores || {}), [serial]: orden[(orden.indexOf(actual) + 1) % orden.length] };
+      saveState();
+      renderSimulator();
+    }
+
+    function cambiarVistaSim(vista) {
+      simVista = vista;
+      simAbiertas = {};
+      renderSimulator();
+    }
+
+    const seccionAbierta = id => id in simAbiertas ? simAbiertas[id] : simVista === "ingenieria";
+
+    // Sección plegable con un resumen visible aunque esté cerrada
+    function plegable(id, titulo, resumen, cuerpo) {
+      return `
+        <details ${seccionAbierta(id) ? "open" : ""} ontoggle="simAbiertas['${id}']=this.open; contarDatosSim()" class="group bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm">
+          <summary class="cursor-pointer list-none flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 select-none">
+            <span class="flex items-center gap-2 text-sm font-bold text-[var(--ink)]">
+              <svg class="w-4 h-4 text-[var(--muted)] transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              ${titulo}
+            </span>
+            <span class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">${resumen}</span>
+          </summary>
+          <div class="px-5 pb-5">${cuerpo}</div>
+        </details>`;
+    }
+
+    const chip = (nivel, texto) => `<span class="px-2 py-0.5 rounded-full border text-[11px] font-mono ${NIVEL[nivel].chip}">${texto}</span>`;
+    const dato = (html, extra = "") => `<span data-dato ${extra}>${html}</span>`;
+
+    // Cuenta los valores visibles para evaluar la densidad de información de cada vista
+    function contarDatosSim() {
+      const el = document.getElementById("sim-densidad");
+      if (!el) return;
+      const visibles = [...document.querySelectorAll("#app [data-dato]")]
+        .filter(d => !d.closest("details:not([open])") && d.getClientRects().length > 0).length;
+      const nivel = visibles > 120 ? "critico" : visibles > 60 ? "advertencia" : "normal";
+      el.className = `px-2.5 py-1 rounded-lg border text-xs font-mono ${NIVEL[nivel].chip}`;
+      el.textContent = `${visibles} datos en pantalla`;
+    }
+
+    function renderChasisTelemetria(tel) {
+      const porPos = Object.fromEntries(tel.neumaticos.map(n => [n.pos, n]));
+      const rueda = pos => {
+        const n = porPos[pos];
+        if (!n) return `<div class="w-24"></div>`;
+        const borde = { normal: "border-emerald-500/50", advertencia: "border-amber-500/60", critico: "border-rose-500/70 shadow-[0_0_12px_rgba(244,63,94,0.35)]", sin_dato: "border-slate-500/50" }[n.nivelGeneral];
+        return `
+          <button onclick="navigate('#/n/${n.serial}')" title="Abrir ficha de ${n.serial}" class="w-24 sm:w-28 p-2 rounded-xl border-2 ${borde} bg-[var(--bg)] hover:bg-[var(--card-hover)] text-left transition-all">
+            <div class="flex items-center justify-between text-[11px] font-bold text-[var(--ink)]">P${n.pos}<span class="w-2 h-2 rounded-full ${ESTADOS_SENSOR[n.estadoSensor].dot}" title="Sensor TPMS: ${ESTADOS_SENSOR[n.estadoSensor].txt}"></span></div>
+            <div class="text-[11px] font-mono ${NIVEL[n.nivelPresion].cls}">${dato(n.psi != null ? `${Math.round(n.psi)} psi` : "— psi")}</div>
+            <div class="text-[11px] font-mono ${NIVEL[n.nivelTemp].cls}">${dato(`${n.tempExterna} °C`)}</div>
+            <div class="text-[11px] font-mono ${NIVEL[n.nivelZona].cls}">${dato(`${f(n.mm)} mm`)}</div>
+          </button>`;
+      };
+      return `
+        <div class="flex flex-col items-center gap-3 py-2">
+          <div class="text-[10px] font-mono uppercase tracking-wider text-[var(--muted)]">▲ Frente del CAEX</div>
+          <div class="flex items-center gap-10 sm:gap-24">${rueda(1)}${rueda(2)}</div>
+          <div class="w-1.5 h-6 bg-[var(--border)] rounded"></div>
+          <div class="flex items-center gap-4 sm:gap-10">
+            <div class="flex gap-1.5">${rueda(3)}${rueda(4)}</div>
+            <div class="w-6 sm:w-16 h-1.5 bg-[var(--border)] rounded"></div>
+            <div class="flex gap-1.5">${rueda(5)}${rueda(6)}</div>
+          </div>
+          <div class="text-[10px] font-mono text-[var(--muted)]">Eje trasero dual · izquierda P3-P4 · derecha P5-P6 · el borde muestra el peor estado del neumático</div>
+        </div>`;
+    }
+
+    function renderSeccionTPMS(tel) {
+      return `
+        <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
+          <table class="w-full text-xs">
+            <thead class="bg-[var(--bg)] text-[10px] uppercase tracking-wider text-[var(--muted)]">
+              <tr><th class="p-2.5 text-left">Posición</th><th class="p-2.5 text-right">Presión</th><th class="p-2.5 text-right">bar</th>
+                  <th class="p-2.5 text-right">vs nominal</th><th class="p-2.5 text-left">Nivel</th><th class="p-2.5 text-left">Sensor TPMS</th><th class="p-2.5 text-left">Última lectura</th></tr>
+            </thead>
+            <tbody>
+              ${tel.neumaticos.map(n => `
+                <tr class="border-t border-[var(--border)]">
+                  <td class="p-2.5 font-semibold text-[var(--ink)]">P${n.pos} <span class="text-[var(--muted)] font-normal">${n.posNombre.replace(/ \(P\d\)/, "")}</span></td>
+                  <td class="p-2.5 text-right font-mono font-bold ${NIVEL[n.nivelPresion].cls}">${dato(n.psi != null ? `${Math.round(n.psi)} psi` : "—")}</td>
+                  <td class="p-2.5 text-right font-mono text-[var(--muted)]">${dato(n.bar != null ? f(n.bar.toFixed(2)) : "—")}</td>
+                  <td class="p-2.5 text-right font-mono ${NIVEL[n.nivelPresion].cls}">${dato(n.desvPresion != null ? `${n.desvPresion > 0 ? "+" : ""}${f(n.desvPresion.toFixed(1))} %` : "—")}</td>
+                  <td class="p-2.5">${chip(n.nivelPresion, NIVEL[n.nivelPresion].txt)}</td>
+                  <td class="p-2.5">
+                    <button onclick="toggleSensorTPMS('${n.serial}')" title="Clic para simular otro estado del sensor" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-semibold ${ESTADOS_SENSOR[n.estadoSensor].cls}">
+                      <span class="w-2 h-2 rounded-full ${ESTADOS_SENSOR[n.estadoSensor].dot} ${n.estadoSensor !== "operativo" ? "animate-pulse" : ""}"></span>${ESTADOS_SENSOR[n.estadoSensor].txt}
+                    </button>
+                  </td>
+                  <td class="p-2.5 font-mono text-[var(--muted)]">${dato(n.ultimaLectura)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-[var(--muted)] mt-2">Nominal ${PRESION_NOMINAL_PSI} psi (${f((PRESION_NOMINAL_PSI * PSI_A_BAR).toFixed(2))} bar). Normal ±${UMBRAL_PRESION.advertencia} %, advertencia hasta ±${UMBRAL_PRESION.critico} %, crítico sobre ±${UMBRAL_PRESION.critico} %. Valores simulados; clic en el sensor para probar los estados Sin señal y Falla.</p>`;
+    }
+
+    function renderSeccionTemperatura(tel) {
+      return `
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+          ${tel.neumaticos.map(n => {
+            const delta = n.tempInterna != null ? n.tempExterna - n.tempInterna : null;
+            const ancho = Math.min(100, Math.max(0, (n.tempExterna - 50) / 70 * 100));
+            return `
+              <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-[var(--ink)]">P${n.pos}</span>${chip(n.nivelTemp, NIVEL[n.nivelTemp].txt)}
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-[11px]">
+                  <div><div class="text-[var(--muted)]">Flanco (pórtico)</div><div class="font-mono font-bold ${NIVEL[n.nivelTemp].cls}">${dato(`${n.tempExterna} °C`)}</div></div>
+                  <div><div class="text-[var(--muted)]">Interna (TPMS)</div><div class="font-mono font-bold text-[var(--ink)]">${dato(n.tempInterna != null ? `${Math.round(n.tempInterna)} °C` : "—")}</div></div>
+                </div>
+                <div class="relative h-1.5 rounded-full bg-gradient-to-r from-emerald-500/40 via-amber-500/40 to-rose-500/50">
+                  <span class="absolute -top-0.5 w-1 h-2.5 rounded bg-white" style="left:${ancho}%"></span>
+                </div>
+                <div class="text-[10px] font-mono text-[var(--muted)]">${dato(delta != null ? `Δ flanco − interna: ${Math.round(delta)} °C` : "Δ sin dato interno")}</div>
+              </div>`;
+          }).join("")}
+        </div>
+        <p class="text-[11px] text-[var(--muted)] mt-2">Fuente principal: termografía del flanco en el pórtico (<code>mediciones.temperatura_flanco_c</code>). Normal bajo ${UMBRAL_TEMP.advertencia} °C, advertencia ${UMBRAL_TEMP.advertencia} a ${UMBRAL_TEMP.critico} °C, crítico sobre ${UMBRAL_TEMP.critico} °C (umbral del proyecto). La temperatura interna del TPMS es simulada y sirve para comparar ambas fuentes.</p>`;
+    }
+
+    function renderSeccionCarga(tel) {
+      const sobre = (tel.carga / tel.cargaNominal - 1) * 100;
+      const nivelCarga = sobre > 10 ? "critico" : sobre > 5 ? "advertencia" : "normal";
+      const tarjeta = (titulo, valor, detalle, nivel = "normal") => `
+        <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+          <div class="text-[10px] uppercase tracking-wider text-[var(--muted)]">${titulo}</div>
+          <div class="text-lg font-mono font-bold ${NIVEL[nivel].cls}">${dato(valor)}</div>
+          <div class="text-[10px] text-[var(--muted)] font-mono">${dato(detalle)}</div>
+        </div>`;
+      return `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          ${tarjeta("Carga del ciclo", `${Math.round(tel.carga)} t`, `nominal ${tel.cargaNominal} t (${sobre > 0 ? "+" : ""}${f(sobre.toFixed(1))} %)`, nivelCarga)}
+          ${tarjeta("Velocidad de pasada", `${f(tel.velPasada.toFixed(1))} km/h`, "rango de captura 2 a 5 km/h", tel.velPasada > 5 || tel.velPasada < 2 ? "advertencia" : "normal")}
+          ${tarjeta("Velocidad media del ciclo", `${f(tel.velOperacion.toFixed(1))} km/h`, "despacho / GPS")}
+          ${tarjeta("Neumáticos medidos", `${tel.neumaticos.length} de 6`, "cobertura de la pasada")}
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-[var(--border)] mt-3">
+          <table class="w-full text-xs">
+            <thead class="bg-[var(--bg)] text-[10px] uppercase tracking-wider text-[var(--muted)]">
+              <tr><th class="p-2.5 text-left">Posición</th><th class="p-2.5 text-right">Carga media por neumático</th><th class="p-2.5 text-right">TKPH</th><th class="p-2.5 text-right">vs referencia</th><th class="p-2.5 text-right">Tasa de desgaste</th></tr>
+            </thead>
+            <tbody>
+              ${tel.neumaticos.map(n => {
+                const rel = (n.tkph / TKPH_REFERENCIA - 1) * 100;
+                const nv = rel > 20 ? "critico" : rel > 10 ? "advertencia" : "normal";
+                return `<tr class="border-t border-[var(--border)]">
+                  <td class="p-2.5 font-semibold text-[var(--ink)]">P${n.pos}</td>
+                  <td class="p-2.5 text-right font-mono">${dato(`${f(n.cargaNeumatico.toFixed(1))} t`)}</td>
+                  <td class="p-2.5 text-right font-mono font-bold ${NIVEL[nv].cls}">${dato(Math.round(n.tkph))}</td>
+                  <td class="p-2.5 text-right font-mono ${NIVEL[nv].cls}">${dato(`${rel > 0 ? "+" : ""}${f(rel.toFixed(0))} %`)}</td>
+                  <td class="p-2.5 text-right font-mono">${dato(`${f(n.rate)} mm/100 h`)}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-[var(--muted)] mt-2">TKPH = carga media por neumático × velocidad media del ciclo (ver <code>docs/modelo.md</code>). Referencia ${TKPH_REFERENCIA} (supuesto del modelo). La vibración no forma parte del modelo de datos actual, por eso no se muestra.</p>`;
+    }
+
     function renderSimulator() {
       updateActiveNav("nav-portico");
 
@@ -1679,98 +1959,16 @@ const INITIAL_TRUCKS = [
       const totalCams = state.cameras.length;
       const allCamsOk = camsBuenas === totalCams;
 
-      $.innerHTML = `
-        <div class="max-w-5xl mx-auto space-y-6">
-          
-          <!-- Encabezado de la Vista -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border)]">
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Simulador del Pórtico Dimensional Predictivo</h1>
-                <span class="text-xs font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full">PÓRTICO P-100</span>
-              </div>
-              <p class="text-xs text-[var(--muted)] mt-1">Inspección volumétrica 3D, termografía y visión artificial en tránsito (2 a 5 km/h) · Minera a Cielo Abierto</p>
-            </div>
-            <button onclick="navigate('#/')" class="text-xs px-3.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--ink)] transition-all">
-              ‹ Volver al Tablero
-            </button>
-          </div>
+      const tel = telemetriaPasada(truckData, currentTruckTires);
+      const alertas = alertasPasada(tel);
+      const cuenta = niv => tel.neumaticos.filter(n => n.nivelPresion === niv).length;
+      const sensoresOk = tel.neumaticos.filter(n => n.estadoSensor === "operativo").length;
+      const tempMax = Math.max(...tel.neumaticos.map(n => n.tempExterna));
+      const tkphMax = Math.max(...tel.neumaticos.map(n => n.tkph));
+      const fotosResumen = currentTruckTires.filter(t => t.nivel > 0).length;
 
-          <!-- SECCIÓN 1: SELECTOR DE CAMIÓN + FOTO CON CÓDIGO DINÁMICO EN LA TOLVA -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-4">
-            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              <div class="space-y-1 flex-1">
-                <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Seleccionar Camión CAEX a Evaluar en Pórtico:</label>
-                <div class="flex items-center gap-3">
-                  <select onchange="simSelectedTruck=this.value; renderSimulator();" class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm font-bold text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    ${state.trucks.map(c => `
-                      <option value="${c[0]}" ${c[0] === simSelectedTruck ? 'selected' : ''}>${c[0]} (${c[1] || 'Cat 793F'} · Horómetro ${c[2] || '15.000 h'})</option>
-                    `).join("")}
-                  </select>
-                  <span class="text-xs px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 font-mono border border-amber-500/30 font-semibold">
-                    Velocidad: 3,8 km/h
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <button onclick="ejecutarPasadaPortico()" ${isSimulating ? 'disabled' : ''} class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-slate-900 font-extrabold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  <span>${isSimulating ? 'Escaneando en Pórtico P-100...' : 'Iniciar Pasada en Tránsito'}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- FOTO DEL CAMIÓN (REDUCIDA AL 20% Y CENTRADA) CON CÓDIGO DINÁMICO Y ESCANEO LÁSER SUPERPUESTO -->
-            <div class="relative w-full max-w-[260px] mx-auto rounded-2xl overflow-hidden border-2 ${isSimulating ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.45)]' : 'border-[var(--border)]'} bg-slate-950 shadow-xl group transition-all duration-300">
-              <img src="./assets/camion-caex.jpg" alt="Camión CAEX" class="w-full h-auto object-cover block">
-              
-              <!-- Texto con código del camión overlay en el panel blanco lateral de la tolva -->
-              <div class="absolute flex items-center justify-center font-black font-mono tracking-wider select-none pointer-events-none"
-                   style="top: 25%; left: 61.2%; width: 24.8%; height: 16.5%; transform: skewY(1.2deg) rotate(1deg);">
-                <span class="text-[11px] sm:text-xs font-black text-slate-950 tracking-wider">
-                  ${simSelectedTruck}
-                </span>
-              </div>
-
-              <!-- ANIMACIÓN DE ESCANEO LÁSER DIRECTAMENTE SOBRE LA IMAGEN DEL CAMIÓN -->
-              ${isSimulating ? `
-                <!-- Línea láser verde en movimiento vertical constante -->
-                <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_15px_#10b981,0_0_30px_#10b981] animate-laser pointer-events-none z-20"></div>
-                <!-- Velo translúcido de escaneo óptico LiDAR/térmico -->
-                <div class="absolute inset-0 bg-emerald-500/15 pointer-events-none z-10 animate-pulse"></div>
-                <!-- HUD de estado en escaneo sobre la imagen -->
-                <div class="absolute top-2 left-2 z-20 bg-black/85 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1 border border-emerald-500/40">
-                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span> ESCANEANDO P-100
-                </div>
-              ` : ''}
-
-              <!-- Badge inferior sobre la foto -->
-              <div class="absolute bottom-2 left-2 bg-slate-950/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-slate-700/60 flex items-center gap-1 text-[10px] z-10">
-                <span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}"></span>
-                <span class="font-mono text-slate-300"><strong class="text-white">${simSelectedTruck}</strong></span>
-              </div>
-              <div class="absolute top-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 border border-amber-500/30 z-10">
-                RFID P-100
-              </div>
-            </div>
-
-            <!-- Panel de Estado del Pórtico Láser -->
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs font-mono">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}"></span>
-                <span class="text-emerald-400 font-bold">ESTADO PÓRTICO P-100:</span>
-                <span class="text-slate-200">${isSimulating ? 'ESCANEANDO SENSORES 3D Y CÁMARAS (EN PROCESO)' : 'CALIBRADO Y LISTO PARA DETECCIÓN'}</span>
-              </div>
-              <div class="flex items-center gap-4 text-[11px] text-slate-400">
-                <span>Precisión: ±0,5 mm</span>
-                <span>Termografía: P1 a P6</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- SECCIÓN 2: REGISTRO DE TELEMETRÍA SENSORIAL DE LA PASADA -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3 shadow-sm">
+      const seccionRegistro = `<!-- SECCIÓN 2: REGISTRO DE TELEMETRÍA SENSORIAL DE LA PASADA -->
+          <div class="space-y-4">
             <h3 class="text-xs font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
               <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
               Registro de Telemetría Sensorial de la Pasada
@@ -1783,7 +1981,8 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
-          <!-- SECCIÓN 3: DESPLIEGUE INDICANDO QUE EL CAMIÓN PASÓ POR EL PÓRTICO P-100 -->
+          `;
+      const seccionPaso = `<!-- SECCIÓN 3: DESPLIEGUE INDICANDO QUE EL CAMIÓN PASÓ POR EL PÓRTICO P-100 -->
           <div class="p-5 rounded-2xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-slate-950 border-2 border-blue-500/50 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/40 flex items-center justify-center shrink-0 shadow-lg">
@@ -1814,8 +2013,9 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
-          <!-- SECCIÓN 4: ARREGLO DE 8 CÁMARAS (CAM-101 A CAM-108) + IMAGEN DE DISTRIBUCIÓN -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-6">
+          `;
+      const seccionCamaras = `<!-- SECCIÓN 4: ARREGLO DE 8 CÁMARAS (CAM-101 A CAM-108) + IMAGEN DE DISTRIBUCIÓN -->
+          <div class="space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
               <div>
                 <h2 class="text-lg font-bold text-[var(--ink)] flex items-center gap-2">
@@ -1878,7 +2078,7 @@ const INITIAL_TRUCKS = [
                           <!-- Luz indicadora verde/roja interactiva -->
                           <button onclick="toggleCamEstado('${cam.id}')" title="Clic para alternar estado" class="flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-bold transition-all ${isOk ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'}">
                             <span class="w-2.5 h-2.5 rounded-full ${isOk ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#ef4444] animate-ping'}"></span>
-                            <span>${isOk ? 'Buena' : 'En Falla'}</span>
+                            <span data-dato>${isOk ? 'Buena' : 'En Falla'}</span>
                           </button>
                         </div>
                       </div>
@@ -1898,8 +2098,9 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
-          <!-- SECCIÓN 5: FOTOS E INSPECCIÓN DE LOS 6 NEUMÁTICOS -->
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-4">
+          `;
+      const seccionFotos = `<!-- SECCIÓN 5: FOTOS E INSPECCIÓN DE LOS 6 NEUMÁTICOS -->
+          <div class="space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
               <div>
                 <h2 class="text-lg font-bold text-[var(--ink)]">Inspección Fotográfica y Dimensional de Neumáticos</h2>
@@ -1975,15 +2176,15 @@ const INITIAL_TRUCKS = [
                     <div class="grid grid-cols-3 gap-1 text-center bg-[var(--card)] p-2 rounded-lg border border-[var(--border)] text-xs">
                       <div>
                         <div class="text-[10px] text-[var(--muted)]">Profundidad</div>
-                        <div class="font-mono font-bold text-[var(--ink)]">${f(t.mm)} mm</div>
+                        <div class="font-mono font-bold text-[var(--ink)]" data-dato>${f(t.mm)} mm</div>
                       </div>
                       <div>
                         <div class="text-[10px] text-[var(--muted)]">Horas Rem.</div>
-                        <div class="font-mono font-bold ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${t.h} h</div>
+                        <div data-dato class="font-mono font-bold ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${t.h} h</div>
                       </div>
                       <div>
                         <div class="text-[10px] text-[var(--muted)]">Zona</div>
-                        <div class="font-mono font-bold uppercase text-[10px] ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${z}</div>
+                        <div data-dato class="font-mono font-bold uppercase text-[10px] ${z === 'rojo' ? 'text-rose-400' : z === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${z}</div>
                       </div>
                     </div>
 
@@ -1997,15 +2198,167 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
+        `;
+
+      $.innerHTML = `
+        <div class="max-w-5xl mx-auto space-y-6">
+          
+          <!-- Encabezado de la Vista -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border)]">
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Simulador del Pórtico Dimensional Predictivo</h1>
+                <span class="text-xs font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full">PÓRTICO P-100</span>
+              </div>
+              <p class="text-xs text-[var(--muted)] mt-1">Inspección volumétrica 3D, termografía y visión artificial en tránsito (2 a 5 km/h) · Minera a Cielo Abierto</p>
+            </div>
+            <button onclick="navigate('#/')" class="text-xs px-3.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--ink)] transition-all">
+              ‹ Volver al Tablero
+            </button>
+          </div>
+
+          <!-- SECCIÓN 1: SELECTOR DE CAMIÓN + FOTO CON CÓDIGO DINÁMICO EN LA TOLVA -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md space-y-4">
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div class="space-y-1 flex-1">
+                <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Seleccionar Camión CAEX a Evaluar en Pórtico:</label>
+                <div class="flex items-center gap-3">
+                  <select onchange="simSelectedTruck=this.value; renderSimulator();" class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm font-bold text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    ${state.trucks.map(c => `
+                      <option value="${c[0]}" ${c[0] === simSelectedTruck ? 'selected' : ''}>${c[0]} (${c[1] || 'Cat 793F'} · Horómetro ${c[2] || '15.000 h'})</option>
+                    `).join("")}
+                  </select>
+                  <span class="text-xs px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 font-mono border border-amber-500/30 font-semibold">
+                    Velocidad de pasada: ${f(tel.velPasada.toFixed(1))} km/h
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <button onclick="ejecutarPasadaPortico()" ${isSimulating ? 'disabled' : ''} class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-slate-900 font-extrabold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span>${isSimulating ? 'Escaneando en Pórtico P-100...' : 'Iniciar Pasada en Tránsito'}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- FOTO DEL CAMIÓN (REDUCIDA AL 20% Y CENTRADA) CON CÓDIGO DINÁMICO Y ESCANEO LÁSER SUPERPUESTO -->
+            <div class="relative w-full max-w-[260px] mx-auto rounded-2xl overflow-hidden border-2 ${isSimulating ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.45)]' : 'border-[var(--border)]'} bg-slate-950 shadow-xl group transition-all duration-300">
+              <img src="./assets/camion-caex.jpg" alt="Camión CAEX" class="w-full h-auto object-cover block">
+              
+              <!-- Texto con código del camión overlay en el panel blanco lateral de la tolva -->
+              <div class="absolute flex items-center justify-center font-black font-mono tracking-wider select-none pointer-events-none"
+                   style="top: 25%; left: 61.2%; width: 24.8%; height: 16.5%; transform: skewY(1.2deg) rotate(1deg);">
+                <span class="text-[11px] sm:text-xs font-black text-slate-950 tracking-wider">
+                  ${simSelectedTruck}
+                </span>
+              </div>
+
+              <!-- ANIMACIÓN DE ESCANEO LÁSER DIRECTAMENTE SOBRE LA IMAGEN DEL CAMIÓN -->
+              ${isSimulating ? `
+                <!-- Línea láser verde en movimiento vertical constante -->
+                <div class="absolute inset-x-0 h-1 bg-emerald-400 shadow-[0_0_15px_#10b981,0_0_30px_#10b981] animate-laser pointer-events-none z-20"></div>
+                <!-- Velo translúcido de escaneo óptico LiDAR/térmico -->
+                <div class="absolute inset-0 bg-emerald-500/15 pointer-events-none z-10 animate-pulse"></div>
+                <!-- HUD de estado en escaneo sobre la imagen -->
+                <div class="absolute top-2 left-2 z-20 bg-black/85 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1 border border-emerald-500/40">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span> ESCANEANDO P-100
+                </div>
+              ` : ''}
+
+              <!-- Badge inferior sobre la foto -->
+              <div class="absolute bottom-2 left-2 bg-slate-950/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-slate-700/60 flex items-center gap-1 text-[10px] z-10">
+                <span class="w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}"></span>
+                <span class="font-mono text-slate-300"><strong class="text-white">${simSelectedTruck}</strong></span>
+              </div>
+              <div class="absolute top-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 border border-amber-500/30 z-10">
+                RFID P-100
+              </div>
+            </div>
+
+            <!-- Panel de Estado del Pórtico Láser -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs font-mono">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full ${isSimulating ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}"></span>
+                <span class="text-emerald-400 font-bold">ESTADO PÓRTICO P-100:</span>
+                <span class="text-slate-200">${isSimulating ? 'ESCANEANDO SENSORES 3D Y CÁMARAS (EN PROCESO)' : 'CALIBRADO Y LISTO PARA DETECCIÓN'}</span>
+              </div>
+              <div class="flex items-center gap-4 text-[11px] text-slate-400">
+                <span>Precisión: ±0,5 mm</span>
+                <span>Termografía: P1 a P6</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTROL DE DENSIDAD: vista operador / ingeniería -->
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-3">
+            <div class="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+              ${[["operador", "Vista Operador · resumen"], ["ingenieria", "Vista Ingeniería · detalle"]].map(([v, txt]) => `
+                <button onclick="cambiarVistaSim('${v}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${simVista === v ? 'bg-blue-600 text-white shadow' : 'text-[var(--muted)] hover:text-[var(--ink)]'}">${txt}</button>
+              `).join("")}
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="document.querySelectorAll('#app details').forEach(d => d.open = true)" class="px-2.5 py-1 rounded-lg border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--ink)]">Expandir todo</button>
+              <button onclick="document.querySelectorAll('#app details').forEach(d => d.open = false)" class="px-2.5 py-1 rounded-lg border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--ink)]">Plegar todo</button>
+              <span id="sim-densidad" class="px-2.5 py-1 rounded-lg border text-xs font-mono" title="Valores visibles: hasta 60 liviano, 61 a 120 denso, más de 120 sobrecargado">— datos</span>
+            </div>
+          </div>
+
+          <!-- ESTADO DE LA PASADA: chasis 6x4 + alertas (siempre visible) -->
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div class="lg:col-span-3 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <h2 class="text-sm font-bold text-[var(--ink)] uppercase tracking-wider">Estado por posición · ${simSelectedTruck}</h2>
+                <span class="text-[10px] font-mono text-[var(--muted)]">presión · temperatura · profundidad</span>
+              </div>
+              ${renderChasisTelemetria(tel)}
+            </div>
+            <div class="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-2">
+              <h2 class="text-sm font-bold text-[var(--ink)] uppercase tracking-wider flex items-center justify-between">
+                Alertas de la pasada
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded-full border ${alertas.length ? NIVEL[alertas[0][0]].chip : NIVEL.normal.chip}">${alertas.length}</span>
+              </h2>
+              <div class="space-y-1.5 ${simVista === 'operador' ? 'max-h-64' : 'max-h-96'} overflow-y-auto pr-1">
+                ${alertas.length ? alertas.slice(0, simVista === 'operador' ? 5 : alertas.length).map(([niv, txt]) => `
+                  <div class="flex items-start gap-2 p-2 rounded-lg border text-xs ${NIVEL[niv].chip}">
+                    <span class="mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${niv === 'critico' ? 'bg-rose-400' : 'bg-amber-400'}"></span>${dato(txt)}
+                  </div>`).join("") : `<p class="text-xs text-emerald-400">Sin alertas: todos los neumáticos dentro de rango.</p>`}
+                ${simVista === 'operador' && alertas.length > 5 ? `<p class="text-[11px] text-[var(--muted)]">+${alertas.length - 5} alertas más en la Vista Ingeniería.</p>` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${plegable("tpms", "Telemetría de presión (TPMS)",
+            `${chip(sensoresOk === 6 ? 'normal' : 'advertencia', `${sensoresOk}/6 sensores operativos`)}${cuenta('critico') ? chip('critico', `${cuenta('critico')} crítico`) : ''}${cuenta('advertencia') ? chip('advertencia', `${cuenta('advertencia')} advertencia`) : ''}`,
+            renderSeccionTPMS(tel))}
+          ${plegable("temperatura", "Medición de temperatura",
+            chip(nivelTemp(tempMax), `máx. ${tempMax} °C`), renderSeccionTemperatura(tel))}
+          ${plegable("carga", "Carga, velocidad y TKPH",
+            `${chip(tel.carga > tel.cargaNominal * 1.05 ? 'advertencia' : 'normal', `${Math.round(tel.carga)} t`)}${chip(tkphMax > TKPH_REFERENCIA * 1.2 ? 'critico' : tkphMax > TKPH_REFERENCIA * 1.1 ? 'advertencia' : 'normal', `TKPH máx. ${Math.round(tkphMax)}`)}`,
+            renderSeccionCarga(tel))}
+          ${plegable("fotos", "Inspección fotográfica y dimensional",
+            chip(fotosResumen ? 'advertencia' : 'normal', `${fotosResumen} con daño detectado`), seccionFotos)}
+          ${plegable("camaras", "Arreglo de cámaras del pórtico",
+            chip(allCamsOk ? 'normal' : 'critico', `${camsBuenas}/${totalCams} operativas`), seccionCamaras)}
+          ${plegable("registro", "Registro de la pasada",
+            chip('normal', `${simLog.length} eventos`), seccionRegistro)}
+          ${simLog.length ? seccionPaso : ''}
+
         </div>
       `;
+      requestAnimationFrame(contarDatosSim);
     }
 
     function ejecutarPasadaPortico() {
       isSimulating = true;
+      // cada pasada genera lecturas nuevas de TPMS, carga y velocidad
+      state.simPasadas = { ...(state.simPasadas || {}), [simSelectedTruck]: ((state.simPasadas || {})[simSelectedTruck] || 0) + 1 };
+      const truckSim = state.trucks.find(c => c[0] === simSelectedTruck);
+      const telSim = telemetriaPasada(truckSim, getTires().filter(t => t.cx === simSelectedTruck));
+      const hora = () => new Date().toLocaleTimeString();
       simLog = [
-        `[${new Date().toLocaleTimeString()}] Inicializando sincronización en PÓRTICO DIMENSIONAL P-100 para ${simSelectedTruck}...`,
-        `[${new Date().toLocaleTimeString()}] Velocidad detectada: 3.8 km/h (Dentro del rango óptimo 2 a 5 km/h)`,
+        `[${hora()}] Inicializando sincronización en PÓRTICO DIMENSIONAL P-100 para ${simSelectedTruck}...`,
+        `[${hora()}] Velocidad detectada: ${f(telSim.velPasada.toFixed(1))} km/h (${telSim.velPasada >= 2 && telSim.velPasada <= 5 ? 'dentro del' : 'FUERA del'} rango de captura 2 a 5 km/h)`,
         `[${new Date().toLocaleTimeString()}] Arreglo de 8 cámaras (CAM-101 a CAM-108) sincronizado con escáner LiDAR 3D...`
       ];
       renderSimulator();
@@ -2026,8 +2379,12 @@ const INITIAL_TRUCKS = [
           }
         }
 
+        const camsOk = state.cameras.filter(c => c.estado === "buena").length;
+        const tpmsOk = telSim.neumaticos.filter(n => n.estadoSensor === "operativo").length;
         simLog.push(
-          `[${new Date().toLocaleTimeString()}] ✓ 8 de 8 cámaras operativas (CAM-101 a CAM-108 procesaron imágenes).`,
+          `[${hora()}] ${camsOk === state.cameras.length ? '✓' : '⚠'} ${camsOk} de ${state.cameras.length} cámaras operativas.`,
+          `[${hora()}] ${tpmsOk === 6 ? '✓' : '⚠'} TPMS: ${tpmsOk} de 6 sensores transmitieron presión y temperatura interna.`,
+          `[${hora()}] Termografía de flancos: máx. ${Math.max(...telSim.neumaticos.map(n => n.tempExterna))} °C · Carga del ciclo: ${Math.round(telSim.carga)} t.`,
           `[${new Date().toLocaleTimeString()}] ✓ 6 de 6 neumáticos escaneados con nubes de puntos 3D.`,
           `[${new Date().toLocaleTimeString()}] ✓ Paso validado por Pórtico P-100 y emitido a registro histórico.`,
           `[${new Date().toLocaleTimeString()}] Telemetría enviada al Tablero de Control del Turno.`
@@ -2044,7 +2401,271 @@ const INITIAL_TRUCKS = [
       }, 2500);
     }
 
+    // --- PANTALLA 8: EXPLORADOR DE DATOS ---
+    const TABLAS_DATOS = [
+      { id: "mediciones", nombre: "Mediciones", desc: "Una fila por neumático en cada pasada por el pórtico: profundidad, tasa, temperatura, horas remanentes y zona. Es la tabla que crece con cada pasada.", orden: "fecha_pasada" },
+      { id: "danos_neumaticos", nombre: "Daños", desc: "Daños detectados por visión artificial y correcciones del planificador (validado_por_humano).", orden: "fecha_registro" },
+      { id: "neumaticos", nombre: "Neumáticos", desc: "Un neumático por serial, con su camión y posición (P1 a P6).", orden: "serial" },
+      { id: "camiones", nombre: "Camiones", desc: "Flota CAEX con modelo y horómetro.", orden: "codigo" },
+      { id: "ordenes_trabajo", nombre: "Órdenes de trabajo", desc: "OT emitidas, con la medición de origen, la ventana del taller y su estado.", orden: "fecha_emision" },
+      { id: "historial_ordenes", nombre: "Historial de OT", desc: "Cada creación, modificación o anulación de una OT, con su motivo.", orden: "fecha_evento" },
+      { id: "ventanas_taller", nombre: "Ventanas del taller", desc: "Turnos del taller y cupos libres (los ajustan los triggers).", orden: "dia" },
+      { id: "vista_tablero_turno", nombre: "Vista del tablero", desc: "Consulta calculada: última medición y último daño de cada neumático montado. Es lo que muestra el Tablero.", orden: "horas_remanentes_calculadas" }
+    ];
+    let datosTabla = "mediciones", datosCache = {}, datosBusqueda = "", datosOrden = null, datosDesc = true, datosPagina = 1;
+    const DATOS_POR_PAGINA = 50;
+
+    // En modo local (sin Supabase) se arma una versión equivalente desde el estado del prototipo
+    function tablaLocal(id) {
+      const tires = getTires();
+      if (id === "camiones") return state.trucks.map(c => ({ codigo: c[0], modelo: c[1], horometro: c[2] }));
+      if (id === "neumaticos" || id === "vista_tablero_turno" || id === "mediciones")
+        return tires.map(t => ({ caex: t.cx, posicion: t.pos, serial: t.serial, profundidad_mm: t.mm, tasa_mm_100h: t.rate, tipo_tasa: t.seg,
+          horas_remanentes: t.h, zona: zona(t.h), temperatura_c: t.temp, nivel_dano: t.nivel, fecha: t.fecha }));
+      if (id === "danos_neumaticos") return tires.filter(t => t.nivel > 0).map(t => ({ serial: t.serial, caex: t.cx, posicion: t.pos, severidad: t.nivel, descripcion: t.dmg[0]?.t, confianza: t.dmg[0]?.c }));
+      if (id === "ordenes_trabajo") return state.orders.map(o => ({ codigo: o[0], emision: o[1], serial: o[2], tipo: o[3], nota: o[4], dia: o[5], turno: o[6], horas: o[7], medicion: o[8], estado: o[10] }));
+      if (id === "historial_ordenes") return state.orders.flatMap(o => (o[11] || []).map(h => ({ orden: o[0], evento: h })));
+      if (id === "ventanas_taller") return state.windows.map(w => ({ id: w.id, dia: w.dia, turno: w.turno, cupos_libres: w.libres, cupos_totales: w.max, horas_hasta_ventana: w.en }));
+      return [];
+    }
+
+    async function cargarTablaDatos(id, forzar = false) {
+      if (datosCache[id] && !forzar) return;
+      datosCache[id] = { cargando: true, filas: [] };
+      try {
+        datosCache[id] = { filas: DB.activo ? await DB.leerTabla(id) : tablaLocal(id), origen: DB.activo ? "Supabase" : "modo local" };
+      } catch (e) {
+        datosCache[id] = { filas: [], error: e.message };
+      }
+      if (location.hash.startsWith("#/datos")) renderDatos();
+    }
+
+    function columnasDatos(filas) {
+      const cols = [...new Set(filas.flatMap(f => Object.keys(f)))];
+      const esId = c => c === "id" || c.endsWith("_id");
+      return [...cols.filter(c => !esId(c)), ...cols.filter(esId)];   // los identificadores técnicos al final
+    }
+
+    function filasFiltradasDatos() {
+      const t = datosCache[datosTabla];
+      if (!t || !t.filas) return [];
+      const q = datosBusqueda.trim().toLowerCase();
+      let filas = q ? t.filas.filter(f => Object.values(f).some(v => String(v ?? "").toLowerCase().includes(q))) : [...t.filas];
+      const col = datosOrden || TABLAS_DATOS.find(x => x.id === datosTabla).orden;
+      if (filas.length && col in filas[0]) {
+        filas.sort((a, b) => {
+          const x = a[col], y = b[col];
+          const r = typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""), "es", { numeric: true });
+          return datosDesc ? -r : r;
+        });
+      }
+      return filas;
+    }
+
+    function descargarCSVDatos() {
+      const filas = filasFiltradasDatos();
+      if (!filas.length) return;
+      const cols = columnasDatos(filas);
+      const celda = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const csv = [cols.join(";"), ...filas.map(f => cols.map(c => celda(f[c])).join(";"))].join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `${datosTabla}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    const formatoCelda = (c, v) => {
+      if (v == null) return `<span class="text-[var(--muted)]">—</span>`;
+      const txt = String(v);
+      if (/^\d{4}-\d{2}-\d{2}T/.test(txt)) return new Date(txt).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      if (c === "id" || c.endsWith("_id")) return `<span title="${txt}" class="text-[var(--muted)]">${txt.slice(0, 8)}…</span>`;
+      if (txt.length > 70) return `<span title="${txt.replace(/"/g, "&quot;")}">${txt.slice(0, 70)}…</span>`;
+      return txt;
+    };
+
+    function renderDatos() {
+      updateActiveNav("nav-datos");
+      const t = datosCache[datosTabla];
+      if (!t) { cargarTablaDatos(datosTabla); }
+      const meta = TABLAS_DATOS.find(x => x.id === datosTabla);
+      const filas = filasFiltradasDatos();
+      const cols = filas.length ? columnasDatos(filas) : [];
+      const paginas = Math.max(1, Math.ceil(filas.length / DATOS_POR_PAGINA));
+      datosPagina = Math.min(datosPagina, paginas);
+      const visibles = filas.slice((datosPagina - 1) * DATOS_POR_PAGINA, datosPagina * DATOS_POR_PAGINA);
+      const colOrden = datosOrden || meta.orden;
+
+      $.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-3 border-b border-[var(--border)]">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Explorador de datos</h1>
+              <p class="text-sm text-[var(--muted)] mt-1">Todas las tablas que alimentan el prototipo, fila por fila. Origen: <strong class="text-[var(--ink)]">${DB.activo ? "Supabase (en vivo)" : "modo local del navegador"}</strong>.</p>
+            </div>
+            <button onclick="navigate('#/modelos')" class="text-xs px-3.5 py-2 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--ink)]">¿Cómo se usan estos datos? Ver modelos ›</button>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            ${TABLAS_DATOS.map(x => {
+              const n = datosCache[x.id]?.filas?.length;
+              return `<button onclick="datosTabla='${x.id}'; datosBusqueda=''; datosOrden=null; datosDesc=true; datosPagina=1; renderDatos()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${datosTabla === x.id ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+                ${x.nombre}${n != null && !datosCache[x.id].cargando ? ` <span class="opacity-70 font-mono">${n.toLocaleString("es-CL")}</span>` : ""}
+              </button>`;
+            }).join("")}
+          </div>
+
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-bold text-[var(--ink)]">${meta.nombre} <code class="text-xs font-normal text-[var(--muted)]">${meta.id}</code></div>
+                <div class="text-xs text-[var(--muted)] mt-0.5">${meta.desc}</div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <input id="datos-busqueda" type="text" placeholder="Buscar en todas las columnas..." value="${datosBusqueda.replace(/"/g, "&quot;")}" oninput="datosBusqueda=this.value; datosPagina=1; renderDatos(); enfocarAlFinal('datos-busqueda');" class="w-56 px-3 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                <button onclick="cargarTablaDatos('${datosTabla}', true)" class="px-3 py-2 rounded-xl border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--ink)]" title="Volver a leer desde la base">↻ Recargar</button>
+                <button onclick="descargarCSVDatos()" ${filas.length ? "" : "disabled"} class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold">Descargar CSV (${filas.length.toLocaleString("es-CL")})</button>
+              </div>
+            </div>
+
+            ${!t || t.cargando ? `<div class="py-12 text-center text-sm text-[var(--muted)]">Cargando ${meta.nombre.toLowerCase()} desde ${DB.activo ? "Supabase" : "el navegador"}…</div>`
+              : t.error ? `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-400">No se pudo leer la tabla: ${t.error}</div>`
+              : !filas.length ? `<div class="py-12 text-center text-sm text-[var(--muted)]">Sin filas${datosBusqueda ? " para esa búsqueda" : ""}.</div>`
+              : `
+              <div class="overflow-auto max-h-[65vh] rounded-xl border border-[var(--border)]">
+                <table class="w-full text-xs">
+                  <thead class="sticky top-0 bg-[var(--bg)] z-10">
+                    <tr>${cols.map(c => `
+                      <th onclick="datosDesc = datosOrden === '${c}' ? !datosDesc : false; datosOrden='${c}'; renderDatos()" class="p-2 text-left font-mono text-[10px] uppercase tracking-wider text-[var(--muted)] whitespace-nowrap cursor-pointer hover:text-[var(--ink)]">
+                        ${c}${c === colOrden ? (datosDesc ? " ▼" : " ▲") : ""}
+                      </th>`).join("")}</tr>
+                  </thead>
+                  <tbody>
+                    ${visibles.map(f => `<tr class="border-t border-[var(--border)] hover:bg-[var(--card-hover)]">${cols.map(c => `<td class="p-2 font-mono whitespace-nowrap text-[var(--ink)]">${formatoCelda(c, f[c])}</td>`).join("")}</tr>`).join("")}
+                  </tbody>
+                </table>
+              </div>
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-[var(--muted)]">
+                <span>Filas ${((datosPagina - 1) * DATOS_POR_PAGINA + 1).toLocaleString("es-CL")} a ${Math.min(datosPagina * DATOS_POR_PAGINA, filas.length).toLocaleString("es-CL")} de ${filas.length.toLocaleString("es-CL")} · ${cols.length} columnas · clic en un encabezado para ordenar</span>
+                <div class="flex items-center gap-1">
+                  <button onclick="datosPagina=Math.max(1,datosPagina-1); renderDatos()" ${datosPagina === 1 ? "disabled" : ""} class="px-2.5 py-1 rounded-lg border border-[var(--border)] disabled:opacity-30">‹ Ant</button>
+                  <span class="px-2 font-mono">${datosPagina} / ${paginas}</span>
+                  <button onclick="datosPagina=Math.min(${paginas},datosPagina+1); renderDatos()" ${datosPagina === paginas ? "disabled" : ""} class="px-2.5 py-1 rounded-lg border border-[var(--border)] disabled:opacity-30">Sig ›</button>
+                </div>
+              </div>`}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[var(--muted)]">
+            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué datos se generan?</strong> Cada pasada por el pórtico agrega 6 filas a <em>Mediciones</em> (una por neumático). Las correcciones de daño, las OT y sus cambios agregan filas a sus tablas. Ninguna fila se borra.</div>
+            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué no está aquí?</strong> La telemetría TPMS, carga y TKPH del simulador es simulada y no se guarda. Los datos de entrenamiento del modelo (96.697 ciclos sintéticos) se generan con <code>modelo/generar_datos.py</code>; ver la página Modelos.</div>
+          </div>
+        </div>`;
+    }
+
+    // --- PANTALLA 9: CÓMO FUNCIONAN LOS MODELOS ---
+    let modelosMetricas = null;
+
+    function renderModelos() {
+      updateActiveNav("nav-modelos");
+      if (!modelosMetricas) {
+        fetch("./assets/modelo/metricas.json").then(r => r.json()).then(m => { modelosMetricas = m; if (location.hash === "#/modelos") renderModelos(); })
+          .catch(() => { modelosMetricas = {}; });
+      }
+      const m = modelosMetricas || {};
+      const rul = m.rul || {};
+      const r30 = rul.a_30_mm, r45 = rul.a_45_mm;
+      const ejemplo = getTires().filter(t => zona(t.h) === "rojo").sort((a, b) => a.h - b.h)[0] || getTires()[0];
+      const tarjeta = (titulo, cuerpo) => `<div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3">${titulo ? `<h2 class="text-lg font-bold text-[var(--ink)]">${titulo}</h2>` : ""}${cuerpo}</div>`;
+      const paso = (n, titulo, texto) => `
+        <div class="flex gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${n}</div>
+          <div><div class="text-sm font-semibold text-[var(--ink)]">${titulo}</div><div class="text-xs text-[var(--muted)] mt-0.5">${texto}</div></div>
+        </div>`;
+      const modelo = (nombre, estado, que, como, salida) => `
+        <div class="p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)] space-y-2">
+          <div class="flex items-center justify-between gap-2"><div class="text-sm font-bold text-[var(--ink)]">${nombre}</div><span class="text-[10px] font-mono px-2 py-0.5 rounded-full border ${estado[1]}">${estado[0]}</span></div>
+          <div class="text-xs"><span class="text-[var(--muted)]">Qué responde:</span> <span class="text-[var(--ink)]">${que}</span></div>
+          <div class="text-xs"><span class="text-[var(--muted)]">Cómo funciona:</span> <span class="text-[var(--ink)]">${como}</span></div>
+          <div class="text-xs"><span class="text-[var(--muted)]">Qué entrega:</span> <span class="text-[var(--ink)]">${salida}</span></div>
+        </div>`;
+      const EN_USO = ["En uso en el prototipo", "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"];
+      const POC = ["Prueba de concepto", "bg-amber-500/10 text-amber-400 border-amber-500/30"];
+      const FUTURO = ["Futuro", "bg-slate-500/10 text-slate-300 border-slate-500/30"];
+
+      $.innerHTML = `
+        <div class="max-w-5xl mx-auto space-y-5">
+          <div class="pb-3 border-b border-[var(--border)]">
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Cómo funcionan los modelos predictivos</h1>
+            <p class="text-sm text-[var(--muted)] mt-1">De la medición del pórtico a la decisión del planificador. Los resultados de aprendizaje son de una prueba de concepto con <strong class="text-amber-400">datos sintéticos</strong>: validan el método, no el desempeño en faena.</p>
+          </div>
+
+          ${tarjeta("1. El cálculo que usa hoy el tablero", `
+            <p class="text-sm text-[var(--muted)]">Cada neumático pierde banda de rodado a una velocidad (tasa de desgaste). Si la tasa se mantiene, las horas que le quedan hasta el umbral de retiro seguro de 20 mm son:</p>
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-sm text-emerald-300 text-center">horas remanentes = (profundidad actual − 20 mm) ÷ tasa de desgaste × 100</div>
+            ${ejemplo ? `<p class="text-xs text-[var(--muted)]">Ejemplo real de la flota: <strong class="text-[var(--ink)]">${ejemplo.cx} P${ejemplo.pos}</strong> tiene ${f(ejemplo.mm)} mm y se desgasta ${f(ejemplo.rate)} mm cada 100 h → quedan unas <strong class="text-rose-400">${ejemplo.h} h</strong>.</p>` : ""}
+            <div class="grid grid-cols-3 gap-2 text-xs text-center">
+              <div class="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400"><strong>Rojo</strong> · menos de 200 h<br>retirar ahora</div>
+              <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400"><strong>Amarillo</strong> · menos de 500 h<br>próxima ventana</div>
+              <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"><strong>Verde</strong> · más de 500 h<br>operación normal</div>
+            </div>
+            <p class="text-xs text-[var(--muted)]">La tasa se calcula con una <strong>recta</strong> sobre las mediciones del neumático (<code>backend/app/proyeccion.py</code>). Es simple y explicable, pero supone que las condiciones de operación no cambian. Los modelos de aprendizaje buscan corregir eso.</p>`)}
+
+          ${tarjeta("2. De los datos a la decisión", `
+            <div class="space-y-3">
+              ${paso(1, "Medir", "El pórtico mide profundidad, daños y temperatura de los 6 neumáticos en una pasada a 2-5 km/h. TPMS, pesaje, despacho y GPS aportan presión, carga, velocidad, pendiente y frenadas.")}
+              ${paso(2, "Ordenar los datos", "Se agrupan por ciclo entre pasadas (ventanas de ~200 h) para que el ruido de medición del pórtico (±0,25 mm) no domine. Se calcula el TKPH = carga por neumático × velocidad.")}
+              ${paso(3, "Predecir", "Un modelo estima la tasa de desgaste según las condiciones actuales y otro el riesgo de daño súbito.")}
+              ${paso(4, "Explicar", "SHAP muestra qué variables empujaron la predicción, para que el planificador vea por qué un neumático está en rojo.")}
+              ${paso(5, "Decidir", "Las horas remanentes alimentan el tablero (HU-01) y el agendamiento en el taller (HU-06). Las recomendaciones operacionales se tratan como hipótesis, no como órdenes.")}
+            </div>`)}
+
+          ${tarjeta("3. Los modelos, uno por uno", `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${modelo("Proyección lineal", EN_USO, "¿Cuántas horas le quedan a este neumático?", "Ajusta una recta a la profundidad medida contra las horas de uso y ve cuándo cruza los 20 mm.", "Horas remanentes y zona roja / amarilla / verde.")}
+              ${modelo("Regresión multivariable", POC, "¿Cuánto aporta cada variable al desgaste?", "Relaciona el logaritmo de la tasa con las variables. Cada coeficiente se lee como «+x % de desgaste por unidad».", "Efecto % de cada factor (ej. roca suelta +30 %).")}
+              ${modelo("Gradient Boosting + SHAP", POC, "¿A qué velocidad se desgastará con las condiciones actuales?", "Combina cientos de árboles de decisión que capturan efectos no lineales (ej. la pendiente pesa más sobre 6 %). SHAP reparte la predicción entre las variables.", "Tasa prevista, horas remanentes y ranking de causas.")}
+              ${modelo("Supervivencia (Cox)", POC, "¿Qué riesgo tiene de un daño súbito (corte, impacto)?", "Usa la vida completa de cada neumático, incluidos los que se retiraron antes de fallar (datos censurados).", "Razón de riesgo de cada factor (ej. roca suelta ×3).")}
+              ${modelo("Deep Learning (LSTM)", FUTURO, "¿Hay patrones en la secuencia de pasadas?", "Red neuronal que aprende de la serie temporal de cada neumático. Requiere miles de vidas de neumático.", "Solo si con datos reales el Gradient Boosting no alcanza la meta de 200 h.")}
+            </div>`)}
+
+          ${tarjeta("4. Resultados de la prueba de concepto", `
+            <p class="text-xs text-[var(--muted)]">Datos sintéticos de 1.610 vidas de neumático en 67 CAEX, con efectos conocidos. Se evaluó en ${m.camiones_prueba || 14} camiones que el modelo nunca vio.</p>
+            ${r30 && r45 ? `
+            <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
+              <table class="w-full text-xs">
+                <thead class="bg-[var(--bg)] text-[10px] uppercase tracking-wider text-[var(--muted)]"><tr><th class="p-2.5 text-left">Horas remanentes estimadas cuando el neumático llega a…</th><th class="p-2.5 text-right">Recta (hoy)</th><th class="p-2.5 text-right">Gradient Boosting</th></tr></thead>
+                <tbody>
+                  <tr class="border-t border-[var(--border)]"><td class="p-2.5">45 mm · error medio</td><td class="p-2.5 text-right font-mono">${r45.recta.mae_h} h</td><td class="p-2.5 text-right font-mono text-emerald-400 font-bold">${r45.modelo.mae_h} h</td></tr>
+                  <tr class="border-t border-[var(--border)]"><td class="p-2.5">30 mm · error medio</td><td class="p-2.5 text-right font-mono">${r30.recta.mae_h} h</td><td class="p-2.5 text-right font-mono text-emerald-400 font-bold">${r30.modelo.mae_h} h</td></tr>
+                  <tr class="border-t border-[var(--border)]"><td class="p-2.5">30 mm · estimaciones dentro de ±200 h</td><td class="p-2.5 text-right font-mono">${f(r30.recta.dentro_200h_pct)} %</td><td class="p-2.5 text-right font-mono text-emerald-400 font-bold">${f(r30.modelo.dentro_200h_pct)} %</td></tr>
+                  <tr class="border-t border-[var(--border)]"><td class="p-2.5">30 mm · estimaciones optimistas (retirar tarde)</td><td class="p-2.5 text-right font-mono">${f(r30.recta.optimista_pct)} %</td><td class="p-2.5 text-right font-mono text-emerald-400 font-bold">${f(r30.modelo.optimista_pct)} %</td></tr>
+                </tbody>
+              </table>
+            </div>` : `<p class="text-xs text-[var(--muted)]">Cargando métricas…</p>`}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <figure class="rounded-xl overflow-hidden border border-[var(--border)] bg-white"><img src="./assets/modelo/importancia_shap.png" alt="Importancia SHAP de cada variable" class="w-full"><figcaption class="p-2 text-[11px] text-slate-600 bg-slate-100">Qué variables explican el desgaste. La temperatura del neumático aparece alta aunque es consecuencia, no causa: importancia no es causalidad.</figcaption></figure>
+              <figure class="rounded-xl overflow-hidden border border-[var(--border)] bg-white"><img src="./assets/modelo/rul_30mm.png" alt="Horas remanentes estimadas contra reales" class="w-full"><figcaption class="p-2 text-[11px] text-slate-600 bg-slate-100">Cada punto es un neumático. Cuanto más cerca de la diagonal, mejor. La franja es ±200 h.</figcaption></figure>
+              <figure class="md:col-span-2 rounded-xl overflow-hidden border border-[var(--border)] bg-white"><img src="./assets/modelo/recuperacion_efectos.png" alt="Efectos verdaderos contra estimados" class="w-full max-w-2xl mx-auto"><figcaption class="p-2 text-[11px] text-slate-600 bg-slate-100">La regresión recupera los efectos que el simulador usó (gris) en la mayoría de las variables. Falla donde el efecto real no es lineal (presión baja, pendiente).</figcaption></figure>
+            </div>`)}
+
+          ${tarjeta("5. Qué falta para usarlo en faena", `
+            <ul class="text-sm text-[var(--muted)] list-disc pl-5 space-y-1">
+              <li><strong class="text-[var(--ink)]">Datos reales:</strong> acceso a TPMS, pesaje y despacho de la faena (tabla <code>ciclos_operacion</code> en Supabase).</li>
+              <li><strong class="text-[var(--ink)]">Validación con el planificador</strong> en la Semana 7: que los motivos mostrados sean comprensibles y útiles.</li>
+              <li><strong class="text-[var(--ink)]">Integración:</strong> reemplazar la recta del tablero por la tasa prevista y mostrar en la ficha las 3 causas principales de cada alerta.</li>
+              <li><strong class="text-[var(--ink)]">Supuestos a revisar:</strong> el tamaño de cada efecto en el simulador viene de literatura y criterio del equipo, no de mediciones.</li>
+            </ul>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <a href="https://github.com/mavalosc/control-neumaticos-caex/blob/main/docs/modelo.md" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Metodología completa (docs/modelo.md) ↗</a>
+              <a href="https://github.com/mavalosc/control-neumaticos-caex/blob/main/modelo/resultados/REPORTE.md" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Reporte de resultados ↗</a>
+              <button onclick="navigate('#/datos')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver los datos ›</button>
+            </div>`)}
+        </div>`;
+    }
+
     // --- ENRUTADOR PRINCIPAL ---
+    let rutaAnterior = null;
+
     function route() {
       const hash = location.hash || "#/";
       const [path, param] = hash.replace("#", "").split("/").filter(Boolean);
@@ -2062,11 +2683,20 @@ const INITIAL_TRUCKS = [
         renderSchedule(param);
       } else if (path === "e" && param) {
         renderEditOrder(param);
+      } else if (path === "datos") {
+        renderDatos();
+      } else if (path === "modelos") {
+        renderModelos();
       } else if (path === "sim") {
+        if (rutaAnterior !== "sim") {             // al entrar al simulador siempre parte en la vista predeterminada
+          simVista = SIM_VISTA_PREDETERMINADA;
+          simAbiertas = {};
+        }
         renderSimulator();
       } else {
         renderDashboard();
       }
+      rutaAnterior = path || "";
     }
 
     window.addEventListener("hashchange", route);
