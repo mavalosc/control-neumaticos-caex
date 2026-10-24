@@ -134,6 +134,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Leer con la clave anon (solo lectura según RLS); mostrar todas las filas, no una muestra; funcionar también en modo local; explicar los modelos sin jerga y dejando claro qué está en uso y qué es prueba de concepto con datos sintéticos. |
 | **Verificación** | Prueba en Chrome headless contra Supabase: las 8 tablas cargan completas (por ejemplo, 414 mediciones, 405 neumáticos y 402 filas de la vista), con búsqueda, orden por columna y descarga CSV; sin errores de consola. La página de modelos lee las métricas desde `assets/modelo/metricas.json`, que `modelo/entrenar.py` actualiza en cada ejecución, para que las cifras no queden desactualizadas. **Falso error investigado:** una prueba mostró 0 filas en la vista del tablero; al aislarla, la página cargaba las 402 filas y el problema estaba en los tiempos de la prueba. **Ajuste visual:** la barra superior no cabía con los dos botones nuevos y pasaron a ser solo íconos bajo 1.536 px. |
 
+## IA-13 · Metodología de propuestas, terminología y manual de uso (PROP-01 a PROP-03)
+**Herramienta:** Claude Code · **Fecha:** 24-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | La IA implementaba y publicaba los cambios en cuanto se pedían. El equipo acordó una metodología con propuestas nombradas (`docs/propuestas.md`). La app no tenía manual de uso y la interfaz decía «goma» en algunos textos. |
+| **Intención** | «acordaremos una metodología de trabajo… no implementes nada, lo conversamos, revisamos las propuestas, le asignamos un nombre y después se publica»; «no utilices la palabra goma, acá solo usamos neumático»; «¿Es posible generar un manual de cómo utilizar esta herramienta… y agregar una sección a este manual en la APP?». Luego: «implementa PROP-01, PROP-02 y PROP-03», con manual para planificador, operador, profesor y evaluadores, ayuda contextual y PDF descargable. |
+| **Restricciones** | Implementar solo lo aprobado, en `dev`, sin publicar en `main`; PROP-01 explícitamente sin publicar; usar solo «neumático»; un solo texto fuente para el manual; ningún cambio en Supabase sin que lo ejecute el equipo. |
+| **Verificación** | **PROP-02:** 0 apariciones de «goma» fuera de las versiones históricas; las 2 notas en Supabase quedan en un script de migración para el equipo. **PROP-03:** el botón **?** abre la sección correcta en las 5 pantallas probadas; 16 secciones, 9 capturas y PDF de ~24 páginas. **Errores de la IA corregidos en la prueba:** (1) las capturas salían todas iguales porque Git Bash convertía la ruta `/c` en `C:\`; (2) la barra superior no cabía con el tercer ícono (faltaban 18 px); (3) el ícono de base de datos salía como un cuadro vacío en el PDF; (4) al abrir la ayuda en una sección, la vista quedaba en la sección anterior porque las capturas cargaban después del desplazamiento. |
+
 ---
 
 ## Qué debe saber explicar cada integrante

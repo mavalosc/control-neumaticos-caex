@@ -9,7 +9,7 @@
 
 ## Flujo principal
 
-La historia que sostiene el flujo central de la solución es **HU-07 · Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM**. Es el resultado que el Roadmap pone en *Ahora*: *"Que el planificador agende la intervención de una goma crítica y que la orden quede escrita con su trazabilidad a la medición que la originó"*.
+La historia que sostiene el flujo central de la solución es **HU-07 · Emisión de Orden de Trabajo y Trazabilidad ERP / SAP PM**. Es el resultado que el Roadmap pone en *Ahora*: *"Que el planificador agende la intervención de un neumático crítico y que la orden quede escrita con su trazabilidad a la medición que la originó"*.
 
 El planificador llega a ella recorriendo cuatro historias, que corresponden a los wireframes W1 a W4:
 

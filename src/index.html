@@ -13,8 +13,27 @@
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="db.js"></script>
+  <!-- Manual de uso (src/manual.md) mostrado como página de ayuda -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   
   <style>
+    /* --- Manual de uso (#/ayuda) --- */
+    .manual h1 { font-size: 1.6rem; font-weight: 700; color: var(--ink); margin: 0 0 .5rem; }
+    .manual h2 { font-size: 1.25rem; font-weight: 700; color: var(--ink); margin: 2rem 0 .75rem; padding-top: .5rem; scroll-margin-top: 90px; }
+    .manual h3 { font-size: 1rem; font-weight: 600; color: var(--ink); margin: 1.25rem 0 .5rem; }
+    .manual p, .manual li { font-size: .875rem; line-height: 1.6; color: var(--muted); }
+    .manual strong { color: var(--ink); }
+    .manual a { color: #60a5fa; text-decoration: underline; }
+    .manual ul, .manual ol { padding-left: 1.4rem; margin: .5rem 0; }
+    .manual ul { list-style: disc; } .manual ol { list-style: decimal; }
+    .manual table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .8rem; }
+    .manual th { text-align: left; background: var(--bg); color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
+    .manual th, .manual td { border: 1px solid var(--border); padding: .45rem .6rem; color: var(--ink); vertical-align: top; }
+    .manual code { font-family: 'IBM Plex Mono', monospace; font-size: .8em; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 .3rem; color: var(--ink); }
+    .manual img { border: 1px solid var(--border); border-radius: 12px; margin: .75rem 0; width: 100%; }
+    .manual blockquote { border-left: 4px solid #f59e0b; background: rgba(245,158,11,.08); padding: .6rem .9rem; border-radius: 0 8px 8px 0; margin: .75rem 0; }
+    .manual hr { border-color: var(--border); margin: 1.5rem 0; }
+
     :root {
       --bg: #0f141c;
       --card: #18202c;
@@ -137,13 +156,17 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           <span>Órdenes</span>
         </button>
-        <button id="nav-datos" onclick="navigate('#/datos')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Explorador de datos">
+        <button id="nav-datos" onclick="navigate('#/datos')" class="px-2.5 2xl:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Explorador de datos">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
           <span class="hidden 2xl:inline">Datos</span>
         </button>
-        <button id="nav-modelos" onclick="navigate('#/modelos')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Cómo funcionan los modelos">
+        <button id="nav-modelos" onclick="navigate('#/modelos')" class="px-2.5 2xl:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Cómo funcionan los modelos">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
           <span class="hidden 2xl:inline">Modelos</span>
+        </button>
+        <button id="nav-ayuda" onclick="navigate('#/ayuda')" class="px-2.5 2xl:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-1.5" title="Manual de uso">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="hidden 2xl:inline">Ayuda</span>
         </button>
         <button id="nav-portico" onclick="navigate('#/sim')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -168,6 +191,10 @@
 
   <!-- MAIN VIEWPORT CONTAINER -->
   <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 pb-16"></main>
+
+  <!-- Ayuda contextual: abre la sección del manual que corresponde a la pantalla actual -->
+  <button id="ayuda-contextual" onclick="abrirAyudaContextual()" title="Ayuda sobre esta pantalla" aria-label="Ayuda sobre esta pantalla"
+          class="fixed bottom-5 right-5 z-40 w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold shadow-xl shadow-blue-900/40 border border-blue-400/40 transition-all">?</button>
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast" class="fixed top-20 right-6 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none max-w-md bg-[var(--card)] border border-[var(--border)] p-4 rounded-xl shadow-2xl flex items-start gap-3"></div>
@@ -281,12 +308,12 @@ const INITIAL_TRUCKS = [
     };
 
     const INITIAL_ORDERS = [
-      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar la goma retirada en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
+      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar el neumático retirado en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
       ["ot-0067", "26-09-2026 09:24", "5980R63-2328-1590", "retiro", "Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.", "29-09-2026", "turno B, 20:00 a 00:00", 95, "med-2492", "21,7 mm, tasa observada", "programada", []],
       ["ot-0066", "25-09-2026 16:40", "5980R63-2345-1534", "retiro", "Retiro programado por proyección de 106 h remanentes.", "30-09-2026", "turno A, 08:00 a 12:00", 106, "med-2490", "21,2 mm, tasa observada", "programada", []],
       ["ot-0065", "25-09-2026 11:05", "5980R63-2312-1561", "retiro", "Retiro programado por proyección de 168 h remanentes.", "30-09-2026", "turno B, 20:00 a 00:00", 168, "med-2488", "24,1 mm, tasa observada", "programada", []],
       ["ot-0064", "24-09-2026 15:12", "5980R63-2218-1478", "rotacion", "Rotación por desgaste desigual entre posiciones traseras.", "01-10-2026", "turno A, 08:00 a 12:00", 392, "med-2485", "20,4 mm, tasa observada", "programada", []],
-      ["ot-0052", "18-09-2026 08:30", "5980R63-2100-1301", "retiro", "Retiro ejecutado en turno matutino, goma entregada en cancha de garantía bajo acta #891.", "19-09-2026", "turno A, 08:00 a 12:00", 120, "med-2410", "20,2 mm, tasa observada", "ejecutada", []],
+      ["ot-0052", "18-09-2026 08:30", "5980R63-2100-1301", "retiro", "Retiro ejecutado en turno matutino, neumático entregado en cancha de garantía bajo acta #891.", "19-09-2026", "turno A, 08:00 a 12:00", 120, "med-2410", "20,2 mm, tasa observada", "ejecutada", []],
       ["ot-0047", "15-09-2026 13:10", "5980R63-2150-1355", "inspeccion", "Anulada: el neumático se rotó antes de la ventana programada.", "16-09-2026", "turno B, 20:00 a 00:00", 480, "med-2380", "20,9 mm, tasa nominal", "anulada", []]
     ];
 
@@ -463,7 +490,7 @@ const INITIAL_TRUCKS = [
     }
 
     function updateActiveNav(activeId) {
-      ["nav-tablero", "nav-camiones", "nav-ordenes", "nav-datos", "nav-modelos", "nav-portico"].forEach(id => {
+      ["nav-tablero", "nav-camiones", "nav-ordenes", "nav-datos", "nav-modelos", "nav-ayuda", "nav-portico"].forEach(id => {
         const btn = document.getElementById(id);
         if (!btn) return;
         if (id === activeId) {
@@ -944,7 +971,7 @@ const INITIAL_TRUCKS = [
               <div>
                 <div class="flex items-center gap-2">
                   <h1 class="text-2xl font-bold font-mono tracking-tight text-[var(--ink)]">${t.serial}</h1>
-                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Goma OTR 59/80R63</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Neumático OTR 59/80R63</span>
                 </div>
                 <p class="text-xs text-[var(--muted)] mt-1">
                   Montado en <strong>${t.cx}</strong> (${t.modelo}) · <strong>${t.posNombre}</strong> · Última pasada pórtico: <strong>${t.fecha}</strong>
@@ -1025,7 +1052,7 @@ const INITIAL_TRUCKS = [
               <!-- Simulación visual de banda con bounding boxes -->
               <div class="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-inner">
                 <svg viewBox="0 0 460 220" class="w-full h-auto block" role="img">
-                  <!-- Fondo de goma neumática -->
+                  <!-- Fondo de la banda del neumático -->
                   <rect width="460" height="220" fill="#1e2229"/>
                   <!-- Patrón de surcos de banda de rodadura OTR -->
                   ${Array.from({length: 16}, (_, i) => `
@@ -2144,7 +2171,7 @@ const INITIAL_TRUCKS = [
                     <!-- Representación Visual Fotográfica / Escaneo de Banda -->
                     <div class="relative bg-slate-900 border border-slate-700/80 rounded-lg overflow-hidden shadow-inner">
                       <svg viewBox="0 0 280 120" class="w-full h-auto block" role="img">
-                        <!-- Fondo de goma neumática -->
+                        <!-- Fondo de la banda del neumático -->
                         <rect width="280" height="120" fill="#181b22"/>
                         
                         <!-- Patrón de surcos de banda OTR -->
@@ -2663,6 +2690,69 @@ const INITIAL_TRUCKS = [
         </div>`;
     }
 
+    // --- PANTALLA 10: AYUDA (MANUAL DE USO) ---
+    // El manual se escribe una sola vez en src/manual.md y se muestra aquí; también se lee en GitHub y en PDF.
+    const AYUDA_POR_PANTALLA = { "": "tablero", c: "camiones", n: "ficha", a: "agendar", o: "ordenes", e: "modificar",
+                                 sim: "simulador", datos: "datos", modelos: "modelos" };
+    let manualHTML = null;
+
+    function abrirAyudaContextual() {
+      const ruta = (location.hash || "#/").replace("#", "").split("/").filter(Boolean)[0] || "";
+      navigate(`#/ayuda/${AYUDA_POR_PANTALLA[ruta] || "primeros-pasos"}`);
+    }
+
+    async function renderAyuda(seccion) {
+      updateActiveNav("nav-ayuda");
+      if (manualHTML === null) {
+        $.innerHTML = `<div class="py-16 text-center text-sm text-[var(--muted)]">Cargando el manual…</div>`;
+        try {
+          const md = await (await fetch("./manual.md", { cache: "no-cache" })).text();
+          manualHTML = window.marked ? marked.parse(md) : `<pre class="whitespace-pre-wrap">${md.replace(/</g, "&lt;")}</pre>`;
+        } catch (e) {
+          manualHTML = `<p class="text-rose-400">No se pudo cargar el manual (${e.message}).</p>`;
+        }
+        if (!location.hash.startsWith("#/ayuda")) return;
+      }
+      const tmp = document.createElement("div");
+      tmp.innerHTML = manualHTML;
+      const indice = [...tmp.querySelectorAll("a[id]")].map(a => {
+        const bloque = a.parentElement && a.parentElement.tagName === "P" ? a.parentElement : a;  // marked envuelve el ancla en <p>
+        let h = bloque.nextElementSibling;
+        while (h && !/^H2$/.test(h.tagName)) h = h.nextElementSibling;
+        return h ? { id: a.id, titulo: h.textContent } : null;
+      }).filter(Boolean);
+
+      $.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <aside class="lg:col-span-1">
+            <div class="lg:sticky lg:top-24 space-y-3">
+              <a href="./assets/manual/manual-control-neumaticos-caex.pdf" download class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-md">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Descargar manual en PDF
+              </a>
+              <nav class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 max-h-[70vh] overflow-y-auto">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] px-2 pb-2">Contenido</div>
+                ${indice.map(x => `<button onclick="navigate('#/ayuda/${x.id}')" class="block w-full text-left px-2 py-1.5 rounded-lg text-xs ${x.id === seccion ? 'bg-blue-600 text-white' : 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--card-hover)]'}">${x.titulo}</button>`).join("")}
+              </nav>
+            </div>
+          </aside>
+          <article class="manual lg:col-span-3 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 sm:p-8">${manualHTML}</article>
+        </div>`;
+
+      // Los enlaces internos del manual (#seccion) navegan dentro de la ayuda
+      $.querySelectorAll('.manual a[href^="#"]').forEach(a => {
+        a.addEventListener("click", ev => { ev.preventDefault(); navigate(`#/ayuda/${a.getAttribute("href").slice(1)}`); });
+      });
+      const destino = seccion && document.getElementById(seccion);
+      if (destino) {
+        requestAnimationFrame(() => destino.scrollIntoView({ block: "start" }));
+        // las capturas de más arriba cambian la altura al cargar: se vuelve a ubicar la sección al terminar
+        const imagenes = [...$.querySelectorAll(".manual img")].filter(i => !i.complete);
+        Promise.all(imagenes.map(i => new Promise(r => { i.onload = i.onerror = r; })))
+          .then(() => { if (location.hash === `#/ayuda/${seccion}`) destino.scrollIntoView({ block: "start" }); });
+      }
+    }
+
     // --- ENRUTADOR PRINCIPAL ---
     let rutaAnterior = null;
 
@@ -2683,6 +2773,8 @@ const INITIAL_TRUCKS = [
         renderSchedule(param);
       } else if (path === "e" && param) {
         renderEditOrder(param);
+      } else if (path === "ayuda") {
+        renderAyuda(param);
       } else if (path === "datos") {
         renderDatos();
       } else if (path === "modelos") {
@@ -2697,6 +2789,8 @@ const INITIAL_TRUCKS = [
         renderDashboard();
       }
       rutaAnterior = path || "";
+      const botonAyuda = document.getElementById("ayuda-contextual");
+      if (botonAyuda) botonAyuda.classList.toggle("hidden", path === "ayuda");
     }
 
     window.addEventListener("hashchange", route);
