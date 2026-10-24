@@ -281,12 +281,12 @@ const INITIAL_TRUCKS = [
     };
 
     const INITIAL_ORDERS = [
-      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar la goma retirada en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
+      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar el neumático retirado en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
       ["ot-0067", "26-09-2026 09:24", "5980R63-2328-1590", "retiro", "Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.", "29-09-2026", "turno B, 20:00 a 00:00", 95, "med-2492", "21,7 mm, tasa observada", "programada", []],
       ["ot-0066", "25-09-2026 16:40", "5980R63-2345-1534", "retiro", "Retiro programado por proyección de 106 h remanentes.", "30-09-2026", "turno A, 08:00 a 12:00", 106, "med-2490", "21,2 mm, tasa observada", "programada", []],
       ["ot-0065", "25-09-2026 11:05", "5980R63-2312-1561", "retiro", "Retiro programado por proyección de 168 h remanentes.", "30-09-2026", "turno B, 20:00 a 00:00", 168, "med-2488", "24,1 mm, tasa observada", "programada", []],
       ["ot-0064", "24-09-2026 15:12", "5980R63-2218-1478", "rotacion", "Rotación por desgaste desigual entre posiciones traseras.", "01-10-2026", "turno A, 08:00 a 12:00", 392, "med-2485", "20,4 mm, tasa observada", "programada", []],
-      ["ot-0052", "18-09-2026 08:30", "5980R63-2100-1301", "retiro", "Retiro ejecutado en turno matutino, goma entregada en cancha de garantía bajo acta #891.", "19-09-2026", "turno A, 08:00 a 12:00", 120, "med-2410", "20,2 mm, tasa observada", "ejecutada", []],
+      ["ot-0052", "18-09-2026 08:30", "5980R63-2100-1301", "retiro", "Retiro ejecutado en turno matutino, neumático entregado en cancha de garantía bajo acta #891.", "19-09-2026", "turno A, 08:00 a 12:00", 120, "med-2410", "20,2 mm, tasa observada", "ejecutada", []],
       ["ot-0047", "15-09-2026 13:10", "5980R63-2150-1355", "inspeccion", "Anulada: el neumático se rotó antes de la ventana programada.", "16-09-2026", "turno B, 20:00 a 00:00", 480, "med-2380", "20,9 mm, tasa nominal", "anulada", []]
     ];
 
@@ -944,7 +944,7 @@ const INITIAL_TRUCKS = [
               <div>
                 <div class="flex items-center gap-2">
                   <h1 class="text-2xl font-bold font-mono tracking-tight text-[var(--ink)]">${t.serial}</h1>
-                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Goma OTR 59/80R63</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Neumático OTR 59/80R63</span>
                 </div>
                 <p class="text-xs text-[var(--muted)] mt-1">
                   Montado en <strong>${t.cx}</strong> (${t.modelo}) · <strong>${t.posNombre}</strong> · Última pasada pórtico: <strong>${t.fecha}</strong>
@@ -1025,7 +1025,7 @@ const INITIAL_TRUCKS = [
               <!-- Simulación visual de banda con bounding boxes -->
               <div class="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-inner">
                 <svg viewBox="0 0 460 220" class="w-full h-auto block" role="img">
-                  <!-- Fondo de goma neumática -->
+                  <!-- Fondo de la banda del neumático -->
                   <rect width="460" height="220" fill="#1e2229"/>
                   <!-- Patrón de surcos de banda de rodadura OTR -->
                   ${Array.from({length: 16}, (_, i) => `
@@ -2144,7 +2144,7 @@ const INITIAL_TRUCKS = [
                     <!-- Representación Visual Fotográfica / Escaneo de Banda -->
                     <div class="relative bg-slate-900 border border-slate-700/80 rounded-lg overflow-hidden shadow-inner">
                       <svg viewBox="0 0 280 120" class="w-full h-auto block" role="img">
-                        <!-- Fondo de goma neumática -->
+                        <!-- Fondo de la banda del neumático -->
                         <rect width="280" height="120" fill="#181b22"/>
                         
                         <!-- Patrón de surcos de banda OTR -->

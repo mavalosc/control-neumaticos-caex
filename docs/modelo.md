@@ -10,7 +10,7 @@
 
 1. Identificar qué variables operacionales tienen mayor influencia en la **tasa de desgaste** y en el **riesgo de falla prematura** de un neumático OTR.
 2. Predecir las **horas de vida útil remanente** con un error menor que el del método actual (recta de profundidad vs horas, `backend/app/proyeccion.py`), con la meta de anticipar el retiro en **al menos 200 h**.
-3. Entregar al planificador la **razón** de cada alerta (explicabilidad, Roadmap *Próximo*: «que el planificador vea por qué el modelo puso una goma en rojo»).
+3. Entregar al planificador la **razón** de cada alerta (explicabilidad, Roadmap *Próximo*: «que el planificador vea por qué el modelo puso un neumático en rojo»).
 
 ## 2. Variables y fuentes de datos
 

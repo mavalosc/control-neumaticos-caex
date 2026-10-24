@@ -944,12 +944,12 @@ INSERT INTO ordenes_trabajo (codigo, fecha_emision, neumatico_id, ventana_id, ti
 SELECT v.cod, v.emision::timestamptz, n.id, v.ventana, v.tipo::tipo_intervencion_enum, v.nota,
        v.horas, v.med, v.origen, v.estado::estado_orden_enum
 FROM (VALUES
-('ot-0068', '2026-09-26 10:59-03', '5980R63-2531-1596', 4, 'retiro', 'Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar la goma retirada en la cancha de garantía con el serial legible para el reclamo al proveedor.', 150, 'med-2494', '22,9 mm, tasa observada', 'programada'),
+('ot-0068', '2026-09-26 10:59-03', '5980R63-2531-1596', 4, 'retiro', 'Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar el neumático retirado en la cancha de garantía con el serial legible para el reclamo al proveedor.', 150, 'med-2494', '22,9 mm, tasa observada', 'programada'),
 ('ot-0067', '2026-09-26 09:24-03', '5980R63-2328-1590', 1, 'retiro', 'Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.', 95, 'med-2492', '21,7 mm, tasa observada', 'programada'),
 ('ot-0066', '2026-09-25 16:40-03', '5980R63-2345-1534', 2, 'retiro', 'Retiro programado por proyección de 106 h remanentes.', 106, 'med-2490', '21,2 mm, tasa observada', 'programada'),
 ('ot-0065', '2026-09-25 11:05-03', '5980R63-2312-1561', 5, 'retiro', 'Retiro programado por proyección de 168 h remanentes.', 168, 'med-2488', '24,1 mm, tasa observada', 'programada'),
 ('ot-0064', '2026-09-24 15:12-03', '5980R63-2218-1478', 6, 'rotacion', 'Rotación por desgaste desigual entre posiciones traseras.', 392, 'med-2485', '20,4 mm, tasa observada', 'programada'),
-('ot-0052', '2026-09-18 08:30-03', '5980R63-2100-1301', 7, 'retiro', 'Retiro ejecutado en turno matutino, goma entregada en cancha de garantía bajo acta #891.', 120, 'med-2410', '20,2 mm, tasa observada', 'ejecutada'),
+('ot-0052', '2026-09-18 08:30-03', '5980R63-2100-1301', 7, 'retiro', 'Retiro ejecutado en turno matutino, neumático entregado en cancha de garantía bajo acta #891.', 120, 'med-2410', '20,2 mm, tasa observada', 'ejecutada'),
 ('ot-0047', '2026-09-15 13:10-03', '5980R63-2150-1355', 8, 'inspeccion', 'Anulada: el neumático se rotó antes de la ventana programada.', 480, 'med-2380', '20,9 mm, tasa nominal', 'anulada')
 ) AS v(cod, emision, serial, ventana, tipo, nota, horas, med, origen, estado)
 JOIN neumaticos n ON n.serial = v.serial;
