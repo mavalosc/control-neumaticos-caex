@@ -193,6 +193,7 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
     ├── bitacora-ia.md       # Uso auditado de asistentes de IA
     ├── modelo.md            # Metodología del modelo de desgaste y RUL (PoC Semana 8)
     ├── experiencia-usuario.md # Mapa de experiencia, flujo de pantallas y especificaciones
+    ├── propuestas.md        # Registro de propuestas PROP-NN (metodología de cambios)
     ├── historico/           # Versiones reemplazadas (solo referencia)
     ├── schema.sql           # DDL Supabase: tablas, triggers de cupos, vista y políticas RLS
     ├── seed.sql             # Datos de demostración: 67 CAEX, 402 neumáticos, órdenes
@@ -244,7 +245,9 @@ Documentación formal:
 - Historias de Usuario INVEST y BDD: [`docs/historias.md`](docs/historias.md)
 - Modelo y Diccionario de Datos: [`docs/datos.md`](docs/datos.md) (implementado en [`docs/schema.sql`](docs/schema.sql))
 - Bitácora de uso de IA: [`docs/bitacora-ia.md`](docs/bitacora-ia.md)
+- Manual de uso: [`src/manual.md`](src/manual.md) (también en la app, en Ayuda, y en [PDF](src/assets/manual/manual-control-neumaticos-caex.pdf))
 - Experiencia de usuario y especificaciones: [`docs/experiencia-usuario.md`](docs/experiencia-usuario.md)
+- Registro de propuestas de cambio: [`docs/propuestas.md`](docs/propuestas.md)
 - Modelo de desgaste y vida útil remanente: [`docs/modelo.md`](docs/modelo.md) · [resultados de la PoC](modelo/resultados/REPORTE.md)
 - Arquitectura del Sistema: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Wireframes Anotados de Flujo: [`docs/wireframes/README.md`](docs/wireframes/README.md)

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+  Captura una pantalla del prototipo para el manual (src/assets/manual/).
+  Parámetros: ?r=<ruta del prototipo sin #>&prep=<código opcional a ejecutar antes de la captura>
+  Uso: ver scripts/manual/generar.sh
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Captura del manual</title>
+<style>
+  html, body { margin: 0; background: #0f141c; }
+  iframe { width: 1400px; height: 900px; border: 0; display: block; }
+</style>
+</head>
+<body>
+<iframe id="app"></iframe>
+<script>
+const q = new URLSearchParams(location.search);
+const frame = document.getElementById("app");
+frame.addEventListener("load", () => {
+  // espera a que el prototipo cargue los datos y dibuje la pantalla
+  setTimeout(() => {
+    const prep = q.get("prep");
+    if (prep) frame.contentWindow.eval(prep);
+  }, 3500);
+}, { once: true });
+frame.src = "../../src/index.html#" + (q.get("r") || "/");
+</script>
+</body>
+</html>
