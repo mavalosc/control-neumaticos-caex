@@ -1,7 +1,7 @@
 # Experiencia de usuario y especificaciones
 ## Herramienta predictiva de desgaste de neumáticos CAEX · Equipo 3
 
-> Describe la herramienta **tal como está publicada** (versión v0.6, 24-10-2026, https://control-neumaticos-caex-frontend.vercel.app) y lo que falta para llevarla a faena.
+> Describe la herramienta en su versión v0.7 (24-10-2026) y lo que falta para llevarla a faena. Se publicará en https://control-neumaticos-caex-frontend.vercel.app cuando se apruebe su revisión (PROP-01).
 > Documentos relacionados: [historias de usuario](historias.md) · [modelo de datos](datos.md) · [modelo predictivo](modelo.md) · [wireframes](wireframes/README.md)
 
 **Estados usados en este documento**
@@ -23,6 +23,7 @@
 | **Despachador de mina** | Sacar del ciclo un CAEX con daño crítico | Cuando recibe una alerta de daño nivel 3 | Banner de alerta del Tablero |
 | **Operador del pórtico** | Confirmar que la pasada se capturó completa | En cada pasada de un CAEX | Simulador del pórtico (Vista Operador) |
 | **Ingeniería de confiabilidad** | Entender por qué se desgastan los neumáticos y validar el modelo | Revisiones semanales | Simulador (Vista Ingeniería), Datos, Modelos |
+| **Profesor y evaluadores** | Revisar el flujo, la trazabilidad y los entregables | En cada entrega | Ayuda (sección para evaluadores), Datos, Modelos |
 | **Taller de neumáticos** | Recibir órdenes con fecha, turno y serial de reemplazo | Al programar el turno del taller | Órdenes (vía ERP en el futuro) |
 
 ---
@@ -90,6 +91,7 @@ flowchart TD
 
     O -.-> D["Datos #/datos<br/>tablas completas y CSV"]
     D -.-> M["Modelos #/modelos<br/>cómo se calcula el riesgo"]
+    T -.->|botón ?| H["Ayuda #/ayuda<br/>manual y PDF"]
 
     classDef principal fill:#1d4ed8,color:#fff,stroke:#1e3a8a
     classDef excepcion fill:#fef3c7,color:#78350f,stroke:#d97706
@@ -164,6 +166,8 @@ sequenceDiagram
 | ESP-F-13 | Explorar las 8 tablas completas con búsqueda, orden por columna y paginación | — | Datos | ✅ | Conteo de filas igual al de Supabase |
 | ESP-F-14 | Descargar en CSV la tabla filtrada | — | Datos | ✅ | Archivo `tabla_fecha.csv` que abre en Excel |
 | ESP-F-15 | Explicar el cálculo actual y los modelos de aprendizaje, con resultados de la PoC | — | Modelos | ✅ | Métricas leídas desde `assets/modelo/metricas.json` |
+| ESP-F-16 | Manual de uso dentro de la app, con índice y descarga en PDF | — | Ayuda | ✅ | `#/ayuda` muestra `src/manual.md`; el PDF se descarga desde la misma página |
+| ESP-F-17 | Ayuda contextual: el botón **?** de cada pantalla abre la sección del manual que le corresponde | — | Todas | ✅ | Desde Camiones abre `#/ayuda/camiones` |
 
 ### 6.2 Reglas de negocio y umbrales
 
