@@ -1,8 +1,8 @@
 # Avances
 
-## v0.7 (24-10-2026) · Propuestas PROP-01 a PROP-03 (en `dev`, pendiente de revisión)
+## v0.7 (24-10-2026) · Propuestas PROP-01 a PROP-03 (aprobadas)
 - [x] Metodología de propuestas y registro en `docs/propuestas.md`
-- [x] PROP-01: `docs/experiencia-usuario.md` (mapa de experiencia, flujo de pantallas y especificaciones) · **no publicar aún**
+- [x] PROP-01: `docs/experiencia-usuario.md` (mapa de experiencia, flujo de pantallas y especificaciones)
 - [x] PROP-02: «neumático» en lugar de «goma» (+ script de migración para Supabase)
 - [x] PROP-03: manual de uso en `#/ayuda`, botón **?** de ayuda contextual y PDF descargable
 

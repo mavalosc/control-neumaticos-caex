@@ -13,9 +13,9 @@
 
 | Código | Nombre | Estado | Versión | Propuesta | Implementación |
 |---|---|---|---|---|---|
-| PROP-01 | Experiencia de usuario y especificaciones | Implementada en `dev` · **pendiente de revisión, no publicar** | v1 | 24-10-2026 | 24-10-2026 |
-| PROP-02 | Terminología: «neumático» en lugar de «goma» | Implementada en `dev` · pendiente de revisión y de ejecutar el SQL en Supabase | v1 | 24-10-2026 | 24-10-2026 |
-| PROP-03 | Manual de uso dentro de la app | Implementada en `dev` · pendiente de revisión | v1 | 24-10-2026 | 24-10-2026 |
+| PROP-01 | Experiencia de usuario y especificaciones | Aprobada · en publicación (PR a `main`) | v1 | 24-10-2026 | 24-10-2026 |
+| PROP-02 | Terminología: «neumático» en lugar de «goma» | Aprobada · en publicación (PR a `main`) · falta ejecutar el SQL en Supabase | v1 | 24-10-2026 | 24-10-2026 |
+| PROP-03 | Manual de uso dentro de la app | Aprobada · en publicación (PR a `main`) | v1 | 24-10-2026 | 24-10-2026 |
 
 ---
 
@@ -28,6 +28,7 @@
 - **Historial:**
   - 24-10-2026 · v1 creada antes de acordar la metodología; tratada como primera propuesta. Aprobada para implementar con la indicación de **no publicar aún**.
   - 24-10-2026 · se agregaron ESP-F-16 y ESP-F-17 (manual y ayuda contextual, PROP-03) y el perfil «Profesor y evaluadores».
+  - 24-10-2026 · revisión aprobada; se autoriza publicar.
 
 ## PROP-02 · Terminología: «neumático» en lugar de «goma»
 - **Qué:** reemplazar «goma» por «neumático» en la interfaz, los documentos, los datos de demostración y las 2 órdenes guardadas en Supabase.
@@ -36,7 +37,7 @@
 - **Fuera de alcance:** `frontend/` y `docs/historico/` (versiones antiguas que se conservan tal cual); tarjetas de Notion (sin acceso de edición: corrección manual).
 - **Riesgos:** bajo. Las notas de ot-0068 y ot-0052 en Supabase se corrigen con el script de migración, que ejecuta el equipo.
 - **Verificación:** 0 apariciones de «goma» en `src/` y `docs/` (fuera de `historico/`); el script termina con una consulta que debe devolver 0.
-- **Historial:** 24-10-2026 · v1 propuesta, aprobada e implementada en `dev`.
+- **Historial:** 24-10-2026 · v1 propuesta, aprobada e implementada en `dev`; revisión aprobada y publicación autorizada.
 
 ## PROP-03 · Manual de uso dentro de la app
 - **Qué:** manual escrito una sola vez (`src/manual.md`) que se lee en la app (`#/ayuda`), en GitHub y en PDF; botón **?** de ayuda contextual en cada pantalla.
@@ -45,4 +46,4 @@
 - **Archivos:** `src/manual.md` (nuevo), `src/index.html` (botón Ayuda, ruta `#/ayuda`, botón **?**), `src/assets/manual/` (9 capturas y PDF), `scripts/manual/` (generador de capturas y PDF).
 - **Riesgos:** que el manual quede desactualizado cuando cambie la interfaz. Mitigación: `bash scripts/manual/generar.sh` regenera capturas y PDF; toda propuesta que cambie la interfaz debe actualizar el manual. Dependencia de la librería `marked` por CDN (versión fija 12.0.2).
 - **Verificación:** el botón **?** abre la sección correcta desde Tablero, Camiones, Órdenes, Simulador y Datos; el índice muestra 16 secciones; las 9 capturas y el PDF cargan; sin errores de consola.
-- **Historial:** 24-10-2026 · v1 propuesta, aprobada e implementada en `dev`.
+- **Historial:** 24-10-2026 · v1 propuesta, aprobada e implementada en `dev`; revisión aprobada y publicación autorizada.

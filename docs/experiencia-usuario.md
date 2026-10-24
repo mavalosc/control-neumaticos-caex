@@ -1,7 +1,7 @@
 # Experiencia de usuario y especificaciones
 ## Herramienta predictiva de desgaste de neumáticos CAEX · Equipo 3
 
-> Describe la herramienta en su versión v0.7 (24-10-2026) y lo que falta para llevarla a faena. Se publicará en https://control-neumaticos-caex-frontend.vercel.app cuando se apruebe su revisión (PROP-01).
+> Describe la herramienta en su versión v0.7 (24-10-2026) y lo que falta para llevarla a faena. Aplicación: https://control-neumaticos-caex-frontend.vercel.app
 > Documentos relacionados: [historias de usuario](historias.md) · [modelo de datos](datos.md) · [modelo predictivo](modelo.md) · [wireframes](wireframes/README.md)
 
 **Estados usados en este documento**
