@@ -154,6 +154,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Conservar la autoría de Nicolás; no presentar como validado lo que la matriz califica como parcial o sin respaldo; usar el criterio de Héctor solo para lo que él aportó (20 mm). |
 | **Verificación** | Se comprobó que los 8 DOI resuelven en doi.org: 7 existen y el de Roberts et al. estaba cortado (`ecog.0288` → `ecog.02881`). Se corrigieron 5 afirmaciones en la app, el manual y los documentos. **Corrección a una entrada anterior:** en IA-10 se describió el 28 % de fallas por daño del simulador como «cercano al ~30 % de la industria»; según la matriz, ese 30 % proviene de una sola operación estudiada (Lindeque, 2016) y no es un estándar de la industria. |
 
+## IA-15 · Datos de terreno simulados, Gradient Boosting y SHAP en Supabase (PROP-06)
+**Herramienta:** Claude Code · **Fecha:** 25-10-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | El equipo no tiene acceso a mediciones en terreno. Solo la fórmula de horas remanentes estaba en uso; el Gradient Boosting existía solo como prueba de concepto fuera de la app. Héctor Medina aporta criterio experto de taller (umbral de 20 mm). |
+| **Intención** | «¿Es posible iniciar un agente que genere los datos de terreno para implementar el modelo Gradient Boosting + SHAP, generar una base de datos en Supabase que almacene esos datos?» y luego la aprobación de PROP-06: tres tablas con `origen = 'simulado'`, generador, entrenamiento, GitHub Actions diario y predicción con 3 causas SHAP en la Ficha; el generador no escribe en `mediciones`; el Tablero muestra ambas horas remanentes. |
+| **Restricciones** | Generador programado y reproducible en lugar de un agente de IA; la clave `service_role` solo en los Secrets de GitHub y en el `.env` local, nunca en el código ni en el chat; la app solo lee; toda fila marcada como simulada; advertir que SHAP no prueba causalidad. |
+| **Verificación** | Prueba previa en modo prueba (solo lectura y CSV). Primera carga real: 60.300 ciclos, 402 predicciones, error de tasa 0,138 mm/100 h en camiones no vistos (promedio de flota 0,654). Segunda ejecución: 0 ciclos nuevos (no duplica). Escritura con la clave pública rechazada (42501). **Errores de la IA corregidos al probar:** (1) el entrenamiento intentaba convertir a número columnas de texto del CSV; (2) la unión con la tabla de la flota no generaba la columna esperada; (3) la prueba inyectaba datos en `window.state`, que no existe porque `state` es una variable de la página; (4) con la columna nueva, la tabla del Tablero partía los textos en dos líneas: se acortaron los encabezados y se fijó una sola línea por celda. **Limitación declarada:** el modelo aprende las reglas del simulador; SHAP vuelve a poner primero la temperatura del neumático, que es consecuencia y no causa. |
+
 ---
 
 ## Qué debe saber explicar cada integrante
@@ -168,6 +178,8 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `src/index.html`, función `persistir()` | Patrón optimista: primero cambia la pantalla, luego escribe en Supabase y recarga. Si falla, muestra el error y vuelve al dato de la base. |
 | `docs/schema.sql` | Para qué sirve cada trigger de cupos; por qué las funciones son `SECURITY DEFINER`; qué permite cada política RLS y por qué no existe `DELETE`. |
 | `scripts/generar_seed.py` | Lee las constantes `INITIAL_*` del prototipo y genera `docs/seed.sql`, para que la base y el modo local tengan los mismos datos. |
+| `modelo/terreno/generar_terreno.py` y `entrenar_terreno.py` | Qué simula el generador cada día, por qué no duplica datos (`neumatico_id, vida, ciclo` único), cómo se calculan las horas del modelo y qué significan las 3 causas SHAP. |
+| `.github/workflows/terreno-diario.yml` | Cuándo corre, dónde vive la clave `service_role` y por qué la app no puede escribir en esas tablas. |
 | `modelo/generar_datos.py` | Qué efectos verdaderos usa el simulador (constantes `VERDAD_*`) y por qué la temperatura del neumático es consecuencia y no causa. |
 | `modelo/entrenar.py` | Por qué se agrupa en ventanas de ~200 h, qué mide SHAP, qué es la censura en el modelo de Cox y cómo se calcula la horas remanentes (`(profundidad − 20) / tasa × 100`). |
 | `backend/app/proyeccion.py` | Regresión lineal de la profundidad contra las horas de operación para proyectar el cruce del umbral de 20 mm. |

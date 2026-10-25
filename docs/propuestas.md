@@ -18,7 +18,7 @@
 | PROP-03 | Manual de uso dentro de la app | **Publicada** (PR #6, 24-10-2026) | v1 | 24-10-2026 | 24-10-2026 |
 | PROP-04 | (Reservada) Revisión del PR #5 de Héctor: wireframes en el README | Sin conversar | — | — | — |
 | PROP-05 | Respaldo bibliográfico y corrección de afirmaciones | Aprobada · en publicación | v1 | 24-10-2026 | 25-10-2026 |
-| PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | Aprobada · en implementación | v2 | 24-10-2026 | — |
+| PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | Implementada · en publicación (rama `feature/prop-06`) | v2 | 24-10-2026 | 25-10-2026 |
 
 ---
 
@@ -65,7 +65,9 @@
 - **Qué:** (1) tres tablas nuevas en Supabase con la marca `origen = 'simulado'`, solo lectura para la app; (2) generador de terreno que simula ciclos de operación de los 402 neumáticos montados; (3) entrenamiento de Gradient Boosting y SHAP que lee y escribe en Supabase, con marca «Simulado»; (4) ejecución automática diaria con GitHub Actions, con la clave `service_role` solo en los Secrets de GitHub; (5) la Ficha muestra la predicción del modelo y sus 3 causas SHAP como «Modelo entrenado con datos de terreno simulados».
 - **Decisiones del equipo (25-10-2026):** el generador **no** escribe en `mediciones`; el Tablero muestra **ambas** horas remanentes en columnas separadas (fórmula y modelo); ejecución **diaria**.
 - **Riesgo declarado:** el modelo aprende las reglas del simulador; demuestra que la cadena completa funciona, no el comportamiento real de los neumáticos.
-- **Historial:** 24-10-2026 · v1 propuesta. 25-10-2026 · v2 con las decisiones del equipo; aprobada para implementar y publicar.
+- **Archivos:** `docs/migraciones/2026-10-25_PROP-06_terreno_simulado.sql` y `docs/schema.sql`; `modelo/terreno/` (generador, entrenamiento y cliente de Supabase); `.github/workflows/terreno-diario.yml`; `src/db.js` y `src/index.html` (Tablero, Ficha, Datos, Modelos); `docs/datos.md`, `docs/modelo.md`, `src/manual.md`, `docs/experiencia-usuario.md`.
+- **Verificación (25-10-2026):** tablas creadas por el equipo con RLS activado; primera carga de 60.300 ciclos y 402 predicciones (versión `gb-terreno-20261025`, error de tasa 0,138 mm/100 h en camiones no vistos, contra 0,654 del promedio de flota); segunda ejecución sin duplicados (0 ciclos nuevos); la clave pública de la app no puede escribir (error 42501); Tablero y Ficha muestran las predicciones sin errores de consola.
+- **Historial:** 24-10-2026 · v1 propuesta. 25-10-2026 · v2 con las decisiones del equipo; aprobada para implementar y publicar; implementada y verificada con datos en Supabase.
 
 ---
 

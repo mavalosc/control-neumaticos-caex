@@ -177,7 +177,9 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
 ├── modelo/                  # PoC del modelo de desgaste y vida útil remanente (Python)
 │   ├── generar_datos.py     # Datos sintéticos con efectos conocidos
 │   ├── entrenar.py          # Regresión, Gradient Boosting + SHAP, supervivencia (Cox) y validación
+│   ├── terreno/             # PROP-06: generador diario de terreno simulado y entrenamiento contra Supabase
 │   └── resultados/          # REPORTE.md, métricas y gráficos
+├── .github/workflows/      # terreno-diario.yml: genera datos simulados y reentrena el modelo cada día
 ├── scripts/
 │   ├── generar_seed.py      # Genera docs/seed.sql desde los datos del prototipo
 │   └── wireframes/          # Genera los wireframes anotados desde el prototipo

@@ -1,5 +1,11 @@
 # Avances
 
+## v0.9 (25-10-2026) · PROP-06
+- [x] Supabase: `ciclos_operacion`, `modelo_versiones` y `predicciones_modelo` (origen = simulado, solo lectura para la app)
+- [x] Generador de terreno diario y entrenamiento Gradient Boosting + SHAP (`modelo/terreno/`), ejecutados por GitHub Actions
+- [x] Tablero con horas de la fórmula y del modelo; Ficha con predicción y 3 causas SHAP
+
+
 ## v0.8 (25-10-2026) · PROP-05
 - [x] `docs/respaldo-bibliografico.md`: matriz y citas de Nicolás Echeverría, con el criterio experto de Héctor Medina
 - [x] Corrección de 5 afirmaciones sin respaldo (umbral de 20 mm, temperaturas, zonas, ±200 h, 30 % de fallas)
