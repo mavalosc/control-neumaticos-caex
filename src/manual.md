@@ -72,7 +72,9 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 **Cuándo:** al inicio de cada turno.
 
 1. Lea las **cuatro tarjetas** de arriba: cuántos neumáticos hay en zona roja, amarilla, verde y sin proyección. Un clic en una tarjeta filtra la tabla por esa zona.
-2. La **tabla** muestra los neumáticos ordenados de **menor a mayor horas remanentes**: los primeros son los más urgentes.
+2. La **tabla** muestra los neumáticos ordenados de **menor a mayor horas remanentes**: los primeros son los más urgentes. Hay dos columnas de horas:
+   - **Horas rem.:** la fórmula con la profundidad y la tasa medidas por el pórtico. Es la que ordena la tabla.
+   - **Modelo** (etiqueta *sim*): lo que estima el modelo Gradient Boosting, entrenado con **datos de terreno simulados**. Sirve para comparar, no para decidir.
 3. Para acotar la lista:
    - **Buscar:** escriba un serial, un camión (ej. `CAEX-102`) o una posición.
    - **Zona:** Todas, Rojo, Amarillo o Verde.
@@ -123,6 +125,14 @@ La ficha reúne la evidencia para decidir el retiro:
 | Acción recomendada | Si conviene intervenir o seguir operando |
 
 **Si la confianza de un daño es menor a 70 %**, aparece la etiqueta **«por confirmar»**: revíselo antes de decidir.
+
+### Predicción del modelo
+Debajo de las tarjetas aparece la **Predicción del modelo (Gradient Boosting)**, marcada como *«Modelo entrenado con datos de terreno simulados»*:
+- **Horas remanentes según el modelo**, comparadas con las de la fórmula.
+- **Tasa de desgaste prevista**, comparada con la medida por el pórtico.
+- **Por qué:** las 3 variables que más pesan en la predicción, con su peso y si **aumentan** o **reducen** el desgaste.
+
+Las causas muestran **qué variables pesan** en la predicción, **no prueban causalidad**. Si todavía no hay predicción para un neumático, aparece un aviso.
 
 ### Corregir la clasificación de daño
 Si el modelo de visión se equivocó, en **Validación del Planificador (Industria 5.0)** elija el nivel correcto (**Sin daño**, **Leve**, **Moderado** o **Crítico**). La corrección queda registrada con su fecha y como **validada por una persona**; el juicio del planificador prevalece sobre la inteligencia artificial.
@@ -217,7 +227,7 @@ El simulador reproduce lo que verá el **operador del pórtico** cuando un CAEX 
 ![Explorador de datos](assets/manual/08-datos.png)
 
 1. Abra **Datos** (ícono de base de datos).
-2. Elija una tabla en las pestañas. La más importante es **Mediciones**: una fila por neumático en cada pasada.
+2. Elija una tabla en las pestañas. La más importante es **Mediciones**: una fila por neumático en cada pasada. Las pestañas **Ciclos de terreno (simulado)**, **Predicciones del modelo** y **Versiones del modelo** muestran los datos que se generan cada día con datos simulados; *Ciclos de terreno* es la más grande y puede tardar unos segundos.
 3. **Buscar** filtra en todas las columnas; un clic en un **encabezado** ordena por esa columna (otro clic invierte el orden).
 4. **Descargar CSV** baja la tabla filtrada; se abre en Excel.
 5. **↻ Recargar** vuelve a leer la tabla desde la base.
@@ -237,7 +247,7 @@ La página **Modelos** explica, sin necesidad de conocimientos técnicos:
 3. Cada modelo, marcado como **en uso**, **prueba de concepto** o **futuro**.
 4. Los resultados de la prueba de concepto con datos sintéticos.
 
-> Los modelos de aprendizaje (Gradient Boosting, supervivencia) todavía **no** reemplazan el cálculo del Tablero: están validados solo con datos sintéticos.
+> El modelo **Gradient Boosting** funciona todos los días con **datos de terreno simulados** y sus predicciones se muestran en el Tablero y en la Ficha, pero **no reemplaza** el cálculo de la fórmula: no está validado con datos reales. La supervivencia (Cox) sigue como prueba de concepto.
 >
 > En los resultados, «dentro de ±200 h» mide el **error de la estimación**; no demuestra que el modelo anticipe una falla con 200 h de antelación.
 
@@ -302,6 +312,8 @@ Los umbrales de temperatura (85 °C y 95 °C), de presión y las zonas de 200/50
 | **Termografía** | Medición de temperatura por cámara infrarroja |
 | **SHAP** | Método que muestra cuánto aporta cada variable a una predicción |
 | **Datos censurados** | Neumáticos retirados antes de fallar: no se sabe cuánto más habrían durado |
+| **Datos simulados** | Datos generados por un programa (columna `origen = simulado`), no medidos en la faena |
+| **Gradient Boosting** | Modelo que combina cientos de árboles de decisión; aquí estima la tasa de desgaste |
 
 ---
 
@@ -342,5 +354,7 @@ Los umbrales de temperatura (85 °C y 95 °C), de presión y las zonas de 200/50
 | Mediciones, daños, órdenes, ventanas e historial | Guardados en Supabase |
 | Flota (67 CAEX, 405 neumáticos) | Datos de demostración |
 | Captura física del pórtico | Simulada (botón «Iniciar Pasada en Tránsito») |
-| TPMS, carga, velocidad del ciclo y TKPH | Simulados en el navegador, no se guardan |
-| Modelos de aprendizaje | Prueba de concepto con datos sintéticos |
+| TPMS, carga, velocidad del ciclo y TKPH en la pantalla del simulador | Simulados en el navegador, no se guardan |
+| Ciclos de terreno, predicciones y versiones del modelo | **Simulados** cada día por GitHub Actions y guardados en Supabase (`origen = simulado`) |
+| Gradient Boosting + SHAP | En operación diaria, entrenado con datos de terreno **simulados** |
+| Supervivencia (Cox) | Prueba de concepto con datos sintéticos |

@@ -149,6 +149,61 @@ Cruza cada neumático montado con su **última** medición y su **último** dañ
 
 ---
 
+### 2.9 Tablas de datos de terreno simulados y del modelo (PROP-06)
+
+Toda fila lleva **`origen`** (`simulado` hoy; `real` cuando existan datos de la faena). La app solo las **lee**; las escribe GitHub Actions cada día con la clave `service_role`.
+
+#### `ciclos_operacion`: un día de operación SIMULADO de un neumático montado
+
+| Campo | Tipo de dato | Obligatoriedad | Valor de ejemplo |
+|---|---|---|---|
+| `id` | UUID | Requerido (PK) | `0b1e…` |
+| `neumatico_id` | UUID | Requerido (FK → `neumaticos.id`) | `607a7246-…` |
+| `serial`, `caex_codigo`, `posicion` | VARCHAR, VARCHAR, INTEGER | Requerido | `5980R63-2426-1348`, `CAEX-102`, `3` |
+| `vida`, `ciclo` | INTEGER | Requerido (único con `neumatico_id`) | `1`, `57` |
+| `fecha` | DATE | Requerido | `2026-10-25` |
+| `horas_ciclo`, `horas_vida` | NUMERIC | Requerido | `19.4`, `1062.0` |
+| `presion_desv_pct`, `presion_psi` | NUMERIC | Requerido | `-3.20`, `98.7` |
+| `temp_neumatico_c`, `temp_ambiente_c` | NUMERIC | Requerido | `88.4`, `17.2` |
+| `carga_t`, `velocidad_kmh`, `distancia_km` | NUMERIC | Requerido | `231.5`, `20.40`, `336.4` |
+| `terreno` | VARCHAR (`compactado`, `roca_suelta`, `barro`) | Requerido | `roca_suelta` |
+| `pendiente_pct`, `frenadas_por_h`, `tkph` | NUMERIC | Requerido | `7.10`, `11.30`, `945.2` |
+| `profundidad_mm` | NUMERIC(5,2) | Requerido | `41.27` (con ruido del pórtico) |
+| `profundidad_real_simulada` | NUMERIC(6,3) | Requerido | `41.402` (sin ruido; solo para continuar la simulación) |
+| `tasa_real_simulada` | NUMERIC(6,4) | Requerido | `2.0571` (verdad del simulador; solo para evaluar, **nunca** es insumo del modelo) |
+| `origen` | VARCHAR (`simulado`, `real`) | Requerido | `simulado` |
+| `creado_en` | TIMESTAMPTZ | Requerido | `2026-10-25T09:04:11Z` |
+
+#### `modelo_versiones`: cada entrenamiento diario
+
+| Campo | Tipo de dato | Obligatoriedad | Valor de ejemplo |
+|---|---|---|---|
+| `id` | UUID | Requerido (PK) | `5c2d…` |
+| `version` | VARCHAR(40), único | Requerido | `gb-terreno-20261025` |
+| `fecha_entrenamiento` | TIMESTAMPTZ | Requerido | `2026-10-25T09:05:02Z` |
+| `algoritmo` | VARCHAR(60) | Requerido | `Gradient Boosting (HistGradientBoostingRegressor) + SHAP` |
+| `n_ciclos`, `n_ventanas`, `camiones_prueba` | INTEGER | Requerido | `60300`, `5963`, `14` |
+| `mae_tasa_modelo`, `mae_tasa_promedio` | NUMERIC(6,4) | Requerido | `0.1380`, `0.6540` (mm/100 h, camiones no vistos) |
+| `importancia` | JSONB | Opcional | `{"Temperatura del neumático": 0.143, …}` |
+| `origen` | VARCHAR | Requerido | `simulado` |
+
+#### `predicciones_modelo`: predicción diaria por neumático
+
+| Campo | Tipo de dato | Obligatoriedad | Valor de ejemplo |
+|---|---|---|---|
+| `id` | UUID | Requerido (PK) | `9a40…` |
+| `neumatico_id` | UUID | Requerido (FK → `neumaticos.id`) | `607a7246-…` |
+| `serial` | VARCHAR(50) | Requerido | `5980R63-2426-1348` |
+| `modelo_version` | VARCHAR(40) | Requerido (FK → `modelo_versiones.version`) | `gb-terreno-20261025` |
+| `fecha_prediccion` | TIMESTAMPTZ | Requerido | `2026-10-25T09:05:30Z` |
+| `profundidad_mm` | NUMERIC(5,2) | Requerido | `19.80` (última medición del pórtico) |
+| `tasa_prevista_mm_100h` | NUMERIC(6,3) | Requerido | `2.571` |
+| `horas_remanentes_modelo` | INTEGER | Requerido | `0` |
+| `causas` | JSONB | Requerido | `[{"etiqueta": "Presión de inflado", "efecto": "aumenta", "peso_pct": 31.8}, …]` |
+| `origen` | VARCHAR | Requerido | `simulado` |
+
+Vistas de apoyo: **`vista_ultimo_ciclo`** (último ciclo de cada neumático, para continuar la simulación) y **`vista_prediccion_actual`** (última predicción de cada neumático, la que muestra la app).
+
 ## 3. Reglas de Tidy Data (Wickham)
 
 | Regla | Cómo se cumple |
@@ -171,5 +226,6 @@ Cruza cada neumático montado con su **última** medición y su **último** dañ
 | `camiones`, `neumaticos`, `ventanas_taller` | ✅ | ❌ | ❌ (solo los triggers) | ❌ |
 | `mediciones`, `danos_neumaticos`, `historial_ordenes` | ✅ | ✅ | ❌ | ❌ |
 | `ordenes_trabajo` | ✅ | ✅ | ✅ | ❌ |
+| `ciclos_operacion`, `modelo_versiones`, `predicciones_modelo` | ✅ | ❌ (solo GitHub Actions con `service_role`) | ❌ | ❌ |
 
 El frontend usa solo la clave **anon**, que es pública por diseño. La clave `service_role` no se usa en el código ni se publica. En una versión productiva, estas políticas se restringirían a usuarios autenticados según su rol (planificador o despachador).

@@ -150,5 +150,18 @@
     return filas;
   }
 
-  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla };
+  // PROP-06: predicción del modelo entrenado con datos de terreno simulados (si las tablas aún no existen, devuelve vacío)
+  async function leerPredicciones() {
+    const [pred, ver] = await Promise.all([
+      cliente.from("vista_prediccion_actual").select("serial,modelo_version,fecha_prediccion,profundidad_mm,tasa_prevista_mm_100h,horas_remanentes_modelo,causas,origen").limit(5000),
+      cliente.from("modelo_versiones").select("*").order("fecha_entrenamiento", { ascending: false }).limit(1)
+    ]);
+    if (pred.error || ver.error) return { predicciones: {}, modeloVersion: null };
+    return {
+      predicciones: Object.fromEntries(pred.data.map(p => [p.serial, p])),
+      modeloVersion: ver.data[0] || null
+    };
+  }
+
+  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones };
 })();

@@ -167,6 +167,7 @@ sequenceDiagram
 | ESP-F-14 | Descargar en CSV la tabla filtrada | — | Datos | ✅ | Archivo `tabla_fecha.csv` que abre en Excel |
 | ESP-F-15 | Explicar el cálculo actual y los modelos de aprendizaje, con resultados de la PoC | — | Modelos | ✅ | Métricas leídas desde `assets/modelo/metricas.json` |
 | ESP-F-16 | Manual de uso dentro de la app, con índice y descarga en PDF | — | Ayuda | ✅ | `#/ayuda` muestra `src/manual.md`; el PDF se descarga desde la misma página |
+| ESP-F-18 | El Tablero muestra las horas remanentes de la fórmula y las del modelo en columnas separadas; la Ficha muestra la predicción del modelo y sus 3 causas SHAP | HU-01, HU-04 | Tablero, Ficha | 🟡 datos simulados | Columna «Modelo · sim» y tarjeta «Modelo entrenado con datos de terreno simulados» |
 | ESP-F-17 | Ayuda contextual: el botón **?** de cada pantalla abre la sección del manual que le corresponde | — | Todas | ✅ | Desde Camiones abre `#/ayuda/camiones` |
 
 ### 6.2 Reglas de negocio y umbrales
@@ -192,7 +193,7 @@ sequenceDiagram
 | ESP-M-02 | Tasa de desgaste prevista con Gradient Boosting sobre las 12 variables + TKPH | 🧪 | Error medio a 30 mm: 65 h · 95 % de estimaciones con error menor a ±200 h (no equivale a anticipar 200 h) | ≥ 90 % dentro de ±200 h con datos reales |
 | ESP-M-03 | Estimaciones optimistas (predicen más de 200 h de vida extra) | 🧪 | 3,0 % (recta: 27,5 %) | < 5 % |
 | ESP-M-04 | Riesgo de daño súbito con modelo de supervivencia (Cox) | 🧪 | Índice de concordancia 0,71 | ≥ 0,70 con datos reales |
-| ESP-M-05 | Explicar cada alerta con las 3 variables SHAP de mayor peso | 🧪 cálculo listo · ⏳ en la ficha | — | Visible en la ficha (HU-04) |
+| ESP-M-05 | Explicar cada alerta con las 3 variables SHAP de mayor peso | 🟡 en la ficha, con datos simulados (PROP-06) | Error de tasa 0,138 mm/100 h en camiones no vistos (datos simulados) | Validar con el planificador que los motivos se entienden |
 | ESP-M-06 | Presentar las recomendaciones operacionales como hipótesis, no como órdenes | ✅ en la documentación | — | Mensaje explícito en la interfaz |
 | ESP-M-07 | Validar con datos reales separando por camión y por tiempo | ⏳ | — | Antes de la Semana 12 (MVP) |
 
@@ -202,7 +203,7 @@ sequenceDiagram
 |---|---|---|
 | ESP-D-01 | Persistencia en Supabase (PostgreSQL) con 7 tablas y la vista del tablero (`docs/datos.md`) | ✅ |
 | ESP-D-02 | Una fila por neumático y pasada; las correcciones agregan filas, nunca sobrescriben | ✅ |
-| ESP-D-03 | Lecturas TPMS, carga y velocidad del ciclo en una tabla `ciclos_operacion` | ⏳ hoy 🟡 simulado |
+| ESP-D-03 | Lecturas TPMS, carga y velocidad del ciclo en una tabla `ciclos_operacion` | 🟡 tabla creada y alimentada a diario con datos simulados (PROP-06); ⏳ datos reales |
 | ESP-D-04 | Captura real del pórtico (escáner 3D, cámaras, termografía, RFID) | ⏳ horizonte *Después* (HW-01) |
 | ESP-D-05 | Envío automático de la OT al ERP del taller (SAP PM) | ⏳ horizonte *Próximo* |
 | ESP-D-06 | Notificación del aviso de daño crítico al despachador | ⏳ hoy 🟡 solo en el navegador |
