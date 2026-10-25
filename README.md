@@ -63,7 +63,7 @@ Rodrigo Erazo participó en los avances 1 y 2 y dejó el curso.
 | Cifra | Significado |
 |---|---|
 | **US$40M** | En neumáticos por faena tipo: 6 unidades por 120 CAEX por unos US$55.000. En una faena de 20 CAEX son US$6,6M |
-| **~30%** | De los neumáticos muere prematuramente, por corte, impacto o desgaste |
+| **~30%** | De los neumáticos murió prematuramente (corte, impacto o desgaste) en la operación estudiada por Lindeque (2016); no es un estándar universal |
 | **15 a 30 min** | De inspección manual por CAEX, subjetiva y hecha por muestreo |
 
 **Qué pasa si no se resuelve.** Una falla de neumático en operación puede detener la rampa y generar riesgos para la continuidad operacional. Y sin historia por serial, la faena no tiene data dura para negociar frente al fabricante (Michelin, Bridgestone o BKT).
@@ -111,7 +111,7 @@ El sistema integra captura automática de datos, gestión del historial y herram
 2. El escáner 3D reconstruye la banda de rodadura y estima la profundidad remanente en cada posición con precisión milimétrica. Las cámaras identifican cortes, rocas incrustadas y desgastes irregulares, y la termografía registra la temperatura superficial de cada flanco.
 3. El sistema identifica cada neumático mediante la lectura de su número de serie grabado en el costado o por RFID, cuando esté disponible, y confirma su posición en el camión.
 4. El sistema registra profundidad, daños, temperatura y horas de operación en el historial de cada neumático y recalcula su vida útil remanente considerando el desgaste histórico y las condiciones de la ruta del CAEX.
-5. El sistema clasifica cada neumático en condición **verde, amarilla o roja** según su riesgo y su proximidad al umbral de retiro seguro, y publica el listado en el tablero de priorización del turno.
+5. El sistema clasifica cada neumático en condición **verde, amarilla o roja** según su riesgo y su proximidad al umbral de retiro (20 mm, criterio experto de taller), y publica el listado en el tablero de priorización del turno.
 6. El planificador revisa el tablero, identifica los neumáticos en rojo o en amarillo cercanos al umbral, y programa su intervención en la próxima ventana disponible del taller.
 7. El sistema notifica al taller, genera la orden de trabajo en el ERP y registra el evento con trazabilidad completa, como respaldo para la planificación semanal y la gestión técnica con el proveedor.
 
@@ -138,7 +138,7 @@ Versión navegable en Figma: [Maqueta de sistema de mantenimiento](https://www.f
 | Característica | Pantalla | Decisión técnica |
 |---|---|---|
 | Flota ordenada por nivel de riesgo | 1 | Un modelo de proyección y un entorno de ejecución que calculen la vida útil remanente por neumático y por turno |
-| Zonas verde, amarilla y roja | 1 | Umbrales de retiro seguro configurables según el tipo de neumático y las condiciones de la faena |
+| Zonas verde, amarilla y roja | 1 | Umbrales de retiro configurables según el tipo de neumático y las condiciones de la faena |
 | Curva de desgaste de la ficha | 2 | Una serie temporal por serial que conserve profundidad, temperatura y horas de operación de cada medición |
 | Ventana del taller | 3 | Un modelo de capacidad del taller con turnos y cupos disponibles, o una integración con el sistema existente |
 | Orden escrita en el ERP | 4 | Una integración con el ERP que defina credenciales, estructura de datos y tratamiento de órdenes rechazadas |
@@ -192,6 +192,7 @@ La meta de anticipación de 200 horas se ubica en *Después*, porque debe contra
     ├── datos.md             # Diccionario de datos y reglas Tidy Data
     ├── bitacora-ia.md       # Uso auditado de asistentes de IA
     ├── modelo.md            # Metodología del modelo de desgaste y RUL (PoC Semana 8)
+    ├── respaldo-bibliografico.md # Nivel de respaldo de cada método y parámetro
     ├── experiencia-usuario.md # Mapa de experiencia, flujo de pantallas y especificaciones
     ├── propuestas.md        # Registro de propuestas PROP-NN (metodología de cambios)
     ├── historico/           # Versiones reemplazadas (solo referencia)
@@ -248,6 +249,7 @@ Documentación formal:
 - Manual de uso: [`src/manual.md`](src/manual.md) (también en la app, en Ayuda, y en [PDF](src/assets/manual/manual-control-neumaticos-caex.pdf))
 - Experiencia de usuario y especificaciones: [`docs/experiencia-usuario.md`](docs/experiencia-usuario.md)
 - Registro de propuestas de cambio: [`docs/propuestas.md`](docs/propuestas.md)
+- Respaldo bibliográfico de métodos y parámetros (Nicolás Echeverría): [`docs/respaldo-bibliografico.md`](docs/respaldo-bibliografico.md)
 - Modelo de desgaste y vida útil remanente: [`docs/modelo.md`](docs/modelo.md) · [resultados de la PoC](modelo/resultados/REPORTE.md)
 - Arquitectura del Sistema: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Wireframes Anotados de Flujo: [`docs/wireframes/README.md`](docs/wireframes/README.md)

@@ -24,7 +24,7 @@ En cada pantalla de la aplicación, el botón **?** (abajo a la derecha) abre la
 La herramienta ayuda a **retirar cada neumático antes de que falle en operación**. Para eso:
 
 1. Un **pórtico** mide los 6 neumáticos de cada CAEX cuando pasa a 2-5 km/h: profundidad de la banda, daños y temperatura.
-2. El sistema calcula las **horas remanentes**: cuántas horas de operación le quedan a cada neumático hasta llegar al **umbral de retiro seguro de 20 mm**.
+2. El sistema calcula las **horas remanentes**: cuántas horas de operación le quedan a cada neumático hasta llegar al **umbral de retiro de 20 mm** (criterio experto de taller; se puede ajustar según el neumático y la faena).
 3. Cada neumático queda en una **zona de riesgo**:
 
 | Zona | Horas remanentes | Qué hacer |
@@ -32,6 +32,8 @@ La herramienta ayuda a **retirar cada neumático antes de que falle en operació
 | 🔴 **Roja** | Menos de 200 h | Programar el retiro **ahora** |
 | 🟡 **Amarilla** | Entre 200 y 500 h | Programar en la próxima ventana del taller |
 | 🟢 **Verde** | 500 h o más | Operación normal |
+
+Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el equipo**, no un estándar del fabricante.
 
 4. El planificador agenda la intervención en una **ventana del taller con cupo** y emite la **orden de trabajo (OT)**, que queda ligada a la medición que la originó.
 
@@ -236,6 +238,10 @@ La página **Modelos** explica, sin necesidad de conocimientos técnicos:
 4. Los resultados de la prueba de concepto con datos sintéticos.
 
 > Los modelos de aprendizaje (Gradient Boosting, supervivencia) todavía **no** reemplazan el cálculo del Tablero: están validados solo con datos sintéticos.
+>
+> En los resultados, «dentro de ±200 h» mide el **error de la estimación**; no demuestra que el modelo anticipe una falla con 200 h de antelación.
+
+La página también enlaza el **respaldo bibliográfico** de cada método y parámetro, preparado por Nicolás Echeverría.
 
 ---
 
@@ -253,7 +259,7 @@ La página **Modelos** explica, sin necesidad de conocimientos técnicos:
 | Estado de la OT | Programada · Ejecutada · Anulada |
 | Velocidad de captura | 2 a 5 km/h |
 
-Los umbrales de 85 °C y de presión son **supuestos del prototipo**, a confirmar con el fabricante y la faena.
+Los umbrales de temperatura (85 °C y 95 °C), de presión y las zonas de 200/500 h son **valores del prototipo** que deben confirmarse con el fabricante y la faena. El nivel de respaldo de cada uno está en `docs/respaldo-bibliografico.md`.
 
 ---
 
@@ -288,7 +294,7 @@ Los umbrales de 85 °C y de presión son **supuestos del prototipo**, a confirma
 | **Profundidad de banda** | Altura remanente del dibujo del neumático, en mm |
 | **Tasa de desgaste** | Milímetros que pierde la banda cada 100 horas de operación |
 | **Horas remanentes** | Horas de operación que quedan hasta el umbral de 20 mm |
-| **Umbral de retiro seguro** | 20 mm: bajo esa profundidad el neumático debe retirarse |
+| **Umbral de retiro** | 20 mm: bajo esa profundidad el neumático debe retirarse. Criterio experto de taller, ajustable según el neumático y la faena |
 | **Ventana del taller** | Turno del taller con cupos para intervenir neumáticos |
 | **OT** | Orden de trabajo enviada al taller (y al ERP SAP PM) |
 | **TPMS** | Sistema de monitoreo de presión de neumáticos (sensor en la válvula) |
@@ -319,6 +325,7 @@ Los umbrales de 85 °C y de presión son **supuestos del prototipo**, a confirma
 | Diccionario de datos y Tidy Data | `docs/datos.md` |
 | Bitácora de uso de IA | `docs/bitacora-ia.md` |
 | Modelo predictivo (prueba de concepto) | `docs/modelo.md`, `modelo/` |
+| Respaldo bibliográfico de métodos y parámetros | `docs/respaldo-bibliografico.md` |
 | Experiencia de usuario y especificaciones | `docs/experiencia-usuario.md` |
 | Registro de propuestas de cambio | `docs/propuestas.md` |
 

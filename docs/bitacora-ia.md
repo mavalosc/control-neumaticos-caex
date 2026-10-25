@@ -144,6 +144,16 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Implementar solo lo aprobado, en `dev`, sin publicar en `main`; PROP-01 explícitamente sin publicar; usar solo «neumático»; un solo texto fuente para el manual; ningún cambio en Supabase sin que lo ejecute el equipo. |
 | **Verificación** | **PROP-02:** 0 apariciones de «goma» fuera de las versiones históricas; las 2 notas en Supabase quedan en un script de migración para el equipo. **PROP-03:** el botón **?** abre la sección correcta en las 5 pantallas probadas; 16 secciones, 9 capturas y PDF de ~24 páginas. **Errores de la IA corregidos en la prueba:** (1) las capturas salían todas iguales porque Git Bash convertía la ruta `/c` en `C:\`; (2) la barra superior no cabía con el tercer ícono (faltaban 18 px); (3) el ícono de base de datos salía como un cuadro vacío en el PDF; (4) al abrir la ayuda en una sección, la vista quedaba en la sección anterior porque las capturas cargaban después del desplazamiento. |
 
+## IA-14 · Respaldo bibliográfico y corrección de afirmaciones (PROP-05)
+**Herramienta:** Claude Code · **Fecha:** 25-10-2026 · **Autor:** Manuel Ávalos · **Insumo:** matriz y citas de Nicolás Echeverría
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Nicolás preparó en el Kanban de Notion una matriz que clasifica el respaldo bibliográfico de 16 métodos y parámetros del prototipo. Héctor Medina aportó, desde su experiencia en reparación de neumáticos CAEX, el umbral de retiro de 20 mm. |
+| **Intención** | «Explícame por qué solo hay un modelo implementado, revisa el trabajo de Nicolás y dime si está bien y es coherente con lo que hay en el prototipo» y luego «Ejecuta y publica PROP-05». |
+| **Restricciones** | Conservar la autoría de Nicolás; no presentar como validado lo que la matriz califica como parcial o sin respaldo; usar el criterio de Héctor solo para lo que él aportó (20 mm). |
+| **Verificación** | Se comprobó que los 8 DOI resuelven en doi.org: 7 existen y el de Roberts et al. estaba cortado (`ecog.0288` → `ecog.02881`). Se corrigieron 5 afirmaciones en la app, el manual y los documentos. **Corrección a una entrada anterior:** en IA-10 se describió el 28 % de fallas por daño del simulador como «cercano al ~30 % de la industria»; según la matriz, ese 30 % proviene de una sola operación estudiada (Lindeque, 2016) y no es un estándar de la industria. |
+
 ---
 
 ## Qué debe saber explicar cada integrante

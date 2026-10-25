@@ -296,6 +296,7 @@ Error absoluto medio frente a la tasa real (mm/100 h). El piso por ruido de medi
 ## 4. Horas remanentes (RUL) frente al método actual
 Método actual = recta de profundidad vs horas sobre todas las mediciones del neumático (`backend/app/proyeccion.py`).
 Cada celda: error medio · % de estimaciones dentro de ±200 h · % **optimistas** (predicen más de 200 h de vida extra, el error peligroso).
+«Dentro de ±200 h» mide el error de la estimación; **no demuestra** que el modelo anticipe una falla con 200 h de antelación (META-01).
 
 | Punto de evaluación | N | Método actual | Modelo |
 |---|---|---|---|

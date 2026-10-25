@@ -30,7 +30,7 @@ El sistema implementa una arquitectura desacoplada y orientada a la nube, diseñ
 
 ## 2. Parámetros del Modelo Predictivo y Dominio Operacional
 
-- **Umbral de Retiro Seguro:** **20,0 mm** de profundidad de banda de rodadura (umbral estricto contra desgaste total de carcasa).
+- **Umbral de retiro:** **20,0 mm** de profundidad de banda de rodadura. Criterio experto de taller (Héctor Medina); configurable por neumático y faena ([respaldo](respaldo-bibliografico.md)).
 - **Zonas de Criticidad de Vida Útil Remanente:**
   - 🔴 **Zona Roja (< 200 h):** Retiro inmediato programado. Alto riesgo de falla en rampa.
   - 🟡 **Zona Amarilla (< 500 h):** Planificación en la próxima ventana disponible de taller.
