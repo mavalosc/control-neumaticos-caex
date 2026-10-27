@@ -2,7 +2,7 @@
 ## Herramienta predictiva de desgaste de neumáticos CAEX · Equipo 3
 
 > Describe la herramienta en su versión v0.7 (24-10-2026) y lo que falta para llevarla a faena. Aplicación: https://control-neumaticos-caex-frontend.vercel.app
-> Documentos relacionados: [historias de usuario](historias.md) · [modelo de datos](datos.md) · [modelo predictivo](modelo.md) · [wireframes](wireframes/README.md)
+> Documentos relacionados: [respaldo bibliográfico](respaldo-bibliografico.md) · [historias de usuario](historias.md) · [modelo de datos](datos.md) · [modelo predictivo](modelo.md) · [wireframes](wireframes/README.md)
 
 **Estados usados en este documento**
 
@@ -173,23 +173,23 @@ sequenceDiagram
 
 | ID | Regla | Valor | Origen |
 |---|---|---|---|
-| ESP-R-01 | Umbral de retiro seguro de la banda | 20,0 mm | Caso de uso (Avance 2) |
+| ESP-R-01 | Umbral de retiro de la banda | 20,0 mm | Criterio experto de taller (Héctor Medina); configurable por neumático y faena |
 | ESP-R-02 | Horas remanentes | (profundidad − 20 mm) ÷ tasa × 100 | `backend/app/proyeccion.py` |
-| ESP-R-03 | Zonas | Rojo < 200 h · Amarillo < 500 h · Verde ≥ 500 h | Caso de uso |
+| ESP-R-03 | Zonas | Rojo < 200 h · Amarillo < 500 h · Verde ≥ 500 h | Requisito propuesto de planificación (sin respaldo bibliográfico directo) |
 | ESP-R-04 | Niveles de daño | 0 sin daño · 1 leve · 2 moderado · 3 crítico (alerta) | Caso de uso |
-| ESP-R-05 | Temperatura del flanco | Normal < 85 °C · Advertencia 85-95 °C · Crítico > 95 °C | 95 °C del proyecto; 85 °C supuesto |
+| ESP-R-05 | Temperatura del flanco | Normal < 85 °C · Advertencia 85-95 °C · Crítico > 95 °C | Umbrales de alerta del prototipo, no validados (95 °C: respaldo parcial; 85 °C: supuesto) |
 | ESP-R-06 | Presión de inflado | Nominal 102 psi; advertencia > ±5 %, crítico > ±10 % | Supuesto; ajustar con el fabricante |
 | ESP-R-07 | Velocidad de captura del pórtico | 2 a 5 km/h | Caso de uso |
 | ESP-R-08 | Capacidad del taller | 3 cupos por ventana; el cupo lo controla la base | `docs/schema.sql` |
 | ESP-R-09 | Trazabilidad de OT | Toda creación, cambio o anulación deja fila en `historial_ordenes` con motivo | HU-08 |
-| ESP-R-10 | Meta de anticipación | Identificar el riesgo con al menos 200 h de anticipación | Roadmap (META-01) |
+| ESP-R-10 | Meta de anticipación | Identificar el riesgo con al menos 200 h de anticipación | Requisito propuesto (META-01); sin respaldo bibliográfico directo |
 
 ### 6.3 Modelo predictivo
 
 | ID | Especificación | Estado | Valor actual | Meta |
 |---|---|---|---|---|
 | ESP-M-01 | Proyección de horas remanentes por recta sobre las mediciones del neumático | ✅ en el tablero | Error medio a 30 mm: 222 h (datos sintéticos) | Reemplazar por ESP-M-02 |
-| ESP-M-02 | Tasa de desgaste prevista con Gradient Boosting sobre las 12 variables + TKPH | 🧪 | Error medio a 30 mm: 65 h · 95 % dentro de ±200 h | ≥ 90 % dentro de ±200 h con datos reales |
+| ESP-M-02 | Tasa de desgaste prevista con Gradient Boosting sobre las 12 variables + TKPH | 🧪 | Error medio a 30 mm: 65 h · 95 % de estimaciones con error menor a ±200 h (no equivale a anticipar 200 h) | ≥ 90 % dentro de ±200 h con datos reales |
 | ESP-M-03 | Estimaciones optimistas (predicen más de 200 h de vida extra) | 🧪 | 3,0 % (recta: 27,5 %) | < 5 % |
 | ESP-M-04 | Riesgo de daño súbito con modelo de supervivencia (Cox) | 🧪 | Índice de concordancia 0,71 | ≥ 0,70 con datos reales |
 | ESP-M-05 | Explicar cada alerta con las 3 variables SHAP de mayor peso | 🧪 cálculo listo · ⏳ en la ficha | — | Visible en la ficha (HU-04) |

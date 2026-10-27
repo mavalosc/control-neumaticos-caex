@@ -9,7 +9,7 @@
 ## 1. Objetivo
 
 1. Identificar qué variables operacionales tienen mayor influencia en la **tasa de desgaste** y en el **riesgo de falla prematura** de un neumático OTR.
-2. Predecir las **horas de vida útil remanente** con un error menor que el del método actual (recta de profundidad vs horas, `backend/app/proyeccion.py`), con la meta de anticipar el retiro en **al menos 200 h**.
+2. Predecir las **horas de vida útil remanente** con un error menor que el del método actual (recta de profundidad vs horas, `backend/app/proyeccion.py`), con la meta de anticipar el retiro en **al menos 200 h**. Esa meta es un **requisito propuesto** de planificación (META-01), sin respaldo directo en la literatura revisada ([respaldo bibliográfico](respaldo-bibliografico.md)).
 3. Entregar al planificador la **razón** de cada alerta (explicabilidad, Roadmap *Próximo*: «que el planificador vea por qué el modelo puso un neumático en rojo»).
 
 ## 2. Variables y fuentes de datos
@@ -39,7 +39,7 @@ Las variables 4, 5 y 6 están fuertemente correlacionadas. La industria las resu
 | Fin de vida | Ejemplo | Modelo | Por qué separarlos |
 |---|---|---|---|
 | **Desgaste** | La banda llega al umbral de 20 mm | Regresión de la tasa (mm/100 h) | Es gradual y medible en cada pasada |
-| **Daño** | Corte, impacto, separación (~30 % de las fallas) | Supervivencia (Cox) | Es un evento súbito; muchas vidas terminan por retiro o siguen montadas (**censura**) |
+| **Daño** | Corte, impacto, separación (~30 % de las fallas en la operación estudiada por Lindeque, 2016) | Supervivencia (Cox) | Es un evento súbito; muchas vidas terminan por retiro o siguen montadas (**censura**) |
 
 Mezclar ambos en una sola cifra de RUL distorsiona los dos.
 
@@ -86,7 +86,9 @@ El simulador genera 1.610 vidas de neumático en 67 CAEX durante unas 12.000 h, 
 | Regresión multivariable | 0,102 |
 | **Gradient Boosting** | **0,080** |
 
-**Horas remanentes frente al método actual** (167 neumáticos de prueba que terminaron por desgaste):
+**Horas remanentes frente al método actual** (167 neumáticos de prueba que terminaron por desgaste).
+
+> **Cómo leer «dentro de ±200 h»:** mide el **error de la estimación** de horas remanentes. **No demuestra** que el modelo anticipe una falla con 200 h de antelación (meta META-01); eso requiere validarlo con fallas reales.
 
 | Punto de evaluación | Método actual (recta) | Modelo | |
 |---|---|---|---|
@@ -109,7 +111,7 @@ El simulador genera 1.610 vidas de neumático en 67 CAEX durante unas 12.000 h, 
 **Riesgo de daño (Cox):** índice de concordancia **0,71** en camiones no vistos. Recupera el efecto del terreno de roca suelta (HR verdadero 3,0; estimado 2,8), de la pendiente y de la sobrecarga. Atribuye un efecto falso pequeño a las frenadas (HR 1,09), que en el simulador no influyen en el daño ni están correlacionadas con el terreno. La causa más probable es que el modelo resume con un **promedio por vida** condiciones que cambian de fase durante la vida del neumático; con datos reales conviene un modelo de Cox con **covariables que varían en el tiempo**.
 
 ### Lecciones para el equipo
-1. **El método funciona:** recupera los efectos principales y reduce a menos de un tercio el error en horas remanentes cerca del retiro.
+1. **El método funciona con datos sintéticos:** recupera los efectos principales y reduce a menos de un tercio el error de estimación de horas remanentes cerca del retiro. No demuestra todavía la anticipación de 200 h.
 2. **La importancia no es causalidad:** SHAP pone la **temperatura del neumático** en tercer lugar, aunque en el simulador no causa desgaste; es un síntoma de carga y presión. Por eso las **recomendaciones operacionales** («corregir presión», «cambiar ruta») se presentan como **hipótesis a validar** y no como órdenes automáticas.
 3. **Los efectos no lineales justifican el Gradient Boosting**, que tiene menor error que la regresión. La regresión sigue siendo útil para **explicar** el tamaño de cada efecto.
 4. **Resumir con promedios puede crear efectos falsos** (frenadas en el modelo de daño). Cada efecto encontrado con datos reales se debe revisar con el equipo de operaciones antes de recomendar acciones.

@@ -1010,7 +1010,7 @@ const INITIAL_TRUCKS = [
                 ${f(t.mm)} <span class="text-base font-normal text-[var(--muted)]">mm</span>
               </div>
               <div class="text-xs text-[var(--muted)] mt-1">
-                Umbral seguro de retiro: <strong class="text-rose-400 font-mono">20,0 mm</strong>
+                Umbral de retiro: <strong class="text-rose-400 font-mono">20,0 mm</strong>
               </div>
             </div>
 
@@ -2627,7 +2627,7 @@ const INITIAL_TRUCKS = [
           </div>
 
           ${tarjeta("1. El cálculo que usa hoy el tablero", `
-            <p class="text-sm text-[var(--muted)]">Cada neumático pierde banda de rodado a una velocidad (tasa de desgaste). Si la tasa se mantiene, las horas que le quedan hasta el umbral de retiro seguro de 20 mm son:</p>
+            <p class="text-sm text-[var(--muted)]">Cada neumático pierde banda de rodado a una velocidad (tasa de desgaste). Si la tasa se mantiene, las horas que le quedan hasta el umbral de retiro de 20 mm (criterio experto de taller) son:</p>
             <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-sm text-emerald-300 text-center">horas remanentes = (profundidad actual − 20 mm) ÷ tasa de desgaste × 100</div>
             ${ejemplo ? `<p class="text-xs text-[var(--muted)]">Ejemplo real de la flota: <strong class="text-[var(--ink)]">${ejemplo.cx} P${ejemplo.pos}</strong> tiene ${f(ejemplo.mm)} mm y se desgasta ${f(ejemplo.rate)} mm cada 100 h → quedan unas <strong class="text-rose-400">${ejemplo.h} h</strong>.</p>` : ""}
             <div class="grid grid-cols-3 gap-2 text-xs text-center">
@@ -2635,6 +2635,7 @@ const INITIAL_TRUCKS = [
               <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400"><strong>Amarillo</strong> · menos de 500 h<br>próxima ventana</div>
               <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"><strong>Verde</strong> · más de 500 h<br>operación normal</div>
             </div>
+            <p class="text-xs text-[var(--muted)]">El umbral de 20 mm viene de la experiencia de taller del equipo y se puede ajustar por neumático y faena. Las zonas de 200 h y 500 h son requisitos de planificación propuestos por el equipo, no un estándar del fabricante.</p>
             <p class="text-xs text-[var(--muted)]">La tasa se calcula con una <strong>recta</strong> sobre las mediciones del neumático (<code>backend/app/proyeccion.py</code>). Es simple y explicable, pero supone que las condiciones de operación no cambian. Los modelos de aprendizaje buscan corregir eso.</p>`)}
 
           ${tarjeta("2. De los datos a la decisión", `
@@ -2657,6 +2658,7 @@ const INITIAL_TRUCKS = [
 
           ${tarjeta("4. Resultados de la prueba de concepto", `
             <p class="text-xs text-[var(--muted)]">Datos sintéticos de 1.610 vidas de neumático en 67 CAEX, con efectos conocidos. Se evaluó en ${m.camiones_prueba || 14} camiones que el modelo nunca vio.</p>
+            <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300"><strong>Cómo leer «dentro de ±200 h»:</strong> mide el error de la estimación de horas remanentes. No demuestra que el modelo anticipe una falla con 200 h de antelación (meta del Roadmap); eso requiere validarlo con fallas reales.</div>
             ${r30 && r45 ? `
             <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
               <table class="w-full text-xs">
@@ -2685,6 +2687,7 @@ const INITIAL_TRUCKS = [
             <div class="flex flex-wrap gap-2 pt-1">
               <a href="https://github.com/mavalosc/control-neumaticos-caex/blob/main/docs/modelo.md" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Metodología completa (docs/modelo.md) ↗</a>
               <a href="https://github.com/mavalosc/control-neumaticos-caex/blob/main/modelo/resultados/REPORTE.md" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Reporte de resultados ↗</a>
+              <a href="https://github.com/mavalosc/control-neumaticos-caex/blob/main/docs/respaldo-bibliografico.md" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Respaldo bibliográfico de cada método y parámetro ↗</a>
               <button onclick="navigate('#/datos')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver los datos ›</button>
             </div>`)}
         </div>`;

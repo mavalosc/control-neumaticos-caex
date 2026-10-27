@@ -1,5 +1,10 @@
 # Avances
 
+## v0.8 (25-10-2026) · PROP-05
+- [x] `docs/respaldo-bibliografico.md`: matriz y citas de Nicolás Echeverría, con el criterio experto de Héctor Medina
+- [x] Corrección de 5 afirmaciones sin respaldo (umbral de 20 mm, temperaturas, zonas, ±200 h, 30 % de fallas)
+
+
 ## v0.7 (24-10-2026) · Propuestas PROP-01 a PROP-03 (aprobadas)
 - [x] Metodología de propuestas y registro en `docs/propuestas.md`
 - [x] PROP-01: `docs/experiencia-usuario.md` (mapa de experiencia, flujo de pantallas y especificaciones)
