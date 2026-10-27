@@ -1,0 +1,49 @@
+# PROP-06 · Datos de terreno simulados + Gradient Boosting y SHAP
+# Cada día genera un ciclo de operación SIMULADO por neumático montado, reentrena el modelo
+# y publica en Supabase las predicciones que muestra la app (origen = 'simulado').
+# La clave service_role vive solo en Settings → Secrets and variables → Actions.
+name: Terreno simulado diario
+
+on:
+  schedule:
+    - cron: "0 9 * * *"        # 09:00 UTC = 06:00 en Chile (horario de verano)
+  workflow_dispatch:            # ejecución manual desde la pestaña Actions
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terreno-diario
+  cancel-in-progress: false
+
+jobs:
+  terreno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://vwustghenvatlfwankqo.supabase.co' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Verificar el secreto de Supabase
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Falta el secreto SUPABASE_SERVICE_ROLE_KEY (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: modelo/requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r modelo/requirements.txt
+
+      - name: Generar ciclos de terreno simulados
+        run: python modelo/terreno/generar_terreno.py
+
+      - name: Entrenar el modelo y publicar predicciones
+        run: python modelo/terreno/entrenar_terreno.py

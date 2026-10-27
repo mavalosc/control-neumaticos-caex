@@ -116,18 +116,35 @@ El simulador genera 1.610 vidas de neumático en 67 CAEX durante unas 12.000 h, 
 3. **Los efectos no lineales justifican el Gradient Boosting**, que tiene menor error que la regresión. La regresión sigue siendo útil para **explicar** el tamaño de cada efecto.
 4. **Resumir con promedios puede crear efectos falsos** (frenadas en el modelo de daño). Cada efecto encontrado con datos reales se debe revisar con el equipo de operaciones antes de recomendar acciones.
 
-## 6. Limitaciones
+## 6. Modelo en operación con datos de terreno simulados (PROP-06)
+
+Como el equipo no tiene acceso a mediciones en terreno, la cadena completa funciona con **datos de terreno simulados**:
+
+```
+GitHub Actions (diario, 06:00 Chile)
+  ├─ modelo/terreno/generar_terreno.py → ciclos_operacion  (1 día de operación por neumático montado)
+  └─ modelo/terreno/entrenar_terreno.py → modelo_versiones + predicciones_modelo
+App → Tablero (columna «Modelo · sim») y Ficha (predicción y 3 causas SHAP)
+```
+
+- **Generador:** los mismos efectos del simulador de la sección 5, aplicados a los 402 neumáticos montados de Supabase: un ciclo diario por neumático, con fases de la mina por camión. La primera ejecución crea 150 días de historial; las siguientes agregan los días que falten (es idempotente). Cuando la profundidad simulada llega a 20 mm, modela un recambio (`vida` + 1). No escribe en `mediciones`.
+- **Entrenamiento:** ventanas de 10 días (~190 h), Gradient Boosting sobre las 12 variables + TKPH, evaluado en 20 % de camiones no vistos y reentrenado con todo. Horas remanentes del modelo = (profundidad de la última medición del pórtico − 20 mm) ÷ tasa prevista × 100. SHAP entrega las 3 variables que más pesan en cada predicción.
+- **Primera ejecución de prueba (25-10-2026):** 60.300 ciclos y 5.963 ventanas; error de la tasa en camiones no vistos **0,138 mm/100 h**, contra 0,654 del promedio de flota.
+- **Advertencias:** (1) el modelo aprende las reglas del simulador: demuestra que la cadena funciona, no el comportamiento real; (2) SHAP vuelve a poner primero la temperatura del neumático, que es consecuencia y no causa; (3) las horas del modelo pueden diferir mucho de las de la fórmula, porque la tasa simulada no está calibrada con la flota.
+- **Calibración pendiente:** reemplazar los efectos supuestos por el criterio experto de Héctor Medina (vida típica, desgaste por posición, causas de baja prematura, presión de operación).
+
+## 7. Limitaciones
 - Los datos son sintéticos: la magnitud de cada efecto es un **supuesto** basado en literatura y criterio del equipo, no una medición.
 - El modelo supone que las condiciones de las últimas ~200 h se mantienen. Un cambio de fase futuro no se anticipa; se debe conectar con el plan minero.
 - No hay variables de proveedor ni de compuesto del neumático, ni datos de reparaciones.
 
-## 7. Próximos pasos
+## 8. Próximos pasos
 1. **Datos reales:** acordar con la faena el acceso a TPMS, pesaje y despacho, y crear en Supabase una tabla `ciclos_operacion` con las 12 variables (entrada nueva en [`docs/datos.md`](datos.md)).
 2. **Integración con el prototipo:** reemplazar en el tablero la tasa constante por la tasa prevista, y mostrar en la ficha (HU-04) las tres variables SHAP que más explican cada alerta.
 3. **Revisión con el planificador (Semana 7, Francisco Opazo):** validar que los motivos mostrados sean comprensibles y accionables.
 4. **Deep Learning** (LSTM sobre la serie de pasadas) solo si con datos reales el Gradient Boosting no alcanza la meta de 200 h.
 
-## 8. Cómo reproducir
+## 9. Cómo reproducir
 ```bash
 python -m venv modelo/.venv
 modelo/.venv/Scripts/python -m pip install -r modelo/requirements.txt   # en Linux/macOS: modelo/.venv/bin/python
@@ -135,3 +152,10 @@ modelo/.venv/Scripts/python modelo/generar_datos.py   # ~6 s, crea modelo/datos/
 modelo/.venv/Scripts/python modelo/entrenar.py        # ~20 s, crea modelo/resultados/
 ```
 La semilla fija (2026) hace que los resultados sean idénticos en cada ejecución.
+
+Modelo en operación (PROP-06), sin escribir en Supabase:
+```bash
+modelo/.venv/Scripts/python modelo/terreno/generar_terreno.py --prueba    # CSV en modelo/datos/
+modelo/.venv/Scripts/python modelo/terreno/entrenar_terreno.py --prueba
+```
+Con la variable `SUPABASE_SERVICE_ROLE_KEY` (en `.env` local o en los Secrets de GitHub) los mismos scripts escriben en la base.

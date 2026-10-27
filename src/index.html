@@ -17,6 +17,9 @@
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   
   <style>
+    /* Tablero: 11 columnas sin cortar texto (PROP-06 agregó «Horas rem. · modelo») */
+    .tabla-flota th, .tabla-flota td { padding-left: .55rem; padding-right: .55rem; white-space: nowrap; }
+
     /* --- Manual de uso (#/ayuda) --- */
     .manual h1 { font-size: 1.6rem; font-weight: 700; color: var(--ink); margin: 0 0 .5rem; }
     .manual h2 { font-size: 1.25rem; font-weight: 700; color: var(--ink); margin: 2rem 0 .75rem; padding-top: .5rem; scroll-margin-top: 90px; }
@@ -386,8 +389,13 @@ const INITIAL_TRUCKS = [
     async function sincronizarDesdeBase() {
       const datos = await DB.cargar();
       Object.assign(state, datos);
+      try { Object.assign(state, await DB.leerPredicciones()); } catch (e) { console.warn("Sin predicciones del modelo", e); }
       saveState();
     }
+
+    // PROP-06: predicción del modelo entrenado con datos de terreno simulados
+    const prediccion = serial => (state.predicciones || {})[serial] || null;
+    const ETIQUETA_SIMULADO = "Modelo entrenado con datos de terreno simulados";
 
     // Tras redibujar la pantalla, devuelve el foco al buscador con el cursor al final del texto.
     function enfocarAlFinal(id) {
@@ -678,7 +686,7 @@ const INITIAL_TRUCKS = [
           <!-- Tabla de Datos Principal -->
           <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
+              <table class="tabla-flota w-full text-left text-sm">
                 <thead>
                   <tr class="border-b border-[var(--border)] bg-[var(--bg)]/50 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
                     <th class="py-3 px-4">Camión & Pos</th>
@@ -686,7 +694,8 @@ const INITIAL_TRUCKS = [
                     <th class="py-3 px-4 text-right">Profundidad</th>
                     <th class="py-3 px-4 text-right">Tasa Desgaste</th>
                     <th class="py-3 px-4">Tipo Tasa</th>
-                    <th class="py-3 px-4 text-right font-mono">Horas Rem.</th>
+                    <th class="py-3 px-4 text-right font-mono" title="Horas remanentes con la fórmula: profundidad y tasa medidas por el pórtico">Horas rem.</th>
+                    <th class="py-3 px-4 text-right font-mono" title="Horas remanentes según el modelo Gradient Boosting · ${ETIQUETA_SIMULADO}">Modelo <span class="normal-case text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">sim</span></th>
                     <th class="py-3 px-4 text-center">Temp Flanco</th>
                     <th class="py-3 px-4">Condición</th>
                     <th class="py-3 px-4">Severidad Daño</th>
@@ -720,6 +729,10 @@ const INITIAL_TRUCKS = [
                         <td class="py-3.5 px-4 text-right font-mono font-bold ${t.h < 200 ? 'text-rose-400 text-base' : t.h < 500 ? 'text-amber-400' : 'text-emerald-400'}">
                           ${H(t.h)}
                         </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs" title="${ETIQUETA_SIMULADO}">
+                          ${(() => { const p = prediccion(t.serial); if (!p) return `<span class="text-[var(--muted)]">—</span>`;
+                            const hm = p.horas_remanentes_modelo; return `<span class="${hm < 200 ? 'text-rose-400' : hm < 500 ? 'text-amber-400' : 'text-emerald-400'}">${H(hm)}</span>`; })()}
+                        </td>
                         <td class="py-3.5 px-4 text-center font-mono text-xs">
                           <span class="${t.temp > 95 ? 'text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/30' : 'text-[var(--muted)]'}">
                             ${t.temp}°C
@@ -736,7 +749,7 @@ const INITIAL_TRUCKS = [
                     `;
                   }).join("") : `
                     <tr>
-                      <td colspan="10" class="py-8 text-center text-sm text-[var(--muted)]">
+                      <td colspan="11" class="py-8 text-center text-sm text-[var(--muted)]">
                         No se encontraron neumáticos con los filtros seleccionados.
                       </td>
                     </tr>
@@ -1000,7 +1013,7 @@ const INITIAL_TRUCKS = [
                 ${H(t.h)}
               </div>
               <div class="text-xs text-[var(--muted)] mt-1 flex items-center gap-1.5">
-                <span>Proyección: <strong>Modelo v1.3</strong></span>
+                <span>Proyección: <strong>fórmula con la tasa medida</strong></span>
               </div>
             </div>
 
@@ -1035,6 +1048,46 @@ const INITIAL_TRUCKS = [
             </div>
 
           </div>
+
+          <!-- PROP-06: predicción del modelo con datos de terreno simulados y sus 3 causas SHAP -->
+          ${(() => {
+            const p = prediccion(t.serial);
+            const v = state.modeloVersion;
+            if (!p) return `
+              <div class="bg-[var(--card)] border border-dashed border-[var(--border)] rounded-2xl p-4 text-xs text-[var(--muted)]">
+                <strong class="text-[var(--ink)]">Predicción del modelo:</strong> todavía no hay predicción para este neumático. Se genera cada día con datos de terreno simulados (${DB.activo ? "Supabase" : "requiere conexión a Supabase"}).
+              </div>`;
+            const hm = p.horas_remanentes_modelo, dif = hm - t.h;
+            const zm = zona(hm);
+            return `
+              <div class="bg-[var(--card)] border border-amber-500/40 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <h3 class="text-base font-bold text-[var(--ink)]">Predicción del modelo (Gradient Boosting)</h3>
+                  <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">${ETIQUETA_SIMULADO}</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Horas remanentes según el modelo</div>
+                    <div class="text-3xl font-extrabold font-mono mt-1 ${zm === 'rojo' ? 'text-rose-400' : zm === 'amarillo' ? 'text-amber-400' : 'text-emerald-400'}">${H(hm)}</div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Fórmula: ${H(t.h)} · diferencia ${dif > 0 ? "+" : ""}${H(dif)}</div>
+                  </div>
+                  <div>
+                    <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Tasa de desgaste prevista</div>
+                    <div class="text-3xl font-extrabold font-mono text-[var(--ink)] mt-1">${f(Number(p.tasa_prevista_mm_100h).toFixed(2))} <span class="text-base font-normal text-[var(--muted)]">mm/100h</span></div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Medida por el pórtico: ${f(t.rate)} mm/100h</div>
+                  </div>
+                  <div>
+                    <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Por qué (3 causas principales · SHAP)</div>
+                    ${(p.causas || []).map(c => `
+                      <div class="mb-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-[var(--ink)]">${c.etiqueta}</span><span class="font-mono ${c.efecto === 'aumenta' ? 'text-rose-400' : 'text-emerald-400'}">${c.efecto === 'aumenta' ? '▲ aumenta' : '▼ reduce'} · ${f(c.peso_pct)} %</span></div>
+                        <div class="h-1.5 rounded-full bg-[var(--bg)] mt-0.5"><div class="h-1.5 rounded-full ${c.efecto === 'aumenta' ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${Math.min(100, c.peso_pct)}%"></div></div>
+                      </div>`).join("")}
+                  </div>
+                </div>
+                <p class="text-[11px] text-[var(--muted)]">Las causas SHAP muestran qué variables pesan en la predicción, <strong>no prueban causalidad</strong>. El modelo aprendió de ciclos de operación simulados (presión, carga, terreno, pendiente…), no de mediciones reales de la faena. Versión ${p.modelo_version}${v ? ` · error de tasa en camiones no vistos ${f(Number(v.mae_tasa_modelo).toFixed(3))} mm/100h` : ""} · ${new Date(p.fecha_prediccion).toLocaleDateString("es-CL")}.</p>
+              </div>`;
+          })()}
 
           <!-- Paneles de Análisis: Imagen Escáner 3D y Curva de Desgaste -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2437,6 +2490,9 @@ const INITIAL_TRUCKS = [
       { id: "ordenes_trabajo", nombre: "Órdenes de trabajo", desc: "OT emitidas, con la medición de origen, la ventana del taller y su estado.", orden: "fecha_emision" },
       { id: "historial_ordenes", nombre: "Historial de OT", desc: "Cada creación, modificación o anulación de una OT, con su motivo.", orden: "fecha_evento" },
       { id: "ventanas_taller", nombre: "Ventanas del taller", desc: "Turnos del taller y cupos libres (los ajustan los triggers).", orden: "dia" },
+      { id: "ciclos_operacion", nombre: "Ciclos de terreno (simulado)", desc: "Un día de operación SIMULADO por neumático: presión, temperatura, carga, velocidad, terreno, pendiente, frenadas, TKPH y profundidad. Lo genera cada día GitHub Actions (PROP-06). Es la tabla más grande: puede tardar unos segundos.", orden: "fecha" },
+      { id: "predicciones_modelo", nombre: "Predicciones del modelo", desc: "Predicción diaria del modelo Gradient Boosting por neumático, con sus 3 causas SHAP. Entrenado con datos de terreno simulados.", orden: "fecha_prediccion" },
+      { id: "modelo_versiones", nombre: "Versiones del modelo", desc: "Cada entrenamiento diario: cantidad de datos, error en camiones no vistos e importancia SHAP global.", orden: "fecha_entrenamiento" },
       { id: "vista_tablero_turno", nombre: "Vista del tablero", desc: "Consulta calculada: última medición y último daño de cada neumático montado. Es lo que muestra el Tablero.", orden: "horas_remanentes_calculadas" }
     ];
     let datosTabla = "mediciones", datosCache = {}, datosBusqueda = "", datosOrden = null, datosDesc = true, datosPagina = 1;
@@ -2584,7 +2640,7 @@ const INITIAL_TRUCKS = [
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[var(--muted)]">
             <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué datos se generan?</strong> Cada pasada por el pórtico agrega 6 filas a <em>Mediciones</em> (una por neumático). Las correcciones de daño, las OT y sus cambios agregan filas a sus tablas. Ninguna fila se borra.</div>
-            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué no está aquí?</strong> La telemetría TPMS, carga y TKPH del simulador es simulada y no se guarda. Los datos de entrenamiento del modelo (96.697 ciclos sintéticos) se generan con <code>modelo/generar_datos.py</code>; ver la página Modelos.</div>
+            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">Datos simulados:</strong> las tablas <em>Ciclos de terreno</em>, <em>Predicciones</em> y <em>Versiones del modelo</em> se generan cada día con datos de terreno <strong>simulados</strong> (columna <code>origen = simulado</code>). La telemetría que muestra el simulador del pórtico en pantalla no se guarda.</div>
           </div>
         </div>`;
     }
@@ -2617,6 +2673,7 @@ const INITIAL_TRUCKS = [
         </div>`;
       const EN_USO = ["En uso en el prototipo", "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"];
       const POC = ["Prueba de concepto", "bg-amber-500/10 text-amber-400 border-amber-500/30"];
+      const EN_USO_SIM = ["En uso · datos simulados", "bg-amber-500/10 text-amber-400 border-amber-500/30"];
       const FUTURO = ["Futuro", "bg-slate-500/10 text-slate-300 border-slate-500/30"];
 
       $.innerHTML = `
@@ -2651,10 +2708,20 @@ const INITIAL_TRUCKS = [
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               ${modelo("Proyección lineal", EN_USO, "¿Cuántas horas le quedan a este neumático?", "Ajusta una recta a la profundidad medida contra las horas de uso y ve cuándo cruza los 20 mm.", "Horas remanentes y zona roja / amarilla / verde.")}
               ${modelo("Regresión multivariable", POC, "¿Cuánto aporta cada variable al desgaste?", "Relaciona el logaritmo de la tasa con las variables. Cada coeficiente se lee como «+x % de desgaste por unidad».", "Efecto % de cada factor (ej. roca suelta +30 %).")}
-              ${modelo("Gradient Boosting + SHAP", POC, "¿A qué velocidad se desgastará con las condiciones actuales?", "Combina cientos de árboles de decisión que capturan efectos no lineales (ej. la pendiente pesa más sobre 6 %). SHAP reparte la predicción entre las variables.", "Tasa prevista, horas remanentes y ranking de causas.")}
+              ${modelo("Gradient Boosting + SHAP", EN_USO_SIM, "¿A qué velocidad se desgastará con las condiciones actuales?", "Combina cientos de árboles de decisión que capturan efectos no lineales (ej. la pendiente pesa más sobre 6 %). SHAP reparte la predicción entre las variables.", "Tasa prevista, horas remanentes y ranking de causas.")}
               ${modelo("Supervivencia (Cox)", POC, "¿Qué riesgo tiene de un daño súbito (corte, impacto)?", "Usa la vida completa de cada neumático, incluidos los que se retiraron antes de fallar (datos censurados).", "Razón de riesgo de cada factor (ej. roca suelta ×3).")}
               ${modelo("Deep Learning (LSTM)", FUTURO, "¿Hay patrones en la secuencia de pasadas?", "Red neuronal que aprende de la serie temporal de cada neumático. Requiere miles de vidas de neumático.", "Solo si con datos reales el Gradient Boosting no alcanza la meta de 200 h.")}
             </div>`)}
+
+          ${state.modeloVersion ? tarjeta("Modelo en operación (datos de terreno simulados)", `
+            <p class="text-sm text-[var(--muted)]">Cada día, GitHub Actions simula un ciclo de operación por neumático, reentrena el Gradient Boosting y publica una predicción por neumático con sus 3 causas SHAP. La Ficha y el Tablero las muestran marcadas como <strong class="text-amber-400">simuladas</strong>.</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">Versión</div><div class="font-mono font-bold text-[var(--ink)]">${state.modeloVersion.version}</div></div>
+              <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">Ciclos de terreno</div><div class="font-mono font-bold text-[var(--ink)]">${Number(state.modeloVersion.n_ciclos).toLocaleString("es-CL")}</div></div>
+              <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">Error de tasa · modelo</div><div class="font-mono font-bold text-emerald-400">${f(Number(state.modeloVersion.mae_tasa_modelo).toFixed(3))} mm/100h</div></div>
+              <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">Error · promedio de flota</div><div class="font-mono font-bold text-[var(--ink)]">${f(Number(state.modeloVersion.mae_tasa_promedio).toFixed(3))} mm/100h</div></div>
+            </div>
+            <p class="text-xs text-[var(--muted)]">Error medido en ${state.modeloVersion.camiones_prueba} camiones que el modelo no vio al entrenar. Como los datos son simulados, el modelo aprende las reglas del simulador: demuestra que la cadena funciona, no el comportamiento real de los neumáticos.</p>`) : ""}
 
           ${tarjeta("4. Resultados de la prueba de concepto", `
             <p class="text-xs text-[var(--muted)]">Datos sintéticos de 1.610 vidas de neumático en 67 CAEX, con efectos conocidos. Se evaluó en ${m.camiones_prueba || 14} camiones que el modelo nunca vio.</p>
