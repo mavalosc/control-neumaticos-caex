@@ -204,6 +204,41 @@ Toda fila lleva **`origen`** (`simulado` hoy; `real` cuando existan datos de la 
 
 Vistas de apoyo: **`vista_ultimo_ciclo`** (último ciclo de cada neumático, para continuar la simulación) y **`vista_prediccion_actual`** (última predicción de cada neumático, la que muestra la app).
 
+### 2.10 Tablas de datos reales anonimizados y del modelo de riesgo (PROP-07)
+
+Datos **reales** de una faena, con `origen = 'real'`. Los equipos y sensores van **anonimizados** (`Camión A`, `Cargador B`, `S-001`): no se guardan nombres de faena, empresa ni códigos originales. Los carga `modelo/real/cargar_reales.py` con la clave `service_role` desde el computador del equipo; la app solo las **lee**. Estos 19 equipos no tienen relación con los 67 CAEX de demostración.
+
+#### `alertas_tpms`: una alerta del TPMS (presión o temperatura fuera de rango)
+
+| Campo | Tipo de dato | Obligatoriedad | Valor de ejemplo |
+|---|---|---|---|
+| `id` | UUID | Requerido (PK) | `3a1f…` |
+| `clave` | VARCHAR(40), único | Requerido | huella SHA-1 de la fila; evita duplicar al recargar |
+| `equipo`, `tipo_equipo` | VARCHAR (`camion`, `cargador`) | Requerido | `Camión D`, `camion` |
+| `posicion` | INTEGER (1 a 6) | Requerido | `5` |
+| `sensor` | VARCHAR(10) | Requerido | `S-069` |
+| `tipo_alerta` | VARCHAR(30) | Requerido | `Baja presión`, `Alta presión`, `Alta temperatura`, `Presión alta en caliente` |
+| `nivel` | INTEGER (1 a 3) | Requerido | `1` |
+| `valor`, `limite`, `unidad` | NUMERIC, NUMERIC, VARCHAR (`psi`, `°C`) | `valor` y `limite` opcionales | `101.5`, `104.5`, `psi` |
+| `fecha_hora` | TIMESTAMP (hora local de faena) | Requerido | `2024-01-01T20:01:49` |
+| `origen` | VARCHAR | Requerido | `real` |
+
+#### `eventos_velocidad`: un exceso de velocidad
+
+| Campo | Tipo de dato | Obligatoriedad | Valor de ejemplo |
+|---|---|---|---|
+| `clave`, `equipo`, `tipo_equipo`, `fecha_hora` | igual que en `alertas_tpms` | Requerido | `Camión K`, `2026-07-27T18:16:46` |
+| `velocidad_kmh`, `limite_kmh` | INTEGER | Requerido | `24`, `20` |
+| `area` | VARCHAR(40) | Opcional (vacío = ruta general) | `Curva 12 V` |
+| `origen` | VARCHAR | Requerido | `real` |
+
+#### `riesgo_versiones` y `riesgo_posiciones`: modelo de riesgo
+
+| Tabla | Una fila es | Campos principales |
+|---|---|---|
+| `riesgo_versiones` | un entrenamiento | `version` (`gb-riesgo-20261029`), `objetivo`, `datos_desde`, `datos_hasta`, `fecha_corte`, `n_ejemplos`, `tasa_base`, `auc_modelo`, `auc_referencia`, `metricas` (JSONB), `importancia` (JSONB) |
+| `riesgo_posiciones` | el riesgo actual de un equipo y posición | `modelo_version` (FK), `equipo`, `posicion`, `fecha_referencia`, `probabilidad`, `nivel_riesgo` (`alto`, `medio`, `bajo`), `alertas_14d`, `causas` (JSONB con `variable`, `etiqueta`, `valor`, `efecto`, `peso_pct`) |
+
 ## 3. Reglas de Tidy Data (Wickham)
 
 | Regla | Cómo se cumple |

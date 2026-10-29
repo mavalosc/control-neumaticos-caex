@@ -179,7 +179,7 @@ sequenceDiagram
 | ESP-R-03 | Zonas | Rojo < 200 h · Amarillo < 500 h · Verde ≥ 500 h | Requisito propuesto de planificación (sin respaldo bibliográfico directo) |
 | ESP-R-04 | Niveles de daño | 0 sin daño · 1 leve · 2 moderado · 3 crítico (alerta) | Caso de uso |
 | ESP-R-05 | Temperatura del flanco | Normal < 85 °C · Advertencia 85-95 °C · Crítico > 95 °C | Umbrales de alerta del prototipo, no validados (95 °C: respaldo parcial; 85 °C: supuesto) |
-| ESP-R-06 | Presión de inflado | Nominal 102 psi; advertencia > ±5 %, crítico > ±10 % | Supuesto; ajustar con el fabricante |
+| ESP-R-06 | Presión de inflado | Nominal 110 psi; advertencia > ±5 %, crítico > ±10 % | Umbrales del TPMS real de una faena (PROP-07); antes supuesto de 102 psi |
 | ESP-R-07 | Velocidad de captura del pórtico | 2 a 5 km/h | Caso de uso |
 | ESP-R-08 | Capacidad del taller | 3 cupos por ventana; el cupo lo controla la base | `docs/schema.sql` |
 | ESP-R-09 | Trazabilidad de OT | Toda creación, cambio o anulación deja fila en `historial_ordenes` con motivo | HU-08 |
@@ -193,6 +193,7 @@ sequenceDiagram
 | ESP-M-02 | Tasa de desgaste prevista con Gradient Boosting sobre las 12 variables + TKPH | 🧪 | Error medio a 30 mm: 65 h · 95 % de estimaciones con error menor a ±200 h (no equivale a anticipar 200 h) | ≥ 90 % dentro de ±200 h con datos reales |
 | ESP-M-03 | Estimaciones optimistas (predicen más de 200 h de vida extra) | 🧪 | 3,0 % (recta: 27,5 %) | < 5 % |
 | ESP-M-04 | Riesgo de daño súbito con modelo de supervivencia (Cox) | 🧪 | Índice de concordancia 0,71 | ≥ 0,70 con datos reales |
+| ESP-M-06 | Riesgo de alerta crítica del TPMS en 7 días por equipo y posición, con datos reales | ✅ PROP-07 | AUC 0,82 contra 0,75 de una regla simple (prueba abr-oct 2026) | Validar con el planificador si el aviso llega a tiempo para actuar |
 | ESP-M-05 | Explicar cada alerta con las 3 variables SHAP de mayor peso | 🟡 en la ficha, con datos simulados (PROP-06) | Error de tasa 0,138 mm/100 h en camiones no vistos (datos simulados) | Validar con el planificador que los motivos se entienden |
 | ESP-M-06 | Presentar las recomendaciones operacionales como hipótesis, no como órdenes | ✅ en la documentación | — | Mensaje explícito en la interfaz |
 | ESP-M-07 | Validar con datos reales separando por camión y por tiempo | ⏳ | — | Antes de la Semana 12 (MVP) |
@@ -204,6 +205,7 @@ sequenceDiagram
 | ESP-D-01 | Persistencia en Supabase (PostgreSQL) con 7 tablas y la vista del tablero (`docs/datos.md`) | ✅ |
 | ESP-D-02 | Una fila por neumático y pasada; las correcciones agregan filas, nunca sobrescriben | ✅ |
 | ESP-D-03 | Lecturas TPMS, carga y velocidad del ciclo en una tabla `ciclos_operacion` | 🟡 tabla creada y alimentada a diario con datos simulados (PROP-06); ⏳ datos reales |
+| ESP-D-07 | Alertas TPMS y excesos de velocidad reales, anonimizados, en `alertas_tpms` y `eventos_velocidad` | ✅ PROP-07 (30.382 alertas y 11.352 excesos de una faena) |
 | ESP-D-04 | Captura real del pórtico (escáner 3D, cámaras, termografía, RFID) | ⏳ horizonte *Después* (HW-01) |
 | ESP-D-05 | Envío automático de la OT al ERP del taller (SAP PM) | ⏳ horizonte *Próximo* |
 | ESP-D-06 | Notificación del aviso de daño crítico al despachador | ⏳ hoy 🟡 solo en el navegador |

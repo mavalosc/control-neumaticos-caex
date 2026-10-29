@@ -163,5 +163,19 @@
     };
   }
 
-  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones };
+  // PROP-07: datos reales anonimizados (resumen para la página Modelos; si las tablas aún no existen, devuelve null)
+  async function leerDatosReales() {
+    const contar = t => cliente.from(t).select("*", { count: "exact", head: true });
+    const [alertas, velocidad, ver] = await Promise.all([
+      contar("alertas_tpms"), contar("eventos_velocidad"),
+      cliente.from("riesgo_versiones").select("*").order("fecha_entrenamiento", { ascending: false }).limit(1)
+    ]);
+    if (alertas.error || velocidad.error || ver.error) return null;
+    const version = ver.data[0] || null;
+    const riesgo = version ? revisar(await cliente.from("riesgo_posiciones").select("*")
+      .eq("modelo_version", version.version).order("probabilidad", { ascending: false })) : [];
+    return { alertas: alertas.count, velocidad: velocidad.count, version, riesgo };
+  }
+
+  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
 })();

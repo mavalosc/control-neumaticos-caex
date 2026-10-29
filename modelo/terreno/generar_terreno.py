@@ -27,7 +27,7 @@ import generar_datos as G  # noqa: E402  efectos y constantes del simulador
 from terreno.supabase_api import Supabase, RAIZ  # noqa: E402
 
 DIAS_HISTORIAL = 150                 # ≈ 3.000 h de operación por neumático en la primera carga
-PRESION_NOMINAL_PSI = 102            # el mismo supuesto del simulador del pórtico en la app
+PRESION_NOMINAL_PSI = 110            # la misma de la app, inferida del TPMS real (PROP-07); antes 102
 MODELOS = {"Cat 793F": (160, 227), "Komatsu 930E-4": (200, 290), "Cat 797F": (260, 363)}  # (vacío, carga nominal) t
 TERRENOS = ["compactado", "roca_suelta", "barro"]
 

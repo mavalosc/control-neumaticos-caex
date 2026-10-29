@@ -227,7 +227,7 @@ El simulador reproduce lo que verá el **operador del pórtico** cuando un CAEX 
 ![Explorador de datos](assets/manual/08-datos.png)
 
 1. Abra **Datos** (ícono de base de datos).
-2. Elija una tabla en las pestañas. La más importante es **Mediciones**: una fila por neumático en cada pasada. Las pestañas **Ciclos de terreno (simulado)**, **Predicciones del modelo** y **Versiones del modelo** muestran los datos que se generan cada día con datos simulados; *Ciclos de terreno* es la más grande y puede tardar unos segundos.
+2. Elija una tabla en las pestañas. La más importante es **Mediciones**: una fila por neumático en cada pasada. Las pestañas **Ciclos de terreno (simulado)**, **Predicciones del modelo** y **Versiones del modelo** muestran los datos que se generan cada día con datos simulados; *Ciclos de terreno* es la más grande y puede tardar unos segundos. Las pestañas marcadas **(real)** traen datos reales anonimizados de una faena: **Alertas TPMS**, **Excesos de velocidad** y **Riesgo por posición**.
 3. **Buscar** filtra en todas las columnas; un clic en un **encabezado** ordena por esa columna (otro clic invierte el orden).
 4. **Descargar CSV** baja la tabla filtrada; se abre en Excel.
 5. **↻ Recargar** vuelve a leer la tabla desde la base.
@@ -245,9 +245,12 @@ La página **Modelos** explica, sin necesidad de conocimientos técnicos:
 1. El cálculo que usa hoy el Tablero (una recta sobre las mediciones del neumático).
 2. El camino de los datos a la decisión: medir, ordenar, predecir, explicar y decidir.
 3. Cada modelo, marcado como **en uso**, **prueba de concepto** o **futuro**.
-4. Los resultados de la prueba de concepto con datos sintéticos.
+4. **Datos reales (anonimizados):** qué se recibió de una faena, qué se aprendió para calibrar el prototipo y el **modelo de riesgo**, con la lista de posiciones con riesgo medio o alto de una alerta crítica del TPMS en los próximos 7 días y sus 3 causas.
+5. Los resultados de la prueba de concepto con datos sintéticos.
 
 > El modelo **Gradient Boosting** funciona todos los días con **datos de terreno simulados** y sus predicciones se muestran en el Tablero y en la Ficha, pero **no reemplaza** el cálculo de la fórmula: no está validado con datos reales. La supervivencia (Cox) sigue como prueba de concepto.
+>
+> El **modelo de riesgo** sí se entrena con **datos reales**, pero responde otra pregunta: si una posición tendrá una alerta crítica de presión o temperatura en 7 días. Una alerta no es una falla del neumático, y los equipos reales («Camión A»…) no son los CAEX de demostración.
 >
 > En los resultados, «dentro de ±200 h» mide el **error de la estimación**; no demuestra que el modelo anticipe una falla con 200 h de antelación.
 
@@ -264,12 +267,13 @@ La página también enlaza el **respaldo bibliográfico** de cada método y par�
 | Nivel de daño | 0 Sin daño · 1 Leve · 2 Moderado · 3 Crítico (genera alerta) |
 | Confianza del daño | Bajo 70 %: «por confirmar» |
 | Temperatura del flanco | Normal < 85 °C · Advertencia 85-95 °C · Crítico > 95 °C |
-| Presión (TPMS) | Nominal 102 psi · Advertencia sobre ±5 % · Crítico sobre ±10 % |
+| Presión (TPMS) | Nominal 110 psi · Advertencia sobre ±5 % · Crítico sobre ±10 % |
+| Riesgo de alerta crítica (datos reales) | Bajo · Medio desde 15 % · Alto desde 40 % de probabilidad en 7 días |
 | Sensor TPMS | Operativo · Sin señal · Falla / calibración |
 | Estado de la OT | Programada · Ejecutada · Anulada |
 | Velocidad de captura | 2 a 5 km/h |
 
-Los umbrales de temperatura (85 °C y 95 °C), de presión y las zonas de 200/500 h son **valores del prototipo** que deben confirmarse con el fabricante y la faena. El nivel de respaldo de cada uno está en `docs/respaldo-bibliografico.md`.
+Los umbrales de temperatura del flanco (85 °C y 95 °C) y las zonas de 200/500 h son **valores del prototipo** que deben confirmarse con el fabricante y la faena. La presión nominal de 110 psi viene del TPMS real de una faena. El nivel de respaldo de cada uno está en `docs/respaldo-bibliografico.md`.
 
 ---
 

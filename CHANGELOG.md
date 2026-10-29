@@ -1,5 +1,10 @@
 # Avances
 
+## v0.10 (29-10-2026) · PROP-07
+- [x] Supabase: `alertas_tpms` y `eventos_velocidad` con datos reales anonimizados de una faena (origen = real, solo lectura para la app)
+- [x] Modelo de riesgo de alerta crítica en 7 días (Gradient Boosting + SHAP) entrenado con datos reales (`modelo/real/`)
+- [x] Sección «Datos reales» en Modelos y 4 pestañas nuevas en Datos; presión nominal calibrada a 110 psi
+
 ## v0.9 (25-10-2026) · PROP-06
 - [x] Supabase: `ciclos_operacion`, `modelo_versiones` y `predicciones_modelo` (origen = simulado, solo lectura para la app)
 - [x] Generador de terreno diario y entrenamiento Gradient Boosting + SHAP (`modelo/terreno/`), ejecutados por GitHub Actions
