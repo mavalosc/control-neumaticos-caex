@@ -19,7 +19,7 @@
 | PROP-04 | (Reservada) Revisión del PR #5 de Héctor: wireframes en el README | Sin conversar | — | — | — |
 | PROP-05 | Respaldo bibliográfico y corrección de afirmaciones | **Publicada** (PR #7, 26-10-2026) | v1 | 24-10-2026 | 25-10-2026 |
 | PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | **Publicada** (PR #8, 26-10-2026) | v2 | 24-10-2026 | 25-10-2026 |
-| PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | Aprobada · en implementación (rama `feature/prop-07`) | v1 | 28-10-2026 | 29-10-2026 |
+| PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | Implementada y verificada · lista para publicar (rama `feature/prop-07`) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
 
 ---
 
@@ -80,7 +80,7 @@
 - **Archivos:** `docs/migraciones/2026-10-29_PROP-07_datos_reales.sql` y `docs/schema.sql`; `modelo/real/` (carga y modelo de riesgo); `modelo/requirements.txt` (`openpyxl`); `modelo/terreno/generar_terreno.py` (110 psi); `src/db.js` y `src/index.html` (Modelos, Datos, Simulador); `docs/datos.md`, `docs/modelo.md`, `docs/respaldo-bibliografico.md`, `docs/experiencia-usuario.md`, `src/manual.md`.
 - **Riesgos:** (1) una alerta crítica no es una falla del neumático; (2) si un sensor deja de transmitir, la falta de alertas se lee como «sin riesgo»; (3) los cargadores tienen otros umbrales y pocos datos; (4) el cambio de 102 a 110 psi crea un salto en la columna `presion_psi` de los ciclos simulados (el modelo usa la desviación en %, que no cambia).
 - **Verificación:** 0 nombres de faena, empresa o códigos originales de equipo en Supabase, en el repositorio y en la app; modelo evaluado con corte por fecha (entrena antes del 01-04-2026 y prueba después) contra una regla simple.
-- **Historial:** 28-10-2026 · v1 propuesta, con la opción (b) de anonimización elegida por el equipo. 29-10-2026 · aprobada («avanza con PROP-07») e implementada en la rama `feature/prop-07`.
+- **Historial:** 28-10-2026 · v1 propuesta, con la opción (b) de anonimización elegida por el equipo. 29-10-2026 · aprobada («avanza con PROP-07») e implementada en la rama `feature/prop-07`. 07-11-2026 · tablas creadas por el equipo con RLS; carga de 30.382 alertas y 11.352 excesos; modelo `gb-riesgo-20261107` publicado (AUC 0,82 vs 0,75; 4 de 80 posiciones a vigilar al 27-10-2026); la clave pública no puede escribir (42501).
 
 ---
 

@@ -2644,7 +2644,7 @@ const INITIAL_TRUCKS = [
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[var(--muted)]">
             <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué datos se generan?</strong> Cada pasada por el pórtico agrega 6 filas a <em>Mediciones</em> (una por neumático). Las correcciones de daño, las OT y sus cambios agregan filas a sus tablas. Ninguna fila se borra.</div>
-            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">Datos simulados:</strong> las tablas <em>Ciclos de terreno</em>, <em>Predicciones</em> y <em>Versiones del modelo</em> se generan cada día con datos de terreno <strong>simulados</strong> (columna <code>origen = simulado</code>). La telemetría que muestra el simulador del pórtico en pantalla no se guarda.</div>
+            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">Datos simulados:</strong> las tablas <em>Ciclos de terreno</em>, <em>Predicciones</em> y <em>Versiones del modelo</em> se generan cada día con datos de terreno <strong>simulados</strong> (columna <code>origen = simulado</code>). La telemetría que muestra el simulador del pórtico en pantalla no se guarda. Las pestañas marcadas <em>(real)</em> traen <strong>datos reales anonimizados</strong> de una faena (columna <code>origen = real</code>).</div>
           </div>
         </div>`;
     }
@@ -2810,7 +2810,7 @@ const INITIAL_TRUCKS = [
           <div>· El TPMS solo guarda alertas, no lecturas continuas, y no trae profundidad de banda ni horas: <strong class="text-[var(--ink)]">no alcanza para entrenar el modelo de horas remanentes</strong>, que sigue con datos simulados.</div>
         </div>
         ${v.version ? `
-        <div class="text-sm font-semibold text-[var(--ink)] pt-1">Modelo de riesgo: ${(v.objetivo || "").toLowerCase()}</div>
+        <div class="text-sm font-semibold text-[var(--ink)] pt-1">Modelo de riesgo: ${(v.objetivo || "").charAt(0).toLowerCase() + (v.objetivo || "").slice(1)}</div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
           ${kpi("Versión", v.version)}
           ${kpi("AUC · modelo", f(Number(v.auc_modelo).toFixed(2)), "text-emerald-400")}
