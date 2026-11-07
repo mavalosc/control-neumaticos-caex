@@ -135,19 +135,27 @@
     for (const [k, v] of Object.entries(fila)) {
       const clave = prefijo + k;
       if (v && typeof v === "object" && !Array.isArray(v)) aplanar(v, clave + ".", out);
+      else if (Array.isArray(v)) out[clave] = v.map(textoElemento).join(" · ");   // ej. las 3 causas SHAP
       else out[clave] = v;
     }
     return out;
   }
 
+  // { etiqueta: "Presión de inflado", efecto: "aumenta", peso_pct: 23.8 } -> "Presión de inflado (aumenta 23.8 %)"
+  const textoElemento = x => x && typeof x === "object"
+    ? (x.etiqueta ? `${x.etiqueta} (${x.efecto} ${x.peso_pct} %)` : JSON.stringify(x)) : String(x);
+
+  // El primer bloque trae el total de filas; los demás bloques se piden en paralelo (30.000 filas en segundos).
   async function leerTabla(nombre) {
-    const filas = [];
-    for (let desde = 0; ; desde += 1000) {
-      const bloque = revisar(await cliente.from(nombre).select(RELACIONES[nombre] || "*").range(desde, desde + 999));
-      filas.push(...bloque.map(f => aplanar(f)));
-      if (bloque.length < 1000) break;
-    }
-    return filas;
+    const columnas = RELACIONES[nombre] || "*";
+    const primero = await cliente.from(nombre).select(columnas, { count: "exact" }).range(0, 999);
+    const filas = revisar(primero);
+    const total = primero.count ?? filas.length;
+    const bloques = [];
+    for (let desde = 1000; desde < total; desde += 1000)
+      bloques.push(cliente.from(nombre).select(columnas).range(desde, desde + 999).then(revisar));
+    for (const bloque of await Promise.all(bloques)) filas.push(...bloque);
+    return filas.map(f => aplanar(f));
   }
 
   // PROP-06: predicción del modelo entrenado con datos de terreno simulados (si las tablas aún no existen, devuelve vacío)
