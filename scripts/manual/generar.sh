@@ -18,7 +18,7 @@ captura() {  # archivo  ruta  [código previo]
   local url="http://localhost:$PUERTO/scripts/manual/captura.html?r=$(MSYS_NO_PATHCONV=1 python -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$2")"
   [ -n "$3" ] && url="$url&prep=$(MSYS_NO_PATHCONV=1 python -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$3")"
   "$CHROME" --headless=new --disable-gpu --hide-scrollbars --user-data-dir="$PERFIL/$1" \
-    --window-size=1400,900 --virtual-time-budget=9000 --screenshot="$SALIDA/$1" "$url" 2>/dev/null
+    --window-size=1400,900 --virtual-time-budget=20000 --screenshot="$SALIDA/$1" "$url" 2>/dev/null
   echo "src/assets/manual/$1"
 }
 
