@@ -133,13 +133,38 @@ App → Tablero (columna «Modelo · sim») y Ficha (predicción y 3 causas SHAP
 - **Advertencias:** (1) el modelo aprende las reglas del simulador: demuestra que la cadena funciona, no el comportamiento real; (2) SHAP vuelve a poner primero la temperatura del neumático, que es consecuencia y no causa; (3) las horas del modelo pueden diferir mucho de las de la fórmula, porque la tasa simulada no está calibrada con la flota.
 - **Calibración pendiente:** reemplazar los efectos supuestos por el criterio experto de Héctor Medina (vida típica, desgaste por posición, causas de baja prematura, presión de operación).
 
+## 6b. Datos reales anonimizados y modelo de riesgo (PROP-07)
+
+El equipo recibió el historial real de una faena: **30.382 alertas TPMS** (ene-2024 a oct-2026; 15 camiones y 4 cargadores, 6 posiciones, 164 sensores) y **11.352 excesos de velocidad** (jul a oct-2026). Se cargaron anonimizados (`Camión A`, `S-001`…) en `alertas_tpms` y `eventos_velocidad`.
+
+**Qué permiten y qué no.** El TPMS solo registra **alertas** (cuando la presión o la temperatura sale de rango), no lecturas continuas, y no hay profundidad de banda, horas ni motivos de baja. Por eso **no sirven para entrenar el modelo de horas remanentes**, que sigue con datos simulados (sección 6). Sí permiten:
+
+1. **Calibrar** el simulador: presión nominal en frío de **110 psi** (los umbrales del TPMS real son exactamente ±5, ±7 y ±10 % de 110), temperatura interna con alertas a 75, 80 y 85 °C, y límites de velocidad de 50 km/h en ruta y de 20 o 15 km/h en curvas.
+2. **Entrenar un modelo de riesgo con datos reales** (`modelo/real/entrenar_riesgo.py`):
+   - **Pregunta:** ¿tendrá esta posición una alerta crítica (nivel 3) en los próximos 7 días?
+   - **Ejemplos:** uno por equipo, posición y día (92.056), con 12 variables del historial de los 14 días previos (alertas totales, críticas, de baja o alta presión, de temperatura, días desde la última alerta, alertas del resto del equipo, posición delantera y tipo de equipo).
+   - **Evaluación con corte por fecha:** entrena con los datos anteriores al 01-04-2026 y prueba con los posteriores, que el modelo no vio. Se compara con una regla simple: «más alertas en los últimos 14 días, más riesgo».
+
+| Métrica (prueba, abr-oct 2026) | Gradient Boosting | Regla simple |
+|---|---|---|
+| AUC (0,5 azar · 1 perfecto) | **0,82** | 0,75 |
+| Brier (menor es mejor) | **0,041** | 0,067 (tasa base) |
+| Acierto en el 5 % de días-posición con más riesgo | **73 %** | — |
+| Alertas críticas capturadas en ese 5 % | 51 % | — |
+
+En la prueba, el 7 % de los días-posición terminó en una alerta crítica dentro de 7 días. Niveles: **medio** desde 15 % (≈ 2 veces la tasa base) y **alto** desde 40 % (≈ 5 veces). SHAP (TreeExplainer) pone primero los **días desde la última alerta crítica** y las **alertas del resto del equipo**: el riesgo se concentra en posiciones que ya tuvieron problemas recientes.
+
+**Advertencias:** (1) una alerta crítica no es una falla del neumático, sino presión o temperatura fuera de rango; (2) si un sensor deja de transmitir, la falta de alertas se lee como «sin riesgo»; (3) el modelo se reentrena a mano cada vez que llega un Excel nuevo, no a diario; (4) SHAP describe el historial de alertas, no prueba causalidad.
+
+**Para reentrenar el modelo de horas remanentes con datos reales** faltan exportes del software de gestión de neumáticos de la faena: mediciones de profundidad por serial, horas por neumático, motivos de baja e historial de montaje y rotación.
+
 ## 7. Limitaciones
 - Los datos son sintéticos: la magnitud de cada efecto es un **supuesto** basado en literatura y criterio del equipo, no una medición.
 - El modelo supone que las condiciones de las últimas ~200 h se mantienen. Un cambio de fase futuro no se anticipa; se debe conectar con el plan minero.
 - No hay variables de proveedor ni de compuesto del neumático, ni datos de reparaciones.
 
 ## 8. Próximos pasos
-1. **Datos reales:** acordar con la faena el acceso a TPMS, pesaje y despacho, y crear en Supabase una tabla `ciclos_operacion` con las 12 variables (entrada nueva en [`docs/datos.md`](datos.md)).
+1. **Datos reales de desgaste:** ya hay alertas TPMS y excesos de velocidad reales (sección 6b). Falta pedir a la faena profundidad de banda, horas, motivos de baja e historial de montaje por serial para reentrenar el modelo de horas remanentes.
 2. **Integración con el prototipo:** reemplazar en el tablero la tasa constante por la tasa prevista, y mostrar en la ficha (HU-04) las tres variables SHAP que más explican cada alerta.
 3. **Revisión con el planificador (Semana 7, Francisco Opazo):** validar que los motivos mostrados sean comprensibles y accionables.
 4. **Deep Learning** (LSTM sobre la serie de pasadas) solo si con datos reales el Gradient Boosting no alcanza la meta de 200 h.

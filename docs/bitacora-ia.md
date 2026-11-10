@@ -164,6 +164,17 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 | **Restricciones** | Generador programado y reproducible en lugar de un agente de IA; la clave `service_role` solo en los Secrets de GitHub y en el `.env` local, nunca en el código ni en el chat; la app solo lee; toda fila marcada como simulada; advertir que SHAP no prueba causalidad. |
 | **Verificación** | Prueba previa en modo prueba (solo lectura y CSV). Primera carga real: 60.300 ciclos, 402 predicciones, error de tasa 0,138 mm/100 h en camiones no vistos (promedio de flota 0,654). Segunda ejecución: 0 ciclos nuevos (no duplica). Escritura con la clave pública rechazada (42501). **Errores de la IA corregidos al probar:** (1) el entrenamiento intentaba convertir a número columnas de texto del CSV; (2) la unión con la tabla de la flota no generaba la columna esperada; (3) la prueba inyectaba datos en `window.state`, que no existe porque `state` es una variable de la página; (4) con la columna nueva, la tabla del Tablero partía los textos en dos líneas: se acortaron los encabezados y se fijó una sola línea por celda. **Limitación declarada:** el modelo aprende las reglas del simulador; SHAP vuelve a poner primero la temperatura del neumático, que es consecuencia y no causa. |
 
+
+## IA-16 · Datos reales de TPMS y velocidad, anonimizados, y modelo de riesgo (PROP-07)
+**Herramienta:** Claude Code · **Fecha:** 29-10-2026 a 07-11-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Héctor Medina consiguió datos de terreno de una faena: un Excel con el historial de alertas TPMS y de excesos de velocidad, y documentos técnicos (criterios de retiro, rotación, pareamiento, manual de neumáticos y licitación TPMS). El repositorio y la app son públicos. |
+| **Intención** | «Revísalos, dime cómo implementarlos en el modelo en la sección de datos reales»; luego la decisión del equipo: opción (b), mostrar los datos sin nombres de faena ni de empresas, y «avanza con PROP-07». |
+| **Restricciones** | Ningún archivo fuente entra al repositorio; equipos y sensores anonimizados (`Camión A`, `S-001`); la tabla de equivalencias solo en el computador del equipo; la app solo lee; toda fila marcada `origen = 'real'`; no presentar una alerta crítica como falla del neumático. |
+| **Verificación** | La revisión de la IA mostró que el TPMS solo registra **alertas**, sin profundidad, horas ni motivos de baja: los datos **no sirven** para entrenar el modelo de horas remanentes, y así se declaró en vez de forzar un uso. Carga: 30.382 alertas y 11.352 excesos (813 duplicados exactos y 1 sensor de prueba descartados). Modelo de riesgo evaluado con corte por fecha: AUC 0,82 contra 0,75 de una regla simple. Escritura con la clave pública rechazada (42501). Búsqueda de nombres de faena y empresas en el repositorio: 0 resultados. **Errores de la IA corregidos al probar:** (1) SHAP con un explicador genérico tardaba 4 minutos y llenaba la salida: se cambió a TreeExplainer (8 s); (2) los niveles de riesgo con cortes fijos de 20 y 50 % dejaban 1 sola posición a vigilar: se fijaron en 2 y 5 veces la tasa base; (3) la causa «días desde la última alerta crítica · aumenta» era ambigua sin su valor: se agregó el valor; (4) el título pasaba «TPMS» a minúsculas. **Hallazgo de calibración:** los umbrales reales son exactamente ±5, ±7 y ±10 % de 110 psi; el prototipo usaba 102 psi. |
+
 ---
 
 ## Qué debe saber explicar cada integrante

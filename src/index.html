@@ -1756,9 +1756,9 @@ const INITIAL_TRUCKS = [
     // Datos SIMULADOS y deterministas: el mismo neumático muestra los mismos valores hasta la siguiente pasada.
     // Umbrales en un solo lugar para poder ajustarlos con el equipo.
     const UMBRAL_TEMP = { advertencia: 85, critico: 95 };      // °C · el crítico (>95 °C) es el que ya usa el proyecto
-    const PRESION_NOMINAL_PSI = 102;                           // 59/80R63 en frío (supuesto; ajustar por fabricante)
+    const PRESION_NOMINAL_PSI = 110;                           // en frío · inferida de los umbrales del TPMS real de una faena (PROP-07)
     const PSI_A_BAR = 0.0689476;
-    const UMBRAL_PRESION = { advertencia: 5, critico: 10 };    // % de desviación respecto de la nominal
+    const UMBRAL_PRESION = { advertencia: 5, critico: 10 };    // % respecto de la nominal · el TPMS real alerta en ±5, ±7 y ±10 %
     const TKPH_REFERENCIA = 900;                               // el mismo supuesto de docs/modelo.md
     const MODELOS_CAEX = {                                     // peso vacío y carga nominal (t)
       "Cat 793F": { vacio: 160, nominal: 227 },
@@ -2493,6 +2493,10 @@ const INITIAL_TRUCKS = [
       { id: "ciclos_operacion", nombre: "Ciclos de terreno (simulado)", desc: "Un día de operación SIMULADO por neumático: presión, temperatura, carga, velocidad, terreno, pendiente, frenadas, TKPH y profundidad. Lo genera cada día GitHub Actions (PROP-06). Es la tabla más grande: puede tardar unos segundos.", orden: "fecha" },
       { id: "predicciones_modelo", nombre: "Predicciones del modelo", desc: "Predicción diaria del modelo Gradient Boosting por neumático, con sus 3 causas SHAP. Entrenado con datos de terreno simulados.", orden: "fecha_prediccion" },
       { id: "modelo_versiones", nombre: "Versiones del modelo", desc: "Cada entrenamiento diario: cantidad de datos, error en camiones no vistos e importancia SHAP global.", orden: "fecha_entrenamiento" },
+      { id: "alertas_tpms", nombre: "Alertas TPMS (real)", desc: "DATOS REALES de una faena, anonimizados (PROP-07): cada alerta del TPMS cuando la presión o la temperatura salió de rango, 2024 a 2026. El TPMS solo registra excesos, no lecturas continuas. Unas 30.000 filas: puede tardar unos segundos.", orden: "fecha_hora" },
+      { id: "eventos_velocidad", nombre: "Excesos de velocidad (real)", desc: "DATOS REALES anonimizados: cada vez que un equipo superó el límite de su tramo (50 km/h en ruta; 20 o 15 km/h en curvas), julio a octubre de 2026.", orden: "fecha_hora" },
+      { id: "riesgo_posiciones", nombre: "Riesgo por posición (real)", desc: "Probabilidad de una alerta crítica del TPMS en los próximos 7 días por equipo y posición, con sus 3 causas SHAP. Modelo entrenado con datos reales.", orden: "probabilidad" },
+      { id: "riesgo_versiones", nombre: "Versiones del modelo de riesgo", desc: "Cada entrenamiento del modelo de riesgo: período de datos, fecha de corte de la prueba, AUC contra una regla simple e importancia SHAP global.", orden: "fecha_entrenamiento" },
       { id: "vista_tablero_turno", nombre: "Vista del tablero", desc: "Consulta calculada: última medición y último daño de cada neumático montado. Es lo que muestra el Tablero.", orden: "horas_remanentes_calculadas" }
     ];
     let datosTabla = "mediciones", datosCache = {}, datosBusqueda = "", datosOrden = null, datosDesc = true, datosPagina = 1;
@@ -2640,7 +2644,7 @@ const INITIAL_TRUCKS = [
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[var(--muted)]">
             <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">¿Qué datos se generan?</strong> Cada pasada por el pórtico agrega 6 filas a <em>Mediciones</em> (una por neumático). Las correcciones de daño, las OT y sus cambios agregan filas a sus tablas. Ninguna fila se borra.</div>
-            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">Datos simulados:</strong> las tablas <em>Ciclos de terreno</em>, <em>Predicciones</em> y <em>Versiones del modelo</em> se generan cada día con datos de terreno <strong>simulados</strong> (columna <code>origen = simulado</code>). La telemetría que muestra el simulador del pórtico en pantalla no se guarda.</div>
+            <div class="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]"><strong class="text-[var(--ink)]">Datos simulados:</strong> las tablas <em>Ciclos de terreno</em>, <em>Predicciones</em> y <em>Versiones del modelo</em> se generan cada día con datos de terreno <strong>simulados</strong> (columna <code>origen = simulado</code>). La telemetría que muestra el simulador del pórtico en pantalla no se guarda. Las pestañas marcadas <em>(real)</em> traen <strong>datos reales anonimizados</strong> de una faena (columna <code>origen = real</code>).</div>
           </div>
         </div>`;
     }
@@ -2653,6 +2657,11 @@ const INITIAL_TRUCKS = [
       if (!modelosMetricas) {
         fetch("./assets/modelo/metricas.json").then(r => r.json()).then(m => { modelosMetricas = m; if (location.hash === "#/modelos") renderModelos(); })
           .catch(() => { modelosMetricas = {}; });
+      }
+      if (datosReales === undefined && DB.activo) {
+        datosReales = null;
+        DB.leerDatosReales().then(d => { datosReales = d || {}; if (location.hash === "#/modelos") renderModelos(); })
+          .catch(e => { console.warn("Sin datos reales", e); datosReales = {}; });
       }
       const m = modelosMetricas || {};
       const rul = m.rul || {};
@@ -2675,12 +2684,13 @@ const INITIAL_TRUCKS = [
       const POC = ["Prueba de concepto", "bg-amber-500/10 text-amber-400 border-amber-500/30"];
       const EN_USO_SIM = ["En uso · datos simulados", "bg-amber-500/10 text-amber-400 border-amber-500/30"];
       const FUTURO = ["Futuro", "bg-slate-500/10 text-slate-300 border-slate-500/30"];
+      const EN_USO_REAL = ["En uso · datos reales", "bg-sky-500/10 text-sky-400 border-sky-500/30"];
 
       $.innerHTML = `
         <div class="max-w-5xl mx-auto space-y-5">
           <div class="pb-3 border-b border-[var(--border)]">
             <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Cómo funcionan los modelos predictivos</h1>
-            <p class="text-sm text-[var(--muted)] mt-1">De la medición del pórtico a la decisión del planificador. Los resultados de aprendizaje son de una prueba de concepto con <strong class="text-amber-400">datos sintéticos</strong>: validan el método, no el desempeño en faena.</p>
+            <p class="text-sm text-[var(--muted)] mt-1">De la medición del pórtico a la decisión del planificador. Los resultados de aprendizaje del desgaste son de una prueba de concepto con <strong class="text-amber-400">datos sintéticos</strong>: validan el método, no el desempeño en faena. El modelo de riesgo de alertas usa <strong class="text-sky-400">datos reales anonimizados</strong> (sección «Datos reales»).</p>
           </div>
 
           ${tarjeta("1. El cálculo que usa hoy el tablero", `
@@ -2710,6 +2720,7 @@ const INITIAL_TRUCKS = [
               ${modelo("Regresión multivariable", POC, "¿Cuánto aporta cada variable al desgaste?", "Relaciona el logaritmo de la tasa con las variables. Cada coeficiente se lee como «+x % de desgaste por unidad».", "Efecto % de cada factor (ej. roca suelta +30 %).")}
               ${modelo("Gradient Boosting + SHAP", EN_USO_SIM, "¿A qué velocidad se desgastará con las condiciones actuales?", "Combina cientos de árboles de decisión que capturan efectos no lineales (ej. la pendiente pesa más sobre 6 %). SHAP reparte la predicción entre las variables.", "Tasa prevista, horas remanentes y ranking de causas.")}
               ${modelo("Supervivencia (Cox)", POC, "¿Qué riesgo tiene de un daño súbito (corte, impacto)?", "Usa la vida completa de cada neumático, incluidos los que se retiraron antes de fallar (datos censurados).", "Razón de riesgo de cada factor (ej. roca suelta ×3).")}
+              ${modelo("Riesgo de alerta crítica (Gradient Boosting + SHAP)", EN_USO_REAL, "¿Qué posición tendrá una alerta crítica del TPMS en los próximos 7 días?", "Clasificador de árboles entrenado con el historial real de alertas de presión y temperatura de los 14 días previos. SHAP muestra qué parte del historial pesa más.", "Probabilidad por equipo y posición, nivel alto / medio / bajo y sus 3 causas.")}
               ${modelo("Deep Learning (LSTM)", FUTURO, "¿Hay patrones en la secuencia de pasadas?", "Red neuronal que aprende de la serie temporal de cada neumático. Requiere miles de vidas de neumático.", "Solo si con datos reales el Gradient Boosting no alcanza la meta de 200 h.")}
             </div>`)}
 
@@ -2722,6 +2733,8 @@ const INITIAL_TRUCKS = [
               <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">Error · promedio de flota</div><div class="font-mono font-bold text-[var(--ink)]">${f(Number(state.modeloVersion.mae_tasa_promedio).toFixed(3))} mm/100h</div></div>
             </div>
             <p class="text-xs text-[var(--muted)]">Error medido en ${state.modeloVersion.camiones_prueba} camiones que el modelo no vio al entrenar. Como los datos son simulados, el modelo aprende las reglas del simulador: demuestra que la cadena funciona, no el comportamiento real de los neumáticos.</p>`) : ""}
+
+          ${tarjetaDatosReales(tarjeta)}
 
           ${tarjeta("4. Resultados de la prueba de concepto", `
             <p class="text-xs text-[var(--muted)]">Datos sintéticos de 1.610 vidas de neumático en 67 CAEX, con efectos conocidos. Se evaluó en ${m.camiones_prueba || 14} camiones que el modelo nunca vio.</p>
@@ -2746,7 +2759,7 @@ const INITIAL_TRUCKS = [
 
           ${tarjeta("5. Qué falta para usarlo en faena", `
             <ul class="text-sm text-[var(--muted)] list-disc pl-5 space-y-1">
-              <li><strong class="text-[var(--ink)]">Datos reales:</strong> acceso a TPMS, pesaje y despacho de la faena (tabla <code>ciclos_operacion</code> en Supabase).</li>
+              <li><strong class="text-[var(--ink)]">Datos reales de desgaste:</strong> ya se cargaron alertas TPMS y excesos de velocidad reales, pero faltan la profundidad de banda medida, las horas por neumático y los motivos de baja (por ejemplo, exportes del software de gestión de neumáticos de la faena). Sin ellos el modelo de horas remanentes sigue entrenándose con datos simulados.</li>
               <li><strong class="text-[var(--ink)]">Validación con el planificador</strong> en la Semana 7: que los motivos mostrados sean comprensibles y útiles.</li>
               <li><strong class="text-[var(--ink)]">Integración:</strong> reemplazar la recta del tablero por la tasa prevista y mostrar en la ficha las 3 causas principales de cada alerta.</li>
               <li><strong class="text-[var(--ink)]">Supuestos a revisar:</strong> el tamaño de cada efecto en el simulador viene de literatura y criterio del equipo, no de mediciones.</li>
@@ -2758,6 +2771,74 @@ const INITIAL_TRUCKS = [
               <button onclick="navigate('#/datos')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver los datos ›</button>
             </div>`)}
         </div>`;
+    }
+
+    // PROP-07: datos reales anonimizados de una faena (alertas TPMS y excesos de velocidad) y modelo de riesgo
+    let datosReales;   // undefined: sin pedir · null: cargando · {}: sin tablas · { alertas, velocidad, version, riesgo }
+    const NIVEL_RIESGO = {
+      alto: { txt: "Alto", chip: "bg-rose-500/15 text-rose-400 border-rose-500/40" },
+      medio: { txt: "Medio", chip: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+      bajo: { txt: "Bajo", chip: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+    };
+    const valorCausa = c => ["posicion_delantera", "es_cargador"].includes(c.variable) ? (c.valor ? "sí" : "no")
+      : c.variable.startsWith("dias_") && c.valor >= 365 ? "más de 1 año" : f(Math.round(c.valor));
+    const verTablaDatos = id => { datosTabla = id; datosOrden = null; datosPagina = 1; navigate("#/datos"); };
+
+    function tarjetaDatosReales(tarjeta) {
+      const d = datosReales;
+      if (!DB.activo || d === undefined || (d && !d.version && !d.alertas)) return "";
+      if (d === null) return tarjeta("Datos reales (anonimizados)", `<p class="text-xs text-[var(--muted)]">Cargando datos reales…</p>`);
+      const v = d.version || {}, met = v.metricas || {};
+      const pct = x => f((Number(x) * 100).toFixed(0)) + " %";
+      const fechaCL = t => t ? t.split("-").reverse().join("-") : "";
+      const kpi = (titulo, valor, cls = "text-[var(--ink)]") => `<div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]"><div class="text-[var(--muted)]">${titulo}</div><div class="font-mono font-bold ${cls}">${valor}</div></div>`;
+      const vigilar = (d.riesgo || []).filter(r => r.nivel_riesgo !== "bajo");
+      const fecha = fechaCL(v.datos_hasta);
+      return tarjeta("Datos reales (anonimizados)", `
+        <p class="text-sm text-[var(--muted)]">Una faena minera entregó el historial de su sistema TPMS y de excesos de velocidad. Se cargó en Supabase <strong class="text-sky-400">sin nombres de faena, empresa ni códigos de equipo</strong>: cada equipo aparece como «Camión A», «Cargador B»… Son 15 camiones y 4 cargadores, distintos de los 67 CAEX de demostración.</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          ${kpi("Alertas TPMS", Number(d.alertas || 0).toLocaleString("es-CL"))}
+          ${kpi("Excesos de velocidad", Number(d.velocidad || 0).toLocaleString("es-CL"))}
+          ${kpi("Período TPMS", v.datos_desde ? `${v.datos_desde.slice(0, 7)} a ${v.datos_hasta.slice(0, 7)}` : "—")}
+          ${kpi("Posiciones a vigilar", `${vigilar.length} de ${(d.riesgo || []).length}`, vigilar.length ? "text-amber-400" : "text-emerald-400")}
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--muted)] space-y-1">
+          <div class="font-semibold text-[var(--ink)]">Qué se aprendió de los datos reales</div>
+          <div>· Presión nominal en frío de los camiones: <strong class="text-[var(--ink)]">110 psi</strong>, con alertas de nivel 1, 2 y 3 al desviarse ±5, ±7 y ±10 %. El simulador TPMS del prototipo usaba 102 psi y ahora usa 110.</div>
+          <div>· Temperatura interna del TPMS: alertas a 75, 80 y 85 °C en camiones (en los cargadores, desde 65 °C).</div>
+          <div>· Velocidad: límite de 50 km/h en ruta y de 20 o 15 km/h en curvas identificadas.</div>
+          <div>· El TPMS solo guarda alertas, no lecturas continuas, y no trae profundidad de banda ni horas: <strong class="text-[var(--ink)]">no alcanza para entrenar el modelo de horas remanentes</strong>, que sigue con datos simulados.</div>
+        </div>
+        ${v.version ? `
+        <div class="text-sm font-semibold text-[var(--ink)] pt-1">Modelo de riesgo: ${(v.objetivo || "").charAt(0).toLowerCase() + (v.objetivo || "").slice(1)}</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          ${kpi("Versión", v.version)}
+          ${kpi("AUC · modelo", f(Number(v.auc_modelo).toFixed(2)), "text-emerald-400")}
+          ${kpi("AUC · regla simple", f(Number(v.auc_referencia).toFixed(2)))}
+          ${kpi("Acierto en el 5 % de mayor riesgo", met.precision_5pct_mayor_riesgo != null ? pct(met.precision_5pct_mayor_riesgo) : "—", "text-emerald-400")}
+        </div>
+        <p class="text-xs text-[var(--muted)]">Entrenado con los datos anteriores al ${fechaCL(v.fecha_corte)} y evaluado con los posteriores, que el modelo no vio. En esa prueba, el ${pct(v.tasa_base)} de los días-posición terminó en una alerta crítica dentro de 7 días. La regla simple ordena por cantidad de alertas recientes; el AUC mide qué tan bien se ordena el riesgo (0,5 es azar, 1 es perfecto). Riesgo <strong>medio</strong> desde 15 % y <strong>alto</strong> desde 40 %.</p>
+        ${vigilar.length ? `
+        <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
+          <table class="w-full text-xs">
+            <thead class="bg-[var(--bg)] text-[10px] uppercase tracking-wider text-[var(--muted)]"><tr><th class="p-2.5 text-left">Equipo · posición</th><th class="p-2.5 text-left">Riesgo</th><th class="p-2.5 text-right">Prob. 7 días</th><th class="p-2.5 text-right">Alertas 14 d</th><th class="p-2.5 text-left">Causas principales (SHAP)</th></tr></thead>
+            <tbody>${vigilar.map(r => `
+              <tr class="border-t border-[var(--border)] align-top">
+                <td class="p-2.5 font-semibold text-[var(--ink)] whitespace-nowrap">${r.equipo} · P${r.posicion}</td>
+                <td class="p-2.5"><span class="text-[10px] font-mono px-2 py-0.5 rounded-full border ${NIVEL_RIESGO[r.nivel_riesgo].chip}">${NIVEL_RIESGO[r.nivel_riesgo].txt}</span></td>
+                <td class="p-2.5 text-right font-mono">${pct(r.probabilidad)}</td>
+                <td class="p-2.5 text-right font-mono">${r.alertas_14d}</td>
+                <td class="p-2.5 text-[var(--muted)]">${(r.causas || []).map(c => `${c.etiqueta}: <span class="text-[var(--ink)]">${valorCausa(c)}</span> <span class="${c.efecto === "aumenta" ? "text-rose-400" : "text-emerald-400"}">(${c.efecto} el riesgo · ${f(c.peso_pct)} %)</span>`).join("<br>")}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>` : `<p class="text-xs text-emerald-400">Ninguna posición con riesgo medio o alto al ${fecha}.</p>`}
+        <p class="text-xs text-[var(--muted)]">Situación al ${fecha}, último día con datos. Una alerta crítica no es una falla del neumático: indica presión o temperatura fuera de rango. Las causas SHAP describen el historial de alertas, no prueban causalidad.</p>` : ""}
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button onclick="verTablaDatos('alertas_tpms')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver alertas TPMS ›</button>
+          <button onclick="verTablaDatos('eventos_velocidad')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver excesos de velocidad ›</button>
+          <button onclick="verTablaDatos('riesgo_posiciones')" class="text-xs px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Ver riesgo de todas las posiciones ›</button>
+        </div>`);
     }
 
     // --- PANTALLA 10: AYUDA (MANUAL DE USO) ---

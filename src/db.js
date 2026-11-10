@@ -135,19 +135,27 @@
     for (const [k, v] of Object.entries(fila)) {
       const clave = prefijo + k;
       if (v && typeof v === "object" && !Array.isArray(v)) aplanar(v, clave + ".", out);
+      else if (Array.isArray(v)) out[clave] = v.map(textoElemento).join(" · ");   // ej. las 3 causas SHAP
       else out[clave] = v;
     }
     return out;
   }
 
+  // { etiqueta: "Presión de inflado", efecto: "aumenta", peso_pct: 23.8 } -> "Presión de inflado (aumenta 23.8 %)"
+  const textoElemento = x => x && typeof x === "object"
+    ? (x.etiqueta ? `${x.etiqueta} (${x.efecto} ${x.peso_pct} %)` : JSON.stringify(x)) : String(x);
+
+  // El primer bloque trae el total de filas; los demás bloques se piden en paralelo (30.000 filas en segundos).
   async function leerTabla(nombre) {
-    const filas = [];
-    for (let desde = 0; ; desde += 1000) {
-      const bloque = revisar(await cliente.from(nombre).select(RELACIONES[nombre] || "*").range(desde, desde + 999));
-      filas.push(...bloque.map(f => aplanar(f)));
-      if (bloque.length < 1000) break;
-    }
-    return filas;
+    const columnas = RELACIONES[nombre] || "*";
+    const primero = await cliente.from(nombre).select(columnas, { count: "exact" }).range(0, 999);
+    const filas = revisar(primero);
+    const total = primero.count ?? filas.length;
+    const bloques = [];
+    for (let desde = 1000; desde < total; desde += 1000)
+      bloques.push(cliente.from(nombre).select(columnas).range(desde, desde + 999).then(revisar));
+    for (const bloque of await Promise.all(bloques)) filas.push(...bloque);
+    return filas.map(f => aplanar(f));
   }
 
   // PROP-06: predicción del modelo entrenado con datos de terreno simulados (si las tablas aún no existen, devuelve vacío)
@@ -163,5 +171,19 @@
     };
   }
 
-  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones };
+  // PROP-07: datos reales anonimizados (resumen para la página Modelos; si las tablas aún no existen, devuelve null)
+  async function leerDatosReales() {
+    const contar = t => cliente.from(t).select("*", { count: "exact", head: true });
+    const [alertas, velocidad, ver] = await Promise.all([
+      contar("alertas_tpms"), contar("eventos_velocidad"),
+      cliente.from("riesgo_versiones").select("*").order("fecha_entrenamiento", { ascending: false }).limit(1)
+    ]);
+    if (alertas.error || velocidad.error || ver.error) return null;
+    const version = ver.data[0] || null;
+    const riesgo = version ? revisar(await cliente.from("riesgo_posiciones").select("*")
+      .eq("modelo_version", version.version).order("probabilidad", { ascending: false })) : [];
+    return { alertas: alertas.count, velocidad: velocidad.count, version, riesgo };
+  }
+
+  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
 })();
