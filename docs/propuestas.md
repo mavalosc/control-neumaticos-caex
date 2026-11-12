@@ -20,8 +20,8 @@
 | PROP-05 | Respaldo bibliográfico y corrección de afirmaciones | **Publicada** (PR #7, 26-10-2026) | v1 | 24-10-2026 | 25-10-2026 |
 | PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | **Publicada** (PR #8, 26-10-2026) | v2 | 24-10-2026 | 25-10-2026 |
 | PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | **Publicada** (PR #9, 09-11-2026) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
-| PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | Aprobada · en implementación (rama `feature/prop-08-09`) | v1 | 12-11-2026 | 12-11-2026 |
-| PROP-09 | Diseño de la prueba con usuarios y pauta de validación | Aprobada · en implementación (rama `feature/prop-08-09`) | v1 | 12-11-2026 | 12-11-2026 |
+| PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | Aprobada para publicar · en revisión (PR #10) | v1 | 12-11-2026 | 12-11-2026 |
+| PROP-09 | Diseño de la prueba con usuarios y pauta de validación | Aprobada para publicar · en revisión (PR #10) | v1 | 12-11-2026 | 12-11-2026 |
 
 ---
 
