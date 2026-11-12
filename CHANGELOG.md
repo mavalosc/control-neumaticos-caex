@@ -1,5 +1,10 @@
 # Avances
 
+## v0.11 (12-11-2026) · PROP-08 y PROP-09
+- [x] `docs/etica.md`: impacto y exclusión, datos personales, sesgo, revisión WCAG 2.2, sostenibilidad y matriz de riesgos
+- [x] Pantalla de ingreso con email; el autor de cada cambio en las órdenes queda registrado y se muestra abreviado
+- [x] `docs/prueba-usuarios.md` y `docs/pauta-validacion.md`: hipótesis, umbrales, tareas, SUS y planilla de observaciones
+
 ## v0.10 (29-10-2026) · PROP-07
 - [x] Supabase: `alertas_tpms` y `eventos_velocidad` con datos reales anonimizados de una faena (origen = real, solo lectura para la app)
 - [x] Modelo de riesgo de alerta crítica en 7 días (Gradient Boosting + SHAP) entrenado con datos reales (`modelo/real/`)

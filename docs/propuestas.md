@@ -16,10 +16,12 @@
 | PROP-01 | Experiencia de usuario y especificaciones | **Publicada** (PR #6, 24-10-2026) | v1 | 24-10-2026 | 24-10-2026 |
 | PROP-02 | Terminología: «neumático» en lugar de «goma» | **Publicada** (PR #6, 24-10-2026) · SQL ejecutado en Supabase | v1 | 24-10-2026 | 24-10-2026 |
 | PROP-03 | Manual de uso dentro de la app | **Publicada** (PR #6, 24-10-2026) | v1 | 24-10-2026 | 24-10-2026 |
-| PROP-04 | (Reservada) Revisión del PR #5 de Héctor: wireframes en el README | Sin conversar | — | — | — |
+| PROP-04 | (Reservada) Revisión del PR #5 de Héctor: wireframes en el README | **Fusionado sin propuesta formal** (PR #5, 11-11-2026) | — | — | — |
 | PROP-05 | Respaldo bibliográfico y corrección de afirmaciones | **Publicada** (PR #7, 26-10-2026) | v1 | 24-10-2026 | 25-10-2026 |
 | PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | **Publicada** (PR #8, 26-10-2026) | v2 | 24-10-2026 | 25-10-2026 |
-| PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | Aprobada para publicar · en revisión (PR #9) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
+| PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | **Publicada** (PR #9, 09-11-2026) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
+| PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | Aprobada · en implementación (rama `feature/prop-08-09`) | v1 | 12-11-2026 | 12-11-2026 |
+| PROP-09 | Diseño de la prueba con usuarios y pauta de validación | Aprobada · en implementación (rama `feature/prop-08-09`) | v1 | 12-11-2026 | 12-11-2026 |
 
 ---
 
@@ -83,6 +85,23 @@
 - **Historial:** 28-10-2026 · v1 propuesta, con la opción (b) de anonimización elegida por el equipo. 29-10-2026 · aprobada («avanza con PROP-07») e implementada en la rama `feature/prop-07`. 07-11-2026 · tablas creadas por el equipo con RLS; carga de 30.382 alertas y 11.352 excesos; modelo `gb-riesgo-20261107` publicado (AUC 0,82 vs 0,75; 4 de 80 posiciones a vigilar al 27-10-2026); la clave pública no puede escribir (42501).
 
 ---
+
+## PROP-08 · Análisis ético y de sostenibilidad, e ingreso con email
+- **Qué:** (1) `docs/etica.md` con los cuatro componentes de la Semana 6: mapa de impacto y exclusión, ficha de tratamiento de datos personales, sesgo, transparencia y revisión preliminar de accesibilidad WCAG 2.2, y sostenibilidad con matriz de riesgos; (2) **pantalla de ingreso**: la persona escribe su email antes de usar la app y ese email queda como autor en `historial_ordenes` cuando emite, modifica o anula una orden del taller.
+- **Por qué:** entregable de la Semana 6; el equipo pidió además dejar registro de quién modifica la planificación del taller.
+- **Decisiones (12-11-2026):** solo se pide el email (sin contraseña: no verifica identidad, se declara en la pantalla); se puede usar un código en vez del email personal. Al implementarlo se vio que la clave pública de la app puede leer `historial_ordenes` completa: para no exponer emails, la app los muestra **abreviados** (`ma***@usach.cl`) a través de `vista_historial_ordenes` y, después de publicar, la clave pública deja de poder leer la columna `autor`. Los emails se eliminan el 31-12-2026. La ayuda (`#/ayuda`) se puede leer sin identificarse.
+- **Archivos:** `docs/etica.md` (nuevo); `docs/migraciones/2026-11-12_PROP-08_identificacion_por_email.sql` (3 partes) y `docs/schema.sql`; `src/index.html` (pantalla de ingreso, usuario en el encabezado) y `src/db.js` (autor y lectura del historial abreviado); `src/manual.md`, `docs/experiencia-usuario.md`, `docs/datos.md`, `README.md`.
+- **Riesgos:** cualquiera puede escribir el email de otra persona (aceptado hasta la Semana 10); si la parte 2 de la migración no se ejecuta, los emails siguen legibles con la clave pública; la app publicada antes de ejecutar la parte 1 sigue funcionando porque lee la tabla si la vista no existe.
+- **Fuera de alcance:** autenticación real y permisos por rol (Semana 10); correcciones de accesibilidad detectadas (Semana 9).
+- **Verificación:** sin email no se accede a ninguna pantalla salvo la ayuda; un email inválido muestra el error; las órdenes nuevas quedan con el email como autor; la vista devuelve el autor abreviado; después de la parte 2, `has_column_privilege('anon', 'historial_ordenes', 'autor', 'SELECT')` es falso.
+- **Historial:** 12-11-2026 · v1 propuesta; aprobada con el agregado del ingreso por email.
+
+## PROP-09 · Diseño de la prueba con usuarios y pauta de validación
+- **Qué:** `docs/prueba-usuarios.md` (qué se valida y qué no, hipótesis H1 a H5 con umbrales fijados antes de probar, perfiles, plan de levantamiento y regla de severidad) y `docs/pauta-validacion.md` (checklist, consentimiento, preguntas *The Mom Test*, tareas T1 a T6, cuestionario SUS y planilla de observaciones).
+- **Por qué:** entregable de las Semanas 7-8: pasar de la prueba de concepto al MVP con evidencia de uso.
+- **Decisiones del equipo (12-11-2026):** Nicolás Echeverría consigue al voluntario y cumple los tres roles (facilita, registra a partir de la grabación y resguarda la evidencia); sesión por **Google Meet grabada** (pantalla y voz) y grabación compartida en una carpeta de Drive restringida; plazo 21-11-2026.
+- **Riesgos:** con un solo participante los resultados son indicios, no tasas; si el voluntario no es planificador, el perfil es aproximado; las órdenes de la prueba quedan en la base y se anulan con motivo.
+- **Historial:** 12-11-2026 · v1 propuesta y aprobada.
 
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.

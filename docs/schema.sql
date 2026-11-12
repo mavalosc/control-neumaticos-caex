@@ -451,3 +451,23 @@ BEGIN
         EXECUTE format('CREATE POLICY prototipo_lectura ON %I FOR SELECT TO anon, authenticated USING (true)', t);
     END LOOP;
 END $$;
+
+-- =============================================================================
+-- PROP-08 · IDENTIFICACIÓN POR EMAIL (estructura; los permisos y la eliminación
+-- están en docs/migraciones/2026-11-12_PROP-08_identificacion_por_email.sql)
+-- =============================================================================
+ALTER TABLE historial_ordenes ALTER COLUMN autor TYPE VARCHAR(254);
+
+DROP VIEW IF EXISTS vista_historial_ordenes;
+CREATE VIEW vista_historial_ordenes AS
+SELECT h.id, h.orden_id, o.codigo AS codigo_orden, h.fecha_evento,
+       CASE WHEN position('@' IN h.autor) > 1
+            THEN left(h.autor, 2) || '***@' || split_part(h.autor, '@', 2)
+            ELSE h.autor
+       END AS autor,
+       h.accion, h.motivo
+FROM historial_ordenes h
+JOIN ordenes_trabajo o ON o.id = h.orden_id;
+GRANT SELECT ON vista_historial_ordenes TO anon, authenticated;
+REVOKE SELECT ON historial_ordenes FROM anon, authenticated;
+GRANT SELECT (id, orden_id, fecha_evento, accion, motivo, detalles) ON historial_ordenes TO anon, authenticated;
