@@ -94,7 +94,7 @@
 - **Riesgos:** cualquiera puede escribir el email de otra persona (aceptado hasta la Semana 10); si la parte 2 de la migración no se ejecuta, los emails siguen legibles con la clave pública; la app publicada antes de ejecutar la parte 1 sigue funcionando porque lee la tabla si la vista no existe.
 - **Fuera de alcance:** autenticación real y permisos por rol (Semana 10); correcciones de accesibilidad detectadas (Semana 9).
 - **Verificación:** sin email no se accede a ninguna pantalla salvo la ayuda; un email inválido muestra el error; las órdenes nuevas quedan con el email como autor; la vista devuelve el autor abreviado; después de la parte 2, `has_column_privilege('anon', 'historial_ordenes', 'autor', 'SELECT')` es falso.
-- **Historial:** 12-11-2026 · v1 propuesta; aprobada con el agregado del ingreso por email.
+- **Historial:** 12-11-2026 · v1 propuesta; aprobada con el agregado del ingreso por email; implementada, ingreso probado en local por el equipo; `docs/etica.md` revisado y aprobado por el equipo; en revisión de QA (PR #10).
 
 ## PROP-09 · Diseño de la prueba con usuarios y pauta de validación
 - **Qué:** `docs/prueba-usuarios.md` (qué se valida y qué no, hipótesis H1 a H5 con umbrales fijados antes de probar, perfiles, plan de levantamiento y regla de severidad) y `docs/pauta-validacion.md` (checklist, consentimiento, preguntas *The Mom Test*, tareas T1 a T6, cuestionario SUS y planilla de observaciones).
