@@ -168,6 +168,7 @@ sequenceDiagram
 | ESP-F-15 | Explicar el cálculo actual y los modelos de aprendizaje, con resultados de la PoC | — | Modelos | ✅ | Métricas leídas desde `assets/modelo/metricas.json` |
 | ESP-F-16 | Manual de uso dentro de la app, con índice y descarga en PDF | — | Ayuda | ✅ | `#/ayuda` muestra `src/manual.md`; el PDF se descarga desde la misma página |
 | ESP-F-18 | El Tablero muestra las horas remanentes de la fórmula y las del modelo en columnas separadas; la Ficha muestra la predicción del modelo y sus 3 causas SHAP | HU-01, HU-04 | Tablero, Ficha | 🟡 datos simulados | Columna «Modelo · sim» y tarjeta «Modelo entrenado con datos de terreno simulados» |
+| ESP-F-19 | Pantalla de ingreso con email; el email queda como autor de cada creación, modificación o anulación de una orden y se muestra abreviado | HU-07, HU-08 | Ingreso, Órdenes | ✅ PROP-08 | Sin email solo se accede a la Ayuda; el historial muestra `ma***@dominio` |
 | ESP-F-17 | Ayuda contextual: el botón **?** de cada pantalla abre la sección del manual que le corresponde | — | Todas | ✅ | Desde Camiones abre `#/ayuda/camiones` |
 
 ### 6.2 Reglas de negocio y umbrales
@@ -222,9 +223,10 @@ sequenceDiagram
 | ESP-NF-06 | **Despliegue:** cada fusión en `main` se publica automáticamente en Vercel; `main` exige Pull Request aprobado | ✅ |
 | ESP-NF-07 | **Trazabilidad del desarrollo:** el uso de IA queda registrado en `docs/bitacora-ia.md` | ✅ |
 | ESP-NF-08 | **Rendimiento:** el tablero debe cargar la flota completa en menos de 3 s en red de faena | ⏳ no medido |
-| ESP-NF-09 | **Accesibilidad:** contraste suficiente, uso con teclado y textos alternativos | ⏳ sin auditar |
+| ESP-NF-09 | **Accesibilidad:** contraste suficiente, uso con teclado y textos alternativos | 🟡 revisión preliminar WCAG 2.2 en [`etica.md`](etica.md): falla el teclado en filas y tarjetas y el contraste del tema claro |
 | ESP-NF-10 | **Uso en terreno:** legible en tablet y en pantallas de sala de control | ⏳ sin probar con usuarios |
-| ESP-NF-11 | **Autenticación por rol** (planificador, despachador, taller) | ⏳ hoy cualquier persona con el enlace puede operar |
+| ESP-NF-11 | **Autenticación por rol** (planificador, despachador, taller) | 🟡 identificación por email sin verificación (PROP-08); autenticación y roles en la Semana 10 |
+| ESP-NF-12 | **Privacidad:** el email completo no es legible con la clave pública de la app; se conserva hasta el 31-12-2026 | ✅ PROP-08 (vista abreviada y permisos por columna) |
 
 ---
 

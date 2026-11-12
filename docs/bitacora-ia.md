@@ -177,6 +177,18 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 
 ---
 
+## IA-17 · Análisis ético, ingreso con email y diseño de la prueba con usuarios (PROP-08 y PROP-09)
+**Herramienta:** Claude Code · **Fecha:** 12-11-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Entregables de la Semana 6 (análisis ético y de sostenibilidad) y de las Semanas 7-8 (diseño de la prueba con usuarios). La IA leyó los apuntes y presentaciones del curso (Unidades 4.1 y 5.1) y la transcripción de la clase de la Semana 8. Nicolás Echeverría consigue un voluntario y conduce la sesión; plazo 21-11-2026. |
+| **Intención** | «Ayúdame con la evaluación de la experiencia de usuario para transitar desde la PoC hacia el MVP», y agregar a PROP-08 «una pantalla de inicio para que los usuarios se identifiquen […] solo debe ingresar su email, con eso quedará registro si hace alguna modificación en la planificación del taller». |
+| **Restricciones** | Metodología de propuestas (aprobación explícita de PROP-08 y PROP-09); la prueba no es una demo guiada; umbrales fijados antes de ver resultados; grabación por Meet con consentimiento y fuera del repositorio; sin nombres del voluntario en las notas. |
+| **Verificación** | **Hallazgo de la IA:** con la clave pública, cualquier persona podía leer `historial_ordenes` completa, así que el email del voluntario habría quedado expuesto. Se resolvió con una vista que lo abrevia y con permisos por columna, en una migración de tres partes para no romper la app publicada. Revisión WCAG 2.2 con cálculo de contraste: el tema oscuro cumple (5,8:1) y el tema claro no (textos de estado entre 1,7:1 y 2,7:1); 8 elementos clicables no son accesibles con teclado. Sintaxis de `index.html` y `db.js` verificada. **Pendiente:** las capturas automáticas con un usuario de ejemplo fueron bloqueadas por el control de permisos del entorno de la IA; se decidió consultarlo con el equipo en vez de forzarlo. |
+
+---
+
 ## Qué debe saber explicar cada integrante
 
 La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragmento del repositorio, el ítem se reprueba. Antes de la entrega, cada persona revisa estos puntos:
@@ -194,3 +206,6 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `modelo/generar_datos.py` | Qué efectos verdaderos usa el simulador (constantes `VERDAD_*`) y por qué la temperatura del neumático es consecuencia y no causa. |
 | `modelo/entrenar.py` | Por qué se agrupa en ventanas de ~200 h, qué mide SHAP, qué es la censura en el modelo de Cox y cómo se calcula la horas remanentes (`(profundidad − 20) / tasa × 100`). |
 | `backend/app/proyeccion.py` | Regresión lineal de la profundidad contra las horas de operación para proyectar el cruce del umbral de 20 mm. |
+| `docs/etica.md` | Quién queda fuera (el conductor del CAEX), qué dato personal se guarda (el email), quién lo ve, cuánto se conserva y por qué la app no puede leerlo completo. |
+| `src/index.html`, función `renderIngreso()` y `src/db.js`, `fijarUsuario()` | Por qué el ingreso no es una contraseña, dónde queda el email y por qué el historial se lee desde `vista_historial_ordenes`. |
+| `docs/prueba-usuarios.md` y `docs/pauta-validacion.md` | Por qué la prueba busca fallas y no éxito, qué umbrales se fijaron antes, qué no debe decir el facilitador y cómo se calcula el SUS. |

@@ -26,6 +26,11 @@
   const zonaDe = h => h == null ? "gris" : h < 200 ? "rojo" : h < 500 ? "amarillo" : "verde";
   const ACCION = { modificacion: "modificación de orden", anulacion: "orden anulada" };
 
+  // PROP-08: email de quien opera; queda en historial_ordenes.autor. La app solo lo lee abreviado
+  // (vista_historial_ordenes); la columna completa no es legible con la clave pública.
+  let autorActual = "planificador";
+  const fijarUsuario = email => { autorActual = email || "planificador"; };
+
   function revisar({ data, error }) {
     if (error) throw new Error(error.message);
     return data;
@@ -36,9 +41,11 @@
       cliente.from("vista_tablero_turno").select("*").order("caex_codigo").order("posicion").limit(5000).then(revisar),
       cliente.from("ventanas_taller").select("*").eq("reservable", true).order("dia").order("id").then(revisar),
       cliente.from("ordenes_trabajo")
-        .select("id,codigo,fecha_emision,tipo_intervencion,justificacion_nota,horas_remanentes_emision,medicion_codigo,origen_detalle,estado,neumaticos(serial),ventanas_taller(id,dia,turno),historial_ordenes(fecha_evento,autor,accion,motivo)")
+        .select("id,codigo,fecha_emision,tipo_intervencion,justificacion_nota,horas_remanentes_emision,medicion_codigo,origen_detalle,estado,neumaticos(serial),ventanas_taller(id,dia,turno)")
         .order("fecha_emision", { ascending: false }).then(revisar)
     ]);
+    const historialPorOrden = {};
+    (await leerHistorial()).forEach(h => (historialPorOrden[h.orden_id] ||= []).push(h));
     if (!vista.length) throw new Error("La base no tiene neumáticos. Ejecuta docs/seed.sql en Supabase.");
 
     const trucks = [], knownTires = {}, damages = {};
@@ -61,7 +68,7 @@
 
     const orders = ordenes.map(o => {
       idOrden[o.codigo] = o.id;
-      const hist = (o.historial_ordenes || [])
+      const hist = (historialPorOrden[o.id] || [])
         .sort((a, b) => new Date(a.fecha_evento) - new Date(b.fecha_evento))
         .map(h => h.accion === "creacion"
           ? `${fechaHoraCL(h.fecha_evento)} · ${h.autor} · ${h.motivo}`
@@ -78,8 +85,15 @@
     return { trucks, knownTires, damages, orders, windows };
   }
 
+  // Historial con el autor abreviado; si la vista aún no existe en la base, usa la tabla (antes de PROP-08)
+  async function leerHistorial() {
+    const vista = await cliente.from("vista_historial_ordenes").select("orden_id,fecha_evento,autor,accion,motivo").limit(10000);
+    if (!vista.error) return vista.data;
+    return revisar(await cliente.from("historial_ordenes").select("orden_id,fecha_evento,autor,accion,motivo").limit(10000));
+  }
+
   async function historial(codigo, accion, motivo) {
-    revisar(await cliente.from("historial_ordenes").insert({ orden_id: idOrden[codigo], autor: "planificador", accion, motivo }));
+    revisar(await cliente.from("historial_ordenes").insert({ orden_id: idOrden[codigo], autor: autorActual, accion, motivo }));
   }
 
   async function emitirOrden({ codigo, serial, ventanaId, tipo, nota, horas, origen }) {
@@ -129,6 +143,7 @@
     ordenes_trabajo: "*, neumaticos(serial), ventanas_taller(dia, turno)",
     historial_ordenes: "*, ordenes_trabajo(codigo)"
   };
+  const FUENTE = { historial_ordenes: "vista_historial_ordenes" };   // PROP-08: sin el email completo
 
   // { neumaticos: { serial: "x", camiones: { codigo: "y" } } } -> { "neumaticos.serial": "x", "neumaticos.camiones.codigo": "y" }
   function aplanar(fila, prefijo = "", out = {}) {
@@ -147,13 +162,14 @@
 
   // El primer bloque trae el total de filas; los demás bloques se piden en paralelo (30.000 filas en segundos).
   async function leerTabla(nombre) {
-    const columnas = RELACIONES[nombre] || "*";
-    const primero = await cliente.from(nombre).select(columnas, { count: "exact" }).range(0, 999);
+    const fuente = FUENTE[nombre] || nombre;
+    const columnas = fuente === nombre ? RELACIONES[nombre] || "*" : "*";
+    const primero = await cliente.from(fuente).select(columnas, { count: "exact" }).range(0, 999);
     const filas = revisar(primero);
     const total = primero.count ?? filas.length;
     const bloques = [];
     for (let desde = 1000; desde < total; desde += 1000)
-      bloques.push(cliente.from(nombre).select(columnas).range(desde, desde + 999).then(revisar));
+      bloques.push(cliente.from(fuente).select(columnas).range(desde, desde + 999).then(revisar));
     for (const bloque of await Promise.all(bloques)) filas.push(...bloque);
     return filas.map(f => aplanar(f));
   }
@@ -185,5 +201,5 @@
     return { alertas: alertas.count, velocidad: velocidad.count, version, riesgo };
   }
 
-  window.DB = { activo: !!cliente, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
+  window.DB = { activo: !!cliente, fijarUsuario, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
 })();

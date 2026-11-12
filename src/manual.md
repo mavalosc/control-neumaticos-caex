@@ -45,10 +45,14 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 ## 2. Primeros pasos
 
 1. Abra la aplicación en el navegador (Chrome, Edge o Firefox actualizados).
-2. Revise el **indicador de origen de datos**, arriba a la derecha:
+2. **Ingrese su email** en la pantalla de inicio y pulse **Entrar**. No es una contraseña: sirve para que quede registrado quién emite, modifica o anula órdenes del taller. Si prefiere no usar su email personal, puede escribir un código (por ejemplo, `p1@prueba.cl`).
+   - En la aplicación su email aparece **abreviado** (`ma***@usach.cl`), arriba a la derecha y en el historial de cada orden. El email completo solo lo ve el equipo del proyecto y se elimina el 31-12-2026.
+   - Para ingresar con otro email, pulse su usuario arriba a la derecha.
+   - La **Ayuda** se puede leer sin ingresar.
+3. Revise el **indicador de origen de datos**, arriba a la derecha:
    - **● Supabase** (verde): los datos vienen de la base y sus cambios se guardan.
    - **● modo local** (gris): no hay conexión. La aplicación funciona con datos guardados en su navegador; los cambios no los verán otras personas.
-3. Use la **barra de navegación** superior:
+4. Use la **barra de navegación** superior:
 
 | Botón | Pantalla | Para qué |
 |---|---|---|
@@ -60,7 +64,7 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 | Ayuda (ícono de signo de interrogación) | `#/ayuda` | Este manual |
 | Simulador Pórtico | `#/sim` | Simular la pasada de un CAEX |
 
-4. Otros controles: el ícono de luna cambia entre tema oscuro y claro; **↺ Reset** vuelve a leer los datos desde Supabase (en modo local restaura los datos de demostración).
+5. Otros controles: el ícono de luna cambia entre tema oscuro y claro; **↺ Reset** vuelve a leer los datos desde Supabase (en modo local restaura los datos de demostración).
 
 ---
 

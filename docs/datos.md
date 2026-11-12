@@ -239,6 +239,10 @@ Datos **reales** de una faena, con `origen = 'real'`. Los equipos y sensores van
 | `riesgo_versiones` | un entrenamiento | `version` (`gb-riesgo-20261029`), `objetivo`, `datos_desde`, `datos_hasta`, `fecha_corte`, `n_ejemplos`, `tasa_base`, `auc_modelo`, `auc_referencia`, `metricas` (JSONB), `importancia` (JSONB) |
 | `riesgo_posiciones` | el riesgo actual de un equipo y posición | `modelo_version` (FK), `equipo`, `posicion`, `fecha_referencia`, `probabilidad`, `nivel_riesgo` (`alto`, `medio`, `bajo`), `alertas_14d`, `causas` (JSONB con `variable`, `etiqueta`, `valor`, `efecto`, `peso_pct`) |
 
+### 2.11 Autor de los cambios en las órdenes (PROP-08)
+
+`historial_ordenes.autor` pasa a guardar el **email** de quien emite, modifica o anula una orden (VARCHAR(254)); los registros anteriores conservan `planificador`. La app no lee esa columna: usa **`vista_historial_ordenes`**, que entrega el código de la orden y el autor abreviado (`ma***@usach.cl`). Después de publicar PROP-08, la clave pública solo puede leer las demás columnas de la tabla. El tratamiento de este dato está en [`etica.md`](etica.md#2-ficha-de-tratamiento-de-datos-personales).
+
 ## 3. Reglas de Tidy Data (Wickham)
 
 | Regla | Cómo se cumple |

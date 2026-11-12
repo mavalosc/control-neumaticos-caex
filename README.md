@@ -20,6 +20,8 @@ Pórtico instrumentado que mide cada CAEX en tránsito, mantiene la historia dim
 | Solución / Hipótesis (Semana 2) | ✅ Avance 2 |
 | Ambiente integrado y datos (Semana 3) | ✅ GitHub (`dev` → `main` por Pull Request), Vercel con despliegue continuo y Supabase con [modelo de datos](docs/datos.md) |
 | Historias, BDD y wireframes (Semana 4) | ✅ [`docs/historias.md`](docs/historias.md) y [`docs/wireframes/`](docs/wireframes/README.md) |
+| Ética y sostenibilidad (Semana 6) | ✅ [`docs/etica.md`](docs/etica.md): impacto, datos personales, sesgo, accesibilidad WCAG 2.2 y matriz de riesgos |
+| Diseño de la prueba con usuarios (Semanas 7-8) | 🔄 [`docs/prueba-usuarios.md`](docs/prueba-usuarios.md) y [`docs/pauta-validacion.md`](docs/pauta-validacion.md); primera sesión hasta el 21-11-2026 |
 | Prueba de concepto (Semana 8) | 🔄 Método validado con datos sintéticos ([`docs/modelo.md`](docs/modelo.md)); falta integrarlo al prototipo y validarlo con datos reales |
 | MVP (Semana 12) | ⏳ Validación con planificadores reales |
 
@@ -31,6 +33,8 @@ Documentación de los avances del proyecto:
 - **Avance 2:** propuesta de solución, caso de uso principal, maqueta preliminar y roadmap inicial
 - **Entrega 3:** ambiente integrado, [bitácora de IA](docs/bitacora-ia.md) y [modelo de datos](docs/datos.md)
 - **Entrega 4:** [historias de usuario y criterios BDD](docs/historias.md), y [wireframes anotados](docs/wireframes/README.md)
+- **Semana 6:** [análisis ético y de sostenibilidad](docs/etica.md)
+- **Semanas 7-8:** [diseño de la prueba con usuarios](docs/prueba-usuarios.md) y [pauta de validación](docs/pauta-validacion.md). Grabaciones de las sesiones: carpeta de Drive con acceso restringido (enlace por agregar)
 
 Ingeniería Digital en Acción: Datos con IA, MVP · Unidad 1 · Equipo 3
 Universidad de Santiago de Chile
