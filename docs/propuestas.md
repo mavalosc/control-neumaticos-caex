@@ -22,7 +22,7 @@
 | PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | **Publicada** (PR #9, 09-11-2026) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
 | PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | **Publicada** (PR #10, 12-11-2026) · SQL partes 1 y 2 ejecutadas · ajuste v2 publicado (PR #11, 14-11-2026) | v2 | 12-11-2026 | 12-11-2026 |
 | PROP-09 | Diseño de la prueba con usuarios y pauta de validación | **Publicada** (PR #10, 12-11-2026) | v1 | 12-11-2026 | 12-11-2026 |
-| PROP-11 | Cambios de la app tras la sesión 1 con usuario | Aprobada · implementada · en publicación | v1 | 14-11-2026 | 14-11-2026 |
+| PROP-11 | Cambios de la app tras la sesión 1 con usuario | **Publicada** (PR #14, 14-11-2026, sin revisión previa de QA) · SQL partes 1 y 2 | v1 | 14-11-2026 | 14-11-2026 |
 | PROP-10 | Resultados de la sesión 1 con usuario (P1) | **Publicada** (PR #12, 14-11-2026) | v2 | 14-11-2026 | 14-11-2026 |
 
 ---
@@ -139,3 +139,4 @@
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
 - **Commit 43be34f (14-11-2026):** subido directo a `main` por el propietario del repositorio, saltando la regla que exige un PR con aprobación, para que el estado de PROP-10 se viera de inmediato antes de la exposición en clase. Solo cambia el estado de PROP-10 en este registro (de «en publicación» a «Publicada»). Se pidió a Héctor (QA) que lo revise después; queda pendiente su revisión para normalizar. Esta nota también se subió directo a `main`.
+- **PR #14 · PROP-11 (14-11-2026):** fusionado por el propietario del repositorio sin la aprobación previa de Héctor (QA), a pedido del equipo, para avanzar con la parte 2 del SQL. La parte 1 del SQL se ejecutó y verificó antes de fusionar (402 neumáticos con horas de uso; vista de daños abreviada). Se pidió a Héctor que revise el PR #14 y las partes 1 y 2 del SQL en conjunto.
