@@ -189,6 +189,18 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 
 ---
 
+## IA-18 · Resultados de la sesión 1 con usuario (PROP-10)
+**Herramientas:** una IA externa (transcripción y análisis de la grabación) y Claude Code (contraste y documentación) · **Fecha:** 14-11-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Sesión de validación del 13-11-2026 con un voluntario (P1), grabada en Meet. La grabación la procesó otra IA. Claude Code no procesó el video: le redactó a esa IA las instrucciones (anonimizar, separar lo observado de lo interpretado, minutos y `NO CONSTA` cuando faltara un dato). |
+| **Intención** | «No proceses el video, te lo pasaré escrito para IA» y «dame las instrucciones para pedirle a la otra IA lo que te falta». |
+| **Restricciones** | Sin nombre del voluntario ni de la faena en el repositorio; metodología de propuestas (PROP-10 aprobada); los umbrales de las hipótesis no se cambian después de ver los resultados. |
+| **Verificación** | **Hallazgos al contrastar con Supabase:** la primera entrega (solo audio) daba todas las tareas como completadas; los registros mostraron que la orden se emitió para una ventana que llegaba 36 h tarde, que el neumático de T4 ya estaba en Moderado por pruebas del equipo del 17-10 y que en T6 P1 respondió sobre otro neumático. La segunda entrega (con pantalla) coincidió con las horas de la base con 10 a 15 s de diferencia, pero **calculó mal el SUS** (60 en vez de 70). **Riesgo ético detectado:** el consentimiento no mencionaba el uso de una IA externa (R11). |
+
+---
+
 ## Qué debe saber explicar cada integrante
 
 La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragmento del repositorio, el ítem se reprueba. Antes de la entrega, cada persona revisa estos puntos:
@@ -209,3 +221,4 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `docs/etica.md` | Quién queda fuera (el conductor del CAEX), qué dato personal se guarda (el email), quién lo ve, cuánto se conserva y por qué la app no puede leerlo completo. |
 | `src/index.html`, función `renderIngreso()` y `src/db.js`, `fijarUsuario()` | Por qué el ingreso no es una contraseña, dónde queda el email y por qué el historial se lee desde `vista_historial_ordenes`. |
 | `docs/prueba-usuarios.md` y `docs/pauta-validacion.md` | Por qué la prueba busca fallas y no éxito, qué umbrales se fijaron antes, qué no debe decir el facilitador y cómo se calcula el SUS. |
+| `docs/prueba-usuarios.md`, sección 6 | Qué indicio deja cada hipótesis en la sesión 1, por qué T3 y T4 no eran evaluables y cuál fue la desviación del facilitador que cambió un resultado. |

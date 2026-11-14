@@ -1,5 +1,10 @@
 # Avances
 
+## v0.12 (14-11-2026) · PROP-10
+- [x] Resultados de la sesión 1 con un usuario (P1) en `docs/prueba-usuarios.md`: hipótesis, 13 hallazgos con decisión y sesgos declarados
+- [x] Pauta v2: datos de partida verificados, tareas con camión y posición, nuevas reglas para el facilitador
+- [x] Datos de la prueba restaurados en Supabase (orden anulada y daño original)
+
 ## v0.11 (12-11-2026) · PROP-08 y PROP-09
 - [x] `docs/etica.md`: impacto y exclusión, datos personales, sesgo, revisión WCAG 2.2, sostenibilidad y matriz de riesgos
 - [x] Pantalla de ingreso con email; el autor de cada cambio en las órdenes queda registrado y se muestra abreviado

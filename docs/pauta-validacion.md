@@ -4,6 +4,8 @@
 > Guion para la sesión. Lo usa **quien facilita** (Nicolás Echeverría). El diseño, las hipótesis y los umbrales están en [`prueba-usuarios.md`](prueba-usuarios.md).
 >
 > Duración estimada: **40 minutos** · Modalidad: Google Meet con pantalla compartida y grabación.
+>
+> Versión 2 · 14-11-2026: ajustes después de la sesión 1 (PROP-10): datos de partida, T3 a T6 con camión y posición explícitos y nuevas reglas para el facilitador.
 
 ---
 
@@ -12,12 +14,20 @@
 - [ ] Ensayar esta pauta completa con otro integrante del equipo.
 - [ ] Abrir https://control-neumaticos-caex-frontend.vercel.app y anotar, **sin decírselo al participante**:
   - los 3 neumáticos con menos horas remanentes del Tablero (respuesta correcta de T1);
-  - el neumático con menos horas del **CAEX-102** y si tiene daño crítico (respuesta de T3 y T4).
+  - las horas del neumático **P1 del CAEX-159** y la ventana del taller **con cupo** que llega antes del límite (respuesta de T3).
+- [ ] **Verificar los datos de partida** (en la sesión 1 estaban alterados):
+  - el neumático **P3 del CAEX-102** aparece en **3 · Crítico** en su Ficha (T4);
+  - existe al menos una ventana con cupo que llega antes del límite del P1 del CAEX-159 (T3);
+  - no quedan órdenes de pruebas anteriores en estado programada.
 - [ ] Crear la reunión de Meet y verificar que el botón **Grabar** está disponible (cuenta institucional).
 - [ ] Tener a mano el cronómetro, la planilla de la sección 5 y el cuestionario SUS de la sección 4.
 - [ ] Pedir al participante que use un computador (no el celular) con Chrome o Edge.
 
 **Reglas del facilitador:** leer cada tarea tal como está escrita. **No explicar, no ayudar, no defender el diseño.** Si pregunta qué hacer, responder: *«¿Qué haría usted si estuviera solo?»*. El silencio y la duda son el dato que se busca.
+
+- **No preguntar «¿esa es su respuesta?» ni invitar a seguir buscando.** En la sesión 1 esa pregunta hizo cambiar una respuesta correcta. Se anota la primera respuesta y se espera a que el participante diga que terminó.
+- No agregar palabras a la consigna, como «según la plataforma» o «mediante la aplicación». Si pregunta por el canal, responder: *«¿Qué haría usted si estuviera solo?»*.
+- No comentar al final de una tarea lo que el participante no vio.
 
 ---
 
@@ -65,10 +75,10 @@ Leer el **escenario** tal como está. Anotar la hora de inicio y de término de 
 |---|---|---|---|
 | **T1** | «Usted es el planificador de neumáticos y empieza su turno de la mañana. Su jefe le pide saber **cuáles son los tres neumáticos que hay que atender primero**. Dígame cuáles son.» | Ingresa a la herramienta y nombra los 3 de menos horas remanentes en ≤ 3 min | Que el Tablero está ordenado por horas; los filtros |
 | **T2** | «Le avisan por radio que uno de los camiones tiene un neumático con un **daño grave**. Asegúrese de que el despacho de la mina se entere.» | Encuentra el aviso de daño crítico y lo envía a despacho | El banner de alerta y su botón |
-| **T3 ★** | «El neumático más urgente del **camión 102** tiene que cambiarse antes de que se gaste. **Deje programado ese trabajo en el taller.**» | Queda emitida una orden para ese neumático, en un turno con cupo y antes de que llegue al límite, en ≤ 4 min y con ≤ 1 pedido de ayuda | Ficha, botón de agendar, ventanas, órdenes |
-| **T4** | «Revisando la foto de ese neumático, usted cree que el daño **no es tan grave** como dice el sistema: es moderado. **Deje registrado su criterio.**» | Cambia el nivel del daño a 2 y queda guardado | La corrección de daño en la Ficha |
-| **T5** | «El taller le avisa que **no podrá atender en el turno** que usted eligió. Cambie el trabajo a otro turno y deje constancia de por qué.» | Modifica la orden con un motivo escrito | Órdenes, Modificar, motivo obligatorio |
-| **T6** | «Su jefe le pregunta **cuántas horas le quedan** a ese neumático y **por qué se está gastando** así. Respóndale con lo que ve en la herramienta.» | Da una cifra de horas, dice de dónde sale (cálculo o modelo) y menciona al menos una causa; anotar si se apoya solo en «Modelo · sim» | Columnas de horas, causas SHAP, página Modelos |
+| **T3 ★** | «El neumático **delantero izquierdo (P1) del camión 159** tiene que cambiarse antes de que se gaste. **Deje programado ese trabajo en el taller.**» | Queda emitida una orden para ese neumático, en un turno con cupo y antes de que llegue al límite, en ≤ 4 min y con ≤ 1 pedido de ayuda | Ficha, botón de agendar, ventanas, advertencia de ventana tardía, órdenes |
+| **T4** | «Revisando la foto del neumático **trasero P3 del camión 102**, usted cree que el daño **no es tan grave** como dice el sistema: es moderado. **Deje registrado su criterio.**» | Cambia el nivel del daño de 3 a 2 y queda guardado | La corrección de daño en la Ficha |
+| **T5** | «El taller le avisa que **no podrá atender en el turno** que usted eligió para el camión 159. Cambie el trabajo a otro turno y deje constancia de por qué.» | Modifica la orden con un motivo escrito; anotar si nota que la nueva ventana llega tarde | Órdenes, Modificar, motivo obligatorio |
+| **T6** | «Su jefe le pregunta **cuántas horas le quedan** al neumático **P1 del camión 159** y **por qué se está gastando** así. Respóndale con lo que ve en la herramienta.» | Da una cifra de horas de ese neumático, dice de dónde sale (cálculo o modelo) y menciona al menos una causa con el sentido correcto; anotar si se apoya solo en «Modelo · sim» | Columnas de horas, causas SHAP, página Modelos |
 
 Durante las tareas, si el participante se queda en silencio: *«¿Qué está pensando ahora?»*. Si pregunta si lo hizo bien: *«¿Usted qué cree?»*. Si a los **5 minutos** de una tarea no avanza, se pasa a la siguiente y se marca como **no completada**.
 
@@ -76,7 +86,7 @@ Durante las tareas, si el participante se queda en silencio: *«¿Qué está pen
 
 ## 4. Cierre (5 min)
 
-**4.1 Escala de usabilidad del sistema (SUS).** Leer cada frase; el participante responde de 1 (*totalmente en desacuerdo*) a 5 (*totalmente de acuerdo*).
+**4.1 Escala de usabilidad del sistema (SUS).** Leer cada frase; el participante responde de 1 (*totalmente en desacuerdo*) a 5 (*totalmente de acuerdo*). Repetir el número en voz alta antes de anotarlo («¿un 4?»): en la sesión 1 una respuesta quedó en duda.
 
 | # | Frase | 1-5 |
 |---|---|---|
@@ -101,7 +111,7 @@ Durante las tareas, si el participante se queda en silencio: *«¿Qué está pen
 
 > «Muchas gracias. Lo que encontró difícil es justamente lo que vamos a mejorar.»
 
-⏹ **Detener la grabación.** Anotar los códigos de las órdenes que creó (Órdenes de trabajo) para anularlas con el motivo «prueba de usuarios P1».
+⏹ **Detener la grabación.** Anotar los códigos de las órdenes que creó (Órdenes de trabajo) para anularlas con el motivo «prueba de usuarios P*n*». Si corrigió algún daño, **restaurar el nivel original** antes de la sesión siguiente.
 
 ---
 

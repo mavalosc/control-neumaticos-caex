@@ -20,8 +20,9 @@
 | PROP-05 | Respaldo bibliográfico y corrección de afirmaciones | **Publicada** (PR #7, 26-10-2026) | v1 | 24-10-2026 | 25-10-2026 |
 | PROP-06 | Datos de terreno simulados, Gradient Boosting y SHAP en Supabase | **Publicada** (PR #8, 26-10-2026) | v2 | 24-10-2026 | 25-10-2026 |
 | PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | **Publicada** (PR #9, 09-11-2026) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
-| PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | **Publicada** (PR #10, 12-11-2026) · SQL partes 1 y 2 ejecutadas · ajuste v2 en publicación | v1 | 12-11-2026 | 12-11-2026 |
+| PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | **Publicada** (PR #10, 12-11-2026) · SQL partes 1 y 2 ejecutadas · ajuste v2 publicado (PR #11, 14-11-2026) | v2 | 12-11-2026 | 12-11-2026 |
 | PROP-09 | Diseño de la prueba con usuarios y pauta de validación | **Publicada** (PR #10, 12-11-2026) | v1 | 12-11-2026 | 12-11-2026 |
+| PROP-10 | Resultados de la sesión 1 con usuario (P1) | Aprobada · implementada · en publicación | v2 | 14-11-2026 | 14-11-2026 |
 
 ---
 
@@ -102,6 +103,18 @@
 - **Decisiones del equipo (12-11-2026):** Nicolás Echeverría consigue al voluntario y cumple los tres roles (facilita, registra a partir de la grabación y resguarda la evidencia); sesión por **Google Meet grabada** (pantalla y voz) y grabación compartida en una carpeta de Drive restringida; plazo 21-11-2026.
 - **Riesgos:** con un solo participante los resultados son indicios, no tasas; si el voluntario no es planificador, el perfil es aproximado; las órdenes de la prueba quedan en la base y se anulan con motivo.
 - **Historial:** 12-11-2026 · v1 propuesta y aprobada.
+
+## PROP-10 · Resultados de la sesión 1 con usuario (P1)
+- **Qué:** (1) resultados anonimizados de la sesión del 13-11-2026 en la sección 6 de `docs/prueba-usuarios.md`: hipótesis como indicios, 13 hallazgos con severidad y decisión, y sesgos declarados; (2) pauta v2 en `docs/pauta-validacion.md`; (3) restaurar en Supabase los datos de partida; (4) anotar los cambios a la app para la Semana 9, sin implementarlos.
+- **Por qué:** entregable de las Semanas 7-8. Un hallazgo sin decisión es una anécdota.
+- **Fuentes:** transcripción y análisis de la grabación hechos con una herramienta de IA externa (dos entregas), contrastados por Claude Code con los registros de Supabase. El SUS de la IA externa (60) estaba mal calculado; el correcto es 70.
+- **Decisiones:** el voluntario es «P1» y la faena, «gran minería»; el voluntario lo consiguió Francisco (conocido, sesgo declarado); los umbrales de las hipótesis no se cambian.
+- **Datos restaurados (14-11-2026):** ot-0072 anulada con el motivo «prueba de usuarios P1» (el cupo volvió a la ventana); daño del P3 del CAEX-102 restaurado a «3 · corte profundo en flanco», con un registro «restauración PROP-10».
+- **Cambios anotados para la Semana 9 (requieren su propia propuesta):** advertencia de ventana tardía que se confirma, también al modificar; causas SHAP redactadas como «reduce o aumenta el desgaste»; conservar la justificación original de la orden y un solo campo de motivo; confirmación de guardado de la corrección de daño; conservar la descripción detectada; ordenar por severidad y profundidad; horas acumuladas del neumático; email del autor en las correcciones de daño.
+- **Archivos:** `docs/prueba-usuarios.md`, `docs/pauta-validacion.md`, `docs/etica.md` (R3 y R11), `docs/propuestas.md`, `CHANGELOG.md`, `docs/bitacora-ia.md`.
+- **Riesgos:** con una sola sesión los resultados son indicios; dos tareas tenían datos de partida inconsistentes; la grabación pasó por una herramienta de IA externa que no estaba en el consentimiento (R11).
+- **Pendiente:** confirmar en la grabación el ítem 3 del SUS (minuto 17:27) y subir la grabación a la carpeta de Drive restringida.
+- **Historial:** 14-11-2026 · v1 propuesta tras la primera entrega de la IA externa (solo audio); v2 con la segunda entrega (pantalla) y los datos de Supabase; aprobada («sí apruebo prop-10») e implementada en la rama `feature/prop-10-resultados-p1`.
 
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
