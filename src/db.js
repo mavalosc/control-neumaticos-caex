@@ -48,7 +48,7 @@
     (await leerHistorial()).forEach(h => (historialPorOrden[h.orden_id] ||= []).push(h));
     if (!vista.length) throw new Error("La base no tiene neumáticos. Ejecuta docs/seed.sql en Supabase.");
 
-    const trucks = [], knownTires = {}, damages = {};
+    const trucks = [], knownTires = {}, damages = {}, deteccion = {};
     const porCamion = new Map();
     vista.forEach(r => {
       if (!porCamion.has(r.caex_codigo)) {
@@ -58,10 +58,15 @@
       }
       const key = r.caex_codigo.split("-")[1] + "-" + r.posicion;
       porCamion.get(r.caex_codigo)[3][r.posicion - 1] = r.horas_remanentes_calculadas;
+      // PROP-11: [5] horas de uso desde el montaje (dato sintético; null si la migración aún no se ejecuta)
       knownTires[key] = [r.neumatico_serial, Number(r.profundidad_mm), Number(r.tasa_desgaste_por_100h),
-        r.fecha_pasada ? fechaCL(r.fecha_pasada) : "sin pasada", Number(r.temperatura_flanco_c)];
+        r.fecha_pasada ? fechaCL(r.fecha_pasada) : "sin pasada", Number(r.temperatura_flanco_c),
+        r.horas_uso_h == null ? null : Number(r.horas_uso_h)];
       const nivel = Number(r.nivel_dano);
-      if (nivel > 0) damages[key] = [nivel, r.detalle_dano, r.confianza_ia == null ? 1 : Number(r.confianza_ia)];
+      if (nivel > 0) damages[key] = [nivel, r.detalle_dano, r.confianza_ia == null ? 1 : Number(r.confianza_ia), !!r.validado_por_humano];
+      // PROP-11: última detección de la visión artificial, que una corrección humana no reemplaza
+      if (r.detalle_detectado != null && Number(r.nivel_detectado) > 0)
+        deteccion[key] = [Number(r.nivel_detectado), r.detalle_detectado, r.confianza_detectada == null ? null : Number(r.confianza_detectada)];
       idNeumatico[r.neumatico_serial] = r.neumatico_id;
       ultimaMedicion[r.neumatico_serial] = r.codigo_medicion;
     });
@@ -82,7 +87,7 @@
       id: w.id, dia: diaCL(w.dia), turno: w.turno, libres: w.cupos_libres, en: w.horas_hasta_ventana, max: w.cupos_totales
     }));
 
-    return { trucks, knownTires, damages, orders, windows };
+    return { trucks, knownTires, damages, deteccion, orders, windows };
   }
 
   // Historial con el autor abreviado; si la vista aún no existe en la base, usa la tabla (antes de PROP-08)
@@ -107,7 +112,8 @@
   }
 
   async function modificarOrden(codigo, { ventanaId, nota, motivo }) {
-    const cambios = { justificacion_nota: nota, actualizado_en: new Date().toISOString() };
+    const cambios = { actualizado_en: new Date().toISOString() };
+    if (nota !== undefined) cambios.justificacion_nota = nota;
     if (ventanaId) cambios.ventana_id = ventanaId;
     revisar(await cliente.from("ordenes_trabajo").update(cambios).eq("codigo", codigo));
     await historial(codigo, "modificacion", motivo);
@@ -118,10 +124,11 @@
     await historial(codigo, "anulacion", motivo);
   }
 
-  async function registrarDano(serial, nivel, descripcion) {
+  // PROP-11: la corrección conserva la descripción y la confianza de la detección; el autor es el email (PROP-08)
+  async function registrarDano(serial, nivel, descripcion, confianza) {
     revisar(await cliente.from("danos_neumaticos").insert({
       neumatico_id: idNeumatico[serial], severidad: String(nivel), descripcion: nivel > 0 ? descripcion : "Sin daño",
-      confianza_ia: 1, validado_por_humano: true, usuario_validador: "planificador"
+      confianza_ia: confianza == null ? 1 : confianza, validado_por_humano: true, usuario_validador: autorActual
     }));
   }
 
@@ -143,7 +150,8 @@
     ordenes_trabajo: "*, neumaticos(serial), ventanas_taller(dia, turno)",
     historial_ordenes: "*, ordenes_trabajo(codigo)"
   };
-  const FUENTE = { historial_ordenes: "vista_historial_ordenes" };   // PROP-08: sin el email completo
+  // PROP-08 y PROP-11: el email de quien opera solo se lee abreviado
+  const FUENTE = { historial_ordenes: "vista_historial_ordenes", danos_neumaticos: "vista_danos_neumaticos" };
 
   // { neumaticos: { serial: "x", camiones: { codigo: "y" } } } -> { "neumaticos.serial": "x", "neumaticos.camiones.codigo": "y" }
   function aplanar(fila, prefijo = "", out = {}) {
@@ -162,9 +170,13 @@
 
   // El primer bloque trae el total de filas; los demás bloques se piden en paralelo (30.000 filas en segundos).
   async function leerTabla(nombre) {
-    const fuente = FUENTE[nombre] || nombre;
-    const columnas = fuente === nombre ? RELACIONES[nombre] || "*" : "*";
-    const primero = await cliente.from(fuente).select(columnas, { count: "exact" }).range(0, 999);
+    let fuente = FUENTE[nombre] || nombre;
+    let columnas = fuente === nombre ? RELACIONES[nombre] || "*" : "*";
+    let primero = await cliente.from(fuente).select(columnas, { count: "exact" }).range(0, 999);
+    if (primero.error && fuente !== nombre) {   // la vista aún no existe en la base: lee la tabla
+      fuente = nombre; columnas = RELACIONES[nombre] || "*";
+      primero = await cliente.from(fuente).select(columnas, { count: "exact" }).range(0, 999);
+    }
     const filas = revisar(primero);
     const total = primero.count ?? filas.length;
     const bloques = [];

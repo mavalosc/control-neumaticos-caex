@@ -1,5 +1,12 @@
 # Avances
 
+## v0.13 (14-11-2026) · PROP-11
+- [x] Ventana tardía: confirmar el riesgo al agendar y al modificar; aviso para sacar el CAEX del ciclo
+- [x] Ordenar y filtrar desde los encabezados (Tablero, Camiones en vista tabla y Datos)
+- [x] Horas de uso del neumático junto a las remanentes (dato sintético)
+- [x] Avisos al centro y de alto contraste; corrección de daño que conserva la detección y registra el email
+- [x] Causas SHAP con su efecto sobre el desgaste; justificación original fija y un solo motivo al modificar
+
 ## v0.12 (14-11-2026) · PROP-10
 - [x] Resultados de la sesión 1 con un usuario (P1) en `docs/prueba-usuarios.md`: hipótesis, 13 hallazgos con decisión y sesgos declarados
 - [x] Pauta v2: datos de partida verificados, tareas con camión y posición, nuevas reglas para el facilitador

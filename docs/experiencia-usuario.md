@@ -169,6 +169,10 @@ sequenceDiagram
 | ESP-F-16 | Manual de uso dentro de la app, con índice y descarga en PDF | — | Ayuda | ✅ | `#/ayuda` muestra `src/manual.md`; el PDF se descarga desde la misma página |
 | ESP-F-18 | El Tablero muestra las horas remanentes de la fórmula y las del modelo en columnas separadas; la Ficha muestra la predicción del modelo y sus 3 causas SHAP | HU-01, HU-04 | Tablero, Ficha | 🟡 datos simulados | Columna «Modelo · sim» y tarjeta «Modelo entrenado con datos de terreno simulados» |
 | ESP-F-19 | Pantalla de ingreso con email; el email queda como autor de cada creación, modificación o anulación de una orden y se muestra abreviado | HU-07, HU-08 | Ingreso, Órdenes | ✅ PROP-08 | Sin email solo se accede a la Ayuda; el historial muestra `ma***@dominio` |
+| ESP-F-20 | Una ventana que llega después del umbral exige confirmar el riesgo, al agendar y al modificar; si ninguna ventana con cupo llega a tiempo, se ofrece avisar a despacho | HU-06, HU-08 | Agendar, Modificar | ✅ PROP-11 | La orden o el historial registran «RIESGO ACEPTADO» y quién lo aceptó |
+| ESP-F-21 | Encabezados de tabla para ordenar (mayor a menor y menor a mayor) y filtrar por categoría, rango o texto, con «Limpiar filtros» | HU-01 | Tablero, Camiones (tabla), Datos | ✅ PROP-11 | Ordenar por severidad y filtrar horas ≤ 200 deja solo los neumáticos urgentes con daño |
+| ESP-F-22 | Horas de uso del neumático desde el montaje, junto a las horas remanentes | HU-01, HU-03 | Tablero, Ficha, Camiones | ✅ PROP-11 (dato sintético) | Columna «Horas uso» y tarjeta en la Ficha |
+| ESP-F-23 | La corrección de daño cambia el nivel, conserva la descripción y la confianza detectadas, confirma el guardado junto a los botones y registra el email de quien corrige | HU-03 | Ficha | ✅ PROP-11 | Recuadro verde «Guardado: Crítico → Leve…» |
 | ESP-F-17 | Ayuda contextual: el botón **?** de cada pantalla abre la sección del manual que le corresponde | — | Todas | ✅ | Desde Camiones abre `#/ayuda/camiones` |
 
 ### 6.2 Reglas de negocio y umbrales
