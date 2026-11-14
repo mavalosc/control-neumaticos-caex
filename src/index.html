@@ -204,7 +204,8 @@
           class="fixed bottom-5 right-5 z-40 w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold shadow-xl shadow-blue-900/40 border border-blue-400/40 transition-all">?</button>
 
   <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toast" class="fixed top-20 right-6 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none max-w-md bg-[var(--card)] border border-[var(--border)] p-4 rounded-xl shadow-2xl flex items-start gap-3"></div>
+  <!-- PROP-11: aviso centrado, grande y de alto contraste (texto blanco sobre color sólido, ≥ 4,5:1) -->
+  <div id="toast" role="status" aria-live="assertive" onclick="cerrarToast()" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] w-[min(92vw,36rem)] p-5 rounded-2xl shadow-2xl ring-4 ring-white/40 flex items-start gap-3 text-white bg-emerald-700 transition-opacity duration-200 opacity-0 pointer-events-none cursor-pointer"></div>
 
   <!-- SCRIPT ENGINE -->
   <script>
@@ -450,6 +451,11 @@ const INITIAL_TRUCKS = [
         const rate = kn ? kn[2] : 1.1;
         const mm = kn ? kn[1] : +(20 + h * rate / 100).toFixed(1);
         const temp = kn ? (kn[4] || 76) : 74 + ((p * 3 + ci * 2) % 18);
+        // PROP-11: horas de uso desde el montaje (sintético en la base; en modo local se estima desde el desgaste, banda nueva de 95 mm)
+        const uso = kn && kn[5] != null ? kn[5] : Math.max(0, Math.round((95 - mm) / (rate || 1.1) * 100));
+        // PROP-11: detección original de la visión artificial (una corrección humana cambia el nivel, no la descripción)
+        const detBase = DB.activo && state.deteccion && Object.keys(state.deteccion).length;
+        const det = (detBase ? state.deteccion[key] : (state.deteccion || {})[key] || INITIAL_DAMAGES[key]) || null;
         return {
           cx: c[0],
           modelo: c[1] || "Cat 793F",
@@ -464,7 +470,10 @@ const INITIAL_TRUCKS = [
           seg: h < 500 ? "observada" : "nominal",
           fecha: kn ? kn[3] : "24-09-2026",
           nivel: d ? d[0] : 0,
-          dmg: d ? [{ t: d[1], c: d[2] }] : []
+          dmg: d ? [{ t: d[1], c: det && det[2] != null ? det[2] : d[2] }] : [],
+          uso,
+          det: det ? { nivel: det[0], t: det[1], c: det[2] } : null,
+          validado: !!(d && d[3])
         };
       }));
     }
@@ -479,20 +488,28 @@ const INITIAL_TRUCKS = [
     const $ = document.getElementById("app");
     const navigate = hash => { location.hash = hash; };
 
+    // PROP-11 (hallazgo 5 de la sesión 1): el aviso de la esquina pasaba inadvertido.
+    // Ahora aparece al centro, grande y con color sólido; se cierra con un clic, con Esc o a los 5 s.
+    const TOAST_COLOR = { success: "bg-emerald-700", danger: "bg-rose-700", info: "bg-blue-700", warning: "bg-amber-800" };
+    let toastTimer = null;
     function showToast(msg, type = "success") {
       const toast = document.getElementById("toast");
-      const icon = type === "danger" 
-        ? `<svg class="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-        : `<svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
-      
-      toast.innerHTML = `${icon} <div class="text-xs sm:text-sm font-medium text-[var(--ink)]">${msg}</div>`;
-      toast.classList.remove("opacity-0", "translate-y-[-20px]", "pointer-events-none");
-      toast.classList.add("opacity-100", "translate-y-0");
-      setTimeout(() => {
-        toast.classList.add("opacity-0", "translate-y-[-20px]", "pointer-events-none");
-        toast.classList.remove("opacity-100", "translate-y-0");
-      }, 4000);
+      const icon = type === "danger" || type === "warning"
+        ? `<svg class="w-7 h-7 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+        : `<svg class="w-7 h-7 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>`;
+      toast.className = toast.className.replace(/\bbg-(emerald|rose|blue|amber)-\d00\b/g, "").trim() + " " + (TOAST_COLOR[type] || TOAST_COLOR.info);
+      toast.innerHTML = `${icon}<div class="flex-1 text-sm sm:text-base font-semibold leading-snug">${msg}</div><span class="text-white/80 text-xl leading-none" aria-hidden="true">×</span>`;
+      toast.classList.remove("opacity-0", "pointer-events-none");
+      toast.classList.add("opacity-100");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(cerrarToast, 5000);
     }
+    function cerrarToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.add("opacity-0", "pointer-events-none");
+      toast.classList.remove("opacity-100");
+    }
+    document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarToast(); });
 
     function toggleTheme() {
       const isLight = document.documentElement.getAttribute("data-theme") === "light";
@@ -541,6 +558,145 @@ const INITIAL_TRUCKS = [
       </span>`;
     };
 
+    // --- PROP-11: ENCABEZADOS DE TABLA CON ORDENAR Y FILTRAR (Tablero, Camiones y Datos) ---
+    // Cada tabla define columnas { k, label, tipo: "num" | "cat" | "texto", v: fila => valor }.
+    // El panel del filtro se dibuja sobre la tabla (no dentro) para que el desplazamiento horizontal no lo corte.
+    const TF = {};
+    function tfEstado(id, render, ordenInicial) {
+      if (!TF[id]) TF[id] = { orden: ordenInicial || null, filtros: {}, abierto: null, opciones: {}, reiniciar: false };
+      TF[id].render = render;
+      return TF[id];
+    }
+    function tfCumple(fil, v) {
+      if (fil.tipo === "cat") return fil.valores.includes(String(v ?? "—"));
+      if (fil.tipo === "num") return v != null && !isNaN(v) && (fil.min === "" || v >= +fil.min) && (fil.max === "" || v <= +fil.max);
+      return String(v ?? "").toLowerCase().includes(fil.q.toLowerCase());
+    }
+    function tfAplicar(id, filas, cols) {
+      const e = TF[id];
+      const activos = cols.filter(c => e.filtros[c.k]);
+      const r = activos.length ? filas.filter(f => activos.every(c => tfCumple(e.filtros[c.k], c.v(f)))) : [...filas];
+      const c = e.orden && cols.find(x => x.k === e.orden.col);
+      if (c) r.sort((a, b) => {
+        const x = c.v(a), y = c.v(b);
+        if (x == null || x === "") return 1;
+        if (y == null || y === "") return -1;
+        const d = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es", { numeric: true });
+        return e.orden.dir === "asc" ? d : -d;
+      });
+      return r;
+    }
+    const tfDibujar = id => { TF[id].reiniciar = true; TF[id].render(); };
+    function tfOrdenar(id, col, dir, tipo) {
+      const e = TF[id];
+      e.orden = { col, dir: dir || (e.orden && e.orden.col === col ? (e.orden.dir === "asc" ? "desc" : "asc") : (tipo === "num" ? "desc" : "asc")) };
+      tfDibujar(id);
+    }
+    function tfAbrir(id, col) { TF[id].abierto = TF[id].abierto === col ? null : col; TF[id].render(); }
+    function tfCat(id, col, i, marcado) {
+      const e = TF[id], ops = e.opciones[col] || [];
+      const actual = e.filtros[col] ? e.filtros[col].valores : ops.map(o => o[0]);
+      const valores = marcado ? [...new Set([...actual, ops[i][0]])] : actual.filter(v => v !== ops[i][0]);
+      if (valores.length === ops.length) delete e.filtros[col]; else e.filtros[col] = { tipo: "cat", valores };
+      tfDibujar(id);
+    }
+    function tfCatTodos(id, col, todos) {
+      if (todos) delete TF[id].filtros[col]; else TF[id].filtros[col] = { tipo: "cat", valores: [] };
+      tfDibujar(id);
+    }
+    function tfNum(id, col, lado, valor) {
+      const e = TF[id], f = e.filtros[col] || { tipo: "num", min: "", max: "" };
+      f[lado] = String(valor).trim().replace(",", ".");
+      if (f.min === "" && f.max === "") delete e.filtros[col]; else e.filtros[col] = f;
+      tfDibujar(id);
+    }
+    function tfTexto(id, col, q) {
+      if (String(q).trim()) TF[id].filtros[col] = { tipo: "texto", q: String(q).trim() }; else delete TF[id].filtros[col];
+      tfDibujar(id);
+    }
+    function tfQuitar(id, col) { delete TF[id].filtros[col]; tfDibujar(id); }
+    function tfLimpiar(id) { TF[id].filtros = {}; TF[id].abierto = null; tfDibujar(id); }
+    const tfEsc = v => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+    // Encabezado: botón para ordenar y botón para abrir el filtro de la columna
+    function tfEncabezado(id, c, clase = "") {
+      const e = TF[id];
+      const ord = e.orden && e.orden.col === c.k ? (e.orden.dir === "asc" ? "▲" : "▼") : "↕";
+      const filtrado = !!e.filtros[c.k];
+      return `<th class="py-2 px-3 align-top ${clase}" ${e.orden && e.orden.col === c.k ? `aria-sort="${e.orden.dir === "asc" ? "ascending" : "descending"}"` : ""}>
+        <div class="flex items-center gap-1 whitespace-nowrap ${clase.includes("text-right") ? "justify-end" : ""}">
+          <button type="button" onclick="tfOrdenar('${id}','${c.k}',null,'${c.tipo}')" title="Ordenar por ${tfEsc(c.label)}" class="uppercase tracking-wider hover:text-[var(--ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-0.5 ${e.orden && e.orden.col === c.k ? "text-[var(--ink)]" : ""}">${c.html || tfEsc(c.label)} <span aria-hidden="true">${ord}</span></button>
+          <button type="button" onclick="tfAbrir('${id}','${c.k}')" aria-label="Filtrar ${tfEsc(c.label)}" aria-expanded="${e.abierto === c.k}" title="Filtrar ${tfEsc(c.label)}" class="p-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${filtrado ? "text-blue-500 bg-blue-500/15" : "opacity-60 hover:opacity-100"}">
+            <svg class="w-3.5 h-3.5" fill="${filtrado ? "currentColor" : "none"}" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
+          </button>
+        </div>
+      </th>`;
+    }
+
+    // Panel del filtro abierto + resumen de filtros activos con «Limpiar filtros»
+    function tfPanel(id, cols, filasBase, total) {
+      const e = TF[id];
+      const activos = cols.filter(c => e.filtros[c.k]);
+      const resumen = activos.length ? `
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-[var(--muted)]">Filtros activos:</span>
+          ${activos.map(c => `<button type="button" onclick="tfQuitar('${id}','${c.k}')" class="px-2 py-0.5 rounded-full bg-blue-600 text-white font-medium" title="Quitar este filtro">${tfEsc(c.label)} ✕</button>`).join("")}
+          <span class="text-[var(--muted)]">· ${total.toLocaleString("es-CL")} filas</span>
+          <button type="button" onclick="tfLimpiar('${id}')" class="ml-1 px-2.5 py-0.5 rounded-full border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--card-hover)] font-semibold">Limpiar filtros</button>
+        </div>` : "";
+      const c = e.abierto && cols.find(x => x.k === e.abierto);
+      if (!c) return resumen;
+      const fil = e.filtros[c.k];
+      let cuerpo = "";
+      if (c.tipo === "cat") {
+        const cuenta = new Map();
+        filasBase.forEach(f => { const v = String(c.v(f) ?? "—"); cuenta.set(v, (cuenta.get(v) || 0) + 1); });
+        const ops = [...cuenta.entries()].sort((a, b) => a[0].localeCompare(b[0], "es", { numeric: true }));
+        e.opciones[c.k] = ops;
+        const marcados = fil ? fil.valores : ops.map(o => o[0]);
+        cuerpo = `
+          <div class="flex gap-2 text-xs mb-2">
+            <button type="button" onclick="tfCatTodos('${id}','${c.k}',true)" class="underline text-blue-500">Marcar todas</button>
+            <button type="button" onclick="tfCatTodos('${id}','${c.k}',false)" class="underline text-blue-500">Desmarcar todas</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 max-h-56 overflow-auto">
+            ${ops.map(([v, n], i) => `
+              <label class="flex items-center gap-2 text-xs px-2 py-1 rounded-lg hover:bg-[var(--card-hover)] cursor-pointer">
+                <input type="checkbox" ${marcados.includes(v) ? "checked" : ""} onchange="tfCat('${id}','${c.k}',${i},this.checked)" class="accent-blue-600">
+                <span class="text-[var(--ink)] truncate">${tfEsc(v)}</span><span class="ml-auto font-mono text-[var(--muted)]">${n.toLocaleString("es-CL")}</span>
+              </label>`).join("")}
+          </div>`;
+      } else if (c.tipo === "num") {
+        const nums = filasBase.map(c.v).filter(v => v != null && !isNaN(v));
+        const lo = nums.length ? Math.min(...nums) : "", hi = nums.length ? Math.max(...nums) : "";
+        cuerpo = `
+          <div class="flex flex-wrap items-end gap-3 text-xs">
+            <label class="flex flex-col gap-1">Desde (mínimo)<input type="number" step="any" value="${fil ? fil.min : ""}" placeholder="${lo}" onchange="tfNum('${id}','${c.k}','min',this.value)" class="w-32 px-2 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--ink)]"></label>
+            <label class="flex flex-col gap-1">Hasta (máximo)<input type="number" step="any" value="${fil ? fil.max : ""}" placeholder="${hi}" onchange="tfNum('${id}','${c.k}','max',this.value)" class="w-32 px-2 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--ink)]"></label>
+            <span class="text-[var(--muted)] pb-1.5">Rango de los datos: ${String(lo).replace(".", ",")} a ${String(hi).replace(".", ",")} · escriba y presione Enter</span>
+          </div>`;
+      } else {
+        cuerpo = `
+          <label class="flex flex-col gap-1 text-xs">Contiene el texto
+            <input type="text" value="${fil ? tfEsc(fil.q) : ""}" placeholder="Escriba y presione Enter" onchange="tfTexto('${id}','${c.k}',this.value)" class="w-64 px-2 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--ink)]">
+          </label>`;
+      }
+      return `
+        ${resumen}
+        <div class="bg-[var(--card)] border-2 border-blue-500/50 rounded-2xl p-4 space-y-3 shadow-lg" role="group" aria-label="Filtro de ${tfEsc(c.label)}">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-sm font-bold text-[var(--ink)]">Filtrar y ordenar: ${tfEsc(c.label)}</div>
+            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+              <button type="button" onclick="tfOrdenar('${id}','${c.k}','desc')" class="px-2.5 py-1 rounded-lg border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">${c.tipo === "num" ? "Mayor a menor ▼" : "Z a A ▼"}</button>
+              <button type="button" onclick="tfOrdenar('${id}','${c.k}','asc')" class="px-2.5 py-1 rounded-lg border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">${c.tipo === "num" ? "Menor a mayor ▲" : "A a Z ▲"}</button>
+              ${fil ? `<button type="button" onclick="tfQuitar('${id}','${c.k}')" class="px-2.5 py-1 rounded-lg border border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--ink)]">Quitar filtro</button>` : ""}
+              <button type="button" onclick="tfAbrir('${id}','${c.k}')" class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-semibold">Cerrar</button>
+            </div>
+          </div>
+          ${cuerpo}
+        </div>`;
+    }
+
     // --- PANTALLA 1: TABLERO DEL TURNO ---
     let filterZone = "todas";
     let filterRate = "cualquier";
@@ -548,18 +704,36 @@ const INITIAL_TRUCKS = [
     let dashCurrentPage = 1;
     let dashPageSize = 25;
 
+    // PROP-11: columnas del Tablero con ordenar y filtrar
+    const COLS_TABLERO = [
+      { k: "cx", label: "Camión y posición", html: "Camión & Pos", tipo: "texto", v: t => `${t.cx} P${t.pos}` },
+      { k: "serial", label: "Serial neumático", tipo: "texto", v: t => t.serial },
+      { k: "mm", label: "Profundidad (mm)", html: "Profundidad", tipo: "num", v: t => t.mm },
+      { k: "rate", label: "Tasa de desgaste (mm/100 h)", html: "Tasa Desgaste", tipo: "num", v: t => t.rate },
+      { k: "seg", label: "Tipo de tasa", html: "Tipo Tasa", tipo: "cat", v: t => t.seg },
+      { k: "uso", label: "Horas de uso", html: "Horas uso", tipo: "num", v: t => t.uso },
+      { k: "h", label: "Horas remanentes", html: "Horas rem.", tipo: "num", v: t => t.h },
+      { k: "modelo", label: "Horas según el modelo (sim)", html: `Modelo <span class="normal-case text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">sim</span>`, tipo: "num", v: t => prediccion(t.serial)?.horas_remanentes_modelo ?? null },
+      { k: "temp", label: "Temperatura del flanco (°C)", html: "Temp Flanco", tipo: "num", v: t => t.temp },
+      { k: "zona", label: "Condición", tipo: "cat", v: t => ZN[zona(t.h)] },
+      { k: "nivel", label: "Severidad del daño", html: "Severidad Daño", tipo: "cat", v: t => `${t.nivel} · ${DAMAGE_NAMES[t.nivel]}` }
+    ];
+
     function renderDashboard() {
       updateActiveNav("nav-tablero");
       const tires = getTires();
       const counts = { rojo: 0, amarillo: 0, verde: 0, gris: 0 };
       tires.forEach(t => counts[zona(t.h)]++);
 
-      const filtered = tires.filter(t => {
+      const base = tires.filter(t => {
         const matchZone = filterZone === "todas" || ZN[zona(t.h)] === filterZone || zona(t.h) === filterZone;
         const matchRate = filterRate === "cualquier" || t.seg === filterRate.replace("tasa ", "");
         const matchText = (t.serial + t.cx + t.pos + t.modelo).toLowerCase().includes(searchQuery.toLowerCase());
         return matchZone && matchRate && matchText;
-      }).sort((a, b) => a.h - b.h);
+      });
+      const tf = tfEstado("tablero", renderDashboard, { col: "h", dir: "asc" });
+      if (tf.reiniciar) { dashCurrentPage = 1; tf.reiniciar = false; }
+      const filtered = tfAplicar("tablero", base, COLS_TABLERO);
 
       const totalDashPages = Math.ceil(filtered.length / dashPageSize) || 1;
       if (dashCurrentPage > totalDashPages) dashCurrentPage = totalDashPages;
@@ -687,23 +861,16 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
+          ${tfPanel("tablero", COLS_TABLERO, base, filtered.length)}
+
           <!-- Tabla de Datos Principal -->
           <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
               <table class="tabla-flota w-full text-left text-sm">
                 <thead>
                   <tr class="border-b border-[var(--border)] bg-[var(--bg)]/50 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                    <th class="py-3 px-4">Camión & Pos</th>
-                    <th class="py-3 px-4 font-mono">Serial Neumático</th>
-                    <th class="py-3 px-4 text-right">Profundidad</th>
-                    <th class="py-3 px-4 text-right">Tasa Desgaste</th>
-                    <th class="py-3 px-4">Tipo Tasa</th>
-                    <th class="py-3 px-4 text-right font-mono" title="Horas remanentes con la fórmula: profundidad y tasa medidas por el pórtico">Horas rem.</th>
-                    <th class="py-3 px-4 text-right font-mono" title="Horas remanentes según el modelo Gradient Boosting · ${ETIQUETA_SIMULADO}">Modelo <span class="normal-case text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">sim</span></th>
-                    <th class="py-3 px-4 text-center">Temp Flanco</th>
-                    <th class="py-3 px-4">Condición</th>
-                    <th class="py-3 px-4">Severidad Daño</th>
-                    <th class="py-3 px-4 text-right">Acción</th>
+                    ${COLS_TABLERO.map(c => tfEncabezado("tablero", c, ["mm", "rate", "uso", "h", "modelo"].includes(c.k) ? "text-right" : c.k === "temp" ? "text-center" : "")).join("")}
+                    <th class="py-2 px-3 align-top text-right">Acción</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--border)]">
@@ -730,6 +897,7 @@ const INITIAL_TRUCKS = [
                             ${t.seg}
                           </span>
                         </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs text-[var(--ink)]" title="Horas de uso desde el montaje (dato sintético del prototipo)">${H(t.uso)}</td>
                         <td class="py-3.5 px-4 text-right font-mono font-bold ${t.h < 200 ? 'text-rose-400 text-base' : t.h < 500 ? 'text-amber-400' : 'text-emerald-400'}">
                           ${H(t.h)}
                         </td>
@@ -753,7 +921,7 @@ const INITIAL_TRUCKS = [
                     `;
                   }).join("") : `
                     <tr>
-                      <td colspan="11" class="py-8 text-center text-sm text-[var(--muted)]">
+                      <td colspan="12" class="py-8 text-center text-sm text-[var(--muted)]">
                         No se encontraron neumáticos con los filtros seleccionados.
                       </td>
                     </tr>
@@ -791,7 +959,7 @@ const INITIAL_TRUCKS = [
       state.dispatchAlerts.push({ caexId, serial, fecha: new Date().toLocaleString("es-CL"), mensaje: msg });
       saveState();
       showToast(msg, "danger");
-      renderDashboard();
+      route();
     }
 
     // --- PANTALLA 2: VISTA DE CAMIONES (CHASIS Y RUEDAS 6X4) ---
@@ -800,10 +968,33 @@ const INITIAL_TRUCKS = [
     let trucksCurrentPage = 1;
     let trucksPageSize = 12; // 12 por página
 
+    // PROP-11: la flota también se puede ver como tabla, con ordenar y filtrar por columna
+    let truckVista = "tarjetas";
+    const resumenCamion = (c, tires) => {
+      const tt = tires.filter(t => t.cx === c[0]);
+      return {
+        c, codigo: c[0], modelo: c[1] || "Cat 793F", horometro: +String(c[2] || "15000").replace(/\D/g, ""),
+        rojos: tt.filter(t => zona(t.h) === "rojo").length, amarillos: tt.filter(t => zona(t.h) === "amarillo").length,
+        minH: Math.min(...tt.map(t => t.h)), peor: Math.max(...tt.map(t => t.nivel)), usoMax: Math.max(...tt.map(t => t.uso))
+      };
+    };
+    const COLS_CAMIONES = [
+      { k: "codigo", label: "Camión", tipo: "texto", v: r => r.codigo },
+      { k: "modelo", label: "Modelo", tipo: "cat", v: r => r.modelo },
+      { k: "horometro", label: "Horómetro (h)", tipo: "num", v: r => r.horometro },
+      { k: "rojos", label: "Neumáticos en zona roja", html: "En rojo", tipo: "num", v: r => r.rojos },
+      { k: "amarillos", label: "Neumáticos en zona amarilla", html: "En amarillo", tipo: "num", v: r => r.amarillos },
+      { k: "minH", label: "Menor horas remanentes", html: "Menor h rem.", tipo: "num", v: r => r.minH },
+      { k: "usoMax", label: "Mayor horas de uso", html: "Mayor h uso", tipo: "num", v: r => r.usoMax },
+      { k: "peor", label: "Peor daño", tipo: "cat", v: r => `${r.peor} · ${DAMAGE_NAMES[r.peor]}` }
+    ];
+
     function renderTrucks() {
       updateActiveNav("nav-camiones");
       const tires = getTires();
-      const filteredTrucks = state.trucks.filter(c => {
+      const tfc = tfEstado("camiones", renderTrucks, null);
+      if (tfc.reiniciar) { trucksCurrentPage = 1; tfc.reiniciar = false; }
+      const baseTrucks = state.trucks.filter(c => {
         const text = (c[0] + c[1] + c[2]).toLowerCase();
         const matchText = text.includes(truckSearchQuery.toLowerCase());
         if (!matchText) return false;
@@ -816,6 +1007,9 @@ const INITIAL_TRUCKS = [
         if (truckFilterStatus === "verde") return reds === 0 && yellows === 0;
         return true;
       });
+      const filasCamion = baseTrucks.map(c => resumenCamion(c, tires));
+      const filteredRows = tfAplicar("camiones", filasCamion, COLS_CAMIONES);
+      const filteredTrucks = filteredRows.map(r => r.c);
 
       const totalTruckPages = Math.ceil(filteredTrucks.length / trucksPageSize) || 1;
       if (trucksCurrentPage > totalTruckPages) trucksCurrentPage = totalTruckPages;
@@ -863,7 +1057,44 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="font-semibold text-[var(--muted)]">Ver como:</span>
+            ${[["tarjetas", "Tarjetas (esquema 6x4)"], ["tabla", "Tabla (ordenar y filtrar)"]].map(([v, l]) => `
+              <button type="button" onclick="truckVista='${v}'; renderTrucks()" aria-pressed="${truckVista === v}" class="px-3 py-1.5 rounded-xl font-medium ${truckVista === v ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">${l}</button>`).join("")}
+            ${truckVista === "tarjetas" && Object.keys(tfc.filtros).length ? `<span class="text-[var(--muted)]">Se aplican los filtros de la vista tabla. <button type="button" onclick="tfLimpiar('camiones')" class="underline text-blue-500">Limpiar filtros</button></span>` : ""}
+          </div>
+
+          ${truckVista === "tabla" ? `
+            ${tfPanel("camiones", COLS_CAMIONES, filasCamion, filteredRows.length)}
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead>
+                    <tr class="border-b border-[var(--border)] bg-[var(--bg)]/50 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                      ${COLS_CAMIONES.map(c => tfEncabezado("camiones", c, c.tipo === "num" ? "text-right" : "")).join("")}
+                      <th class="py-2 px-3 align-top text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[var(--border)]">
+                    ${filteredRows.slice(startTruck, startTruck + trucksPageSize).map(r => `
+                      <tr class="hover:bg-[var(--card-hover)] ${r.rojos ? 'bg-rose-500/5' : ''}">
+                        <td class="py-3 px-3 font-bold text-[var(--ink)]">${r.codigo}</td>
+                        <td class="py-3 px-3 text-xs text-[var(--muted)]">${r.modelo}</td>
+                        <td class="py-3 px-3 text-right font-mono text-xs text-[var(--ink)]">${H(r.horometro)}</td>
+                        <td class="py-3 px-3 text-right font-mono ${r.rojos ? 'text-rose-400 font-bold' : 'text-[var(--muted)]'}">${r.rojos}</td>
+                        <td class="py-3 px-3 text-right font-mono ${r.amarillos ? 'text-amber-400 font-bold' : 'text-[var(--muted)]'}">${r.amarillos}</td>
+                        <td class="py-3 px-3 text-right font-mono font-bold ${r.minH < 200 ? 'text-rose-400' : r.minH < 500 ? 'text-amber-400' : 'text-emerald-400'}">${H(r.minH)}</td>
+                        <td class="py-3 px-3 text-right font-mono text-xs text-[var(--ink)]">${H(r.usoMax)}</td>
+                        <td class="py-3 px-3">${renderBadge(r.peor)}</td>
+                        <td class="py-3 px-3 text-right"><button type="button" onclick="truckSearchQuery='${r.codigo}'; truckVista='tarjetas'; trucksCurrentPage=1; renderTrucks()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg)] hover:bg-blue-600 hover:text-white text-[var(--ink)] border border-[var(--border)]">Ver posiciones ›</button></td>
+                      </tr>`).join("") || `<tr><td colspan="9" class="py-8 text-center text-sm text-[var(--muted)]">No se encontraron camiones con esos filtros.</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ""}
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 ${truckVista === "tabla" ? "hidden" : ""}">
             ${pagedTrucks.map(truck => {
               const truckTires = tires.filter(t => t.cx === truck[0]);
               const reds = truckTires.filter(t => zona(t.h) === "rojo").length;
@@ -1008,8 +1239,14 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
-          <!-- 3 Tarjetas de Métricas Dimensionales y Vida Remanente -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Tarjetas de Métricas Dimensionales y Vida Remanente -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+            <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
+              <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Horas de Uso</div>
+              <div class="text-3xl font-extrabold font-mono text-[var(--ink)] mt-1">${H(t.uso)}</div>
+              <div class="text-xs text-[var(--muted)] mt-1">Desde el montaje · <span title="Horómetro del camión menos el horómetro al montar el neumático. En el prototipo el horómetro al montaje es un dato sintético.">dato sintético</span></div>
+            </div>
             
             <div class="bg-[var(--card)] border border-[var(--border)] p-5 rounded-2xl shadow-sm">
               <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Horas Remanentes</div>
@@ -1081,10 +1318,11 @@ const INITIAL_TRUCKS = [
                     <div class="text-xs text-[var(--muted)] mt-1">Medida por el pórtico: ${f(t.rate)} mm/100h</div>
                   </div>
                   <div>
-                    <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Por qué (3 causas principales · SHAP)</div>
+                    <div class="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-0.5">Por qué (3 causas principales · SHAP)</div>
+                    <div class="text-[11px] text-[var(--muted)] mb-1.5">Efecto de cada variable sobre el desgaste previsto, no su valor.</div>
                     ${(p.causas || []).map(c => `
                       <div class="mb-1.5">
-                        <div class="flex justify-between text-xs"><span class="text-[var(--ink)]">${c.etiqueta}</span><span class="font-mono ${c.efecto === 'aumenta' ? 'text-rose-400' : 'text-emerald-400'}">${c.efecto === 'aumenta' ? '▲ aumenta' : '▼ reduce'} · ${f(c.peso_pct)} %</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-[var(--ink)]">${c.etiqueta}</span><span class="font-mono ${c.efecto === 'aumenta' ? 'text-rose-400' : 'text-emerald-400'}">${c.efecto === 'aumenta' ? '▲ aumenta el desgaste' : '▼ reduce el desgaste'} · ${f(c.peso_pct)} %</span></div>
                         <div class="h-1.5 rounded-full bg-[var(--bg)] mt-0.5"><div class="h-1.5 rounded-full ${c.efecto === 'aumenta' ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${Math.min(100, c.peso_pct)}%"></div></div>
                       </div>`).join("")}
                   </div>
@@ -1145,6 +1383,12 @@ const INITIAL_TRUCKS = [
               <!-- Lista de daños identificados -->
               <div class="border-t border-[var(--border)] pt-3">
                 <div class="text-xs font-semibold text-[var(--ink)] mb-2">Daños Registrados por Algoritmo de Visión:</div>
+                ${t.validado && t.det ? `<p class="text-[11px] text-[var(--muted)] mb-2">Detección original: <strong class="text-[var(--ink)]">${DAMAGE_NAMES[t.det.nivel]}</strong>. El planificador corrigió el nivel a <strong class="text-[var(--ink)]">${DAMAGE_NAMES[t.nivel]}</strong>; la descripción y la confianza son las de la detección.</p>` : ""}
+                ${t.nivel === 0 && t.validado && t.det ? `
+                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] text-xs mb-2">
+                    <span class="text-[var(--muted)]">Detectado: ${t.det.t}</span>
+                    <span class="font-mono text-[var(--muted)]">descartado por el planificador</span>
+                  </div>` : ""}
                 ${t.dmg.length ? t.dmg.map(d => `
                   <div class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs">
                     <span class="font-medium text-[var(--ink)] flex items-center gap-2">
@@ -1164,11 +1408,16 @@ const INITIAL_TRUCKS = [
                 <p class="text-xs text-[var(--muted)] mb-2">El criterio humano del mantenedor tiene prioridad sobre la inferencia del modelo.</p>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   ${[0, 1, 2, 3].map(n => `
-                    <button onclick="corregirClasificacion('${t.serial}', ${n})" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all ${n === t.nivel ? 'bg-blue-600 text-white border-blue-500 shadow-md font-bold' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border-[var(--border)]'}">
+                    <button onclick="corregirClasificacion('${t.serial}', ${n})" aria-pressed="${n === t.nivel}" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all ${n === t.nivel ? 'bg-blue-600 text-white border-blue-500 shadow-md font-bold' : 'bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--ink)] border-[var(--border)]'}">
                       ${DAMAGE_NAMES[n]}
                     </button>
                   `).join("")}
                 </div>
+                ${ultimaCorreccion[t.serial] ? `
+                  <div role="status" class="mt-2 p-2.5 rounded-xl bg-emerald-700 text-white text-xs font-semibold flex items-center gap-2">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    <span>Guardado: ${ultimaCorreccion[t.serial]}</span>
+                  </div>` : `<p class="mt-2 text-[11px] text-[var(--muted)]">Al elegir un nivel, la corrección se guarda de inmediato y queda en la auditoría con su email.</p>`}
               </div>
 
             </div>
@@ -1275,24 +1524,33 @@ const INITIAL_TRUCKS = [
       `;
     }
 
+    // PROP-11 (hallazgos 5, 6 y 13): la corrección cambia el NIVEL, conserva la descripción y la confianza
+    // de la detección, confirma el guardado junto a los botones y queda a nombre de quien la hizo.
+    const ultimaCorreccion = {};
     function corregirClasificacion(serial, newLevel) {
       const t = ST(serial);
       if (!t) return;
-      
       const prevLevel = t.nivel;
-      state.damages[(t.cx.split("-")[1]) + "-" + t.pos] = newLevel > 0 
-        ? [newLevel, ["", "desgaste irregular", "roca incrustada en la banda", "corte profundo en flanco"][newLevel], 1.0]
-        : null;
+      if (newLevel === prevLevel) return;
+      const key = t.cx.split("-")[1] + "-" + t.pos;
+      state.deteccion = state.deteccion || {};
+      if (!state.deteccion[key] && t.dmg[0] && !t.validado) state.deteccion[key] = [t.nivel, t.dmg[0].t, t.dmg[0].c];
+      const det = state.deteccion[key] || null;
+      const desc = det ? det[1] : (t.dmg[0]?.t || "clasificado por el planificador");
+      const conf = det ? det[2] : null;
+      state.damages[key] = newLevel > 0 ? [newLevel, desc, conf ?? 1, true] : null;
 
       saveState();
-      showToast(`Clasificación actualizada de ${DAMAGE_NAMES[prevLevel]} a ${DAMAGE_NAMES[newLevel]} (registrado en auditoría)`, "info");
+      const hora = new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+      ultimaCorreccion[serial] = `${DAMAGE_NAMES[prevLevel]} → ${DAMAGE_NAMES[newLevel]} · ${hora} · ${autorVisible()}`;
+      showToast(`Corrección guardada: ${DAMAGE_NAMES[prevLevel]} → ${DAMAGE_NAMES[newLevel]}. Queda en la auditoría a nombre de ${autorVisible()}.`, "success");
       renderTireDetail(serial);
-      const desc = state.damages[t.cx.split("-")[1] + "-" + t.pos]?.[1];
-      persistir(() => DB.registrarDano(serial, newLevel, desc));
+      persistir(() => DB.registrarDano(serial, newLevel, desc, conf));
     }
 
     // --- PANTALLA 4: AGENDAR INTERVENCIÓN EN TALLER ---
     let selectedWindowId = null;
+    let riesgoAceptado = false;   // PROP-11: una ventana tardía exige confirmar el riesgo
 
     function renderSchedule(serial) {
       updateActiveNav("");
@@ -1300,6 +1558,9 @@ const INITIAL_TRUCKS = [
       if (!t) return navigate("#/");
 
       const selectedWin = state.windows.find(w => w.id === selectedWindowId);
+      const tardia = !!selectedWin && !(selectedWin.en < t.h);
+      const hayOportuna = state.windows.some(w => w.libres > 0 && w.en < t.h);
+      const puedeEmitir = !!selectedWin && (!tardia || riesgoAceptado);
 
       $.innerHTML = `
         <div class="max-w-3xl mx-auto space-y-6">
@@ -1313,6 +1574,13 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
+          ${hayOportuna ? "" : `
+            <div role="alert" class="p-4 rounded-2xl bg-rose-700 text-white space-y-2 shadow-lg">
+              <div class="text-sm font-bold">Ninguna ventana con cupo llega antes de que el neumático cruce el umbral (${H(t.h)} remanentes).</div>
+              <p class="text-xs text-white/90">Evalúe sacar el ${t.cx} del ciclo de acarreo y avisar a despacho. Si igual programa una ventana, deberá confirmar el riesgo.</p>
+              <button type="button" onclick="notificarDespacho('${t.cx}', '${serial}')" class="px-3 py-1.5 rounded-lg bg-white text-rose-700 text-xs font-bold">Avisar a despacho para sacar el ${t.cx} del ciclo</button>
+            </div>`}
+
           <!-- Selección de Ventana de Taller -->
           <div class="space-y-3">
             <div class="text-sm font-semibold text-[var(--ink)]">Selecciona una Ventana Disponible en el Taller de Neumáticos:</div>
@@ -1324,7 +1592,7 @@ const INITIAL_TRUCKS = [
                 const arrivesOnTime = w.en < t.h;
 
                 return `
-                  <button onclick="${hasSlots ? `selectedWindowId=${w.id}; renderSchedule('${serial}')` : ''}" class="w-full text-left p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)]'} ${!hasSlots ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}">
+                  <button onclick="${hasSlots ? `selectedWindowId=${w.id}; riesgoAceptado=false; renderSchedule('${serial}')` : ''}" class="w-fulltext-left p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)]'} ${!hasSlots ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}">
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-base font-bold text-[var(--ink)]">${w.dia} · ${w.turno}</div>
@@ -1344,7 +1612,7 @@ const INITIAL_TRUCKS = [
                             ✓ Ventana oportuna: La intervención se ejecutará con ${t.h - w.en} h de margen antes del cruce de umbral.
                           </span>
                         ` : `
-                          <span class="text-rose-400 font-semibold flex items-center gap-1">
+                          <span class="text-rose-500 font-bold text-sm flex items-center gap-1">
                             ⚠️ Advertencia de riesgo: El neumático cruzará el umbral ${w.en - t.h} h antes de esta ventana.
                           </span>
                         `}
@@ -1368,11 +1636,17 @@ const INITIAL_TRUCKS = [
             </div>
           </div>
 
+          ${tardia ? `
+            <label class="flex items-start gap-3 p-4 rounded-2xl border-2 border-rose-500 bg-rose-500/10 cursor-pointer">
+              <input type="checkbox" ${riesgoAceptado ? "checked" : ""} onchange="riesgoAceptado=this.checked; renderSchedule('${serial}')" class="mt-0.5 w-5 h-5 accent-rose-600">
+              <span class="text-sm text-[var(--ink)]"><strong class="text-rose-500">Entiendo el riesgo y emito la orden igual:</strong> el neumático cruzará el umbral ${selectedWin.en - t.h} h antes de esta ventana. Quedará registrado en la orden.</span>
+            </label>` : ""}
+
           <!-- Botón de Confirmación -->
           <div class="pt-4">
-            <button onclick="emitirOrden('${serial}')" ${selectedWin ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <button onclick="emitirOrden('${serial}')" ${puedeEmitir ? '' : 'disabled'} class="w-fullbg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>Confirmar y Emitir Orden en SAP PM</span>
+              <span>${tardia ? "Confirmar con riesgo aceptado y emitir orden" : "Confirmar y Emitir Orden en SAP PM"}</span>
             </button>
           </div>
 
@@ -1384,6 +1658,8 @@ const INITIAL_TRUCKS = [
       const t = ST(serial);
       const w = state.windows.find(x => x.id === selectedWindowId);
       if (!t || !w) return;
+      const tardia = !(w.en < t.h);
+      if (tardia && !riesgoAceptado) { showToast("Debe confirmar el riesgo: la ventana llega después del umbral.", "danger"); return; }
 
       w.libres--;
       const newId = siguienteCodigoOrden();
@@ -1394,7 +1670,7 @@ const INITIAL_TRUCKS = [
         nowStr,
         serial,
         "retiro",
-        `Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length ? " Daño: " + t.dmg[0].t + "." : ""} Ingresa serial de bodega 5980R63-B-544. Dejar en cancha de garantía para informe semanal.`,
+        `Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length ? " Daño: " + t.dmg[0].t + "." : ""} Ingresa serial de bodega 5980R63-B-544. Dejar en cancha de garantía para informe semanal.${tardia ? ` RIESGO ACEPTADO por ${autorVisible()}: la ventana llega ${w.en - t.h} h después del cruce del umbral.` : ""}`,
         w.dia,
         w.turno,
         t.h,
@@ -1408,7 +1684,8 @@ const INITIAL_TRUCKS = [
       saveState();
 
       selectedWindowId = null;
-      showToast(`Orden ${newId} emitida con éxito en ERP. Taller notificado.`, "success");
+      riesgoAceptado = false;
+      showToast(tardia ? `Orden ${newId} emitida con riesgo aceptado: la ventana llega ${w.en - t.h} h tarde.` : `Orden ${newId} emitida con éxito en ERP. Taller notificado.`, tardia ? "warning" : "success");
       navigate("#/o");
       persistir(() => DB.emitirOrden({
         codigo: newId, serial, ventanaId: w.id, tipo: "retiro", nota: newOrder[4], horas: t.h, origen: newOrder[9]
@@ -1586,14 +1863,18 @@ const INITIAL_TRUCKS = [
         editState = {
           id: orderId,
           w: curWin.id,
-          nota: o[4],
           motivo: "",
+          riesgoAceptado: false,
           motivoAnulacion: "",
           confirmingAnulacion: false
         };
       }
 
       const t = ST(o[2]);
+      // PROP-11 (hallazgos 2 y 4): la nueva ventana se valida contra las horas remanentes, igual que al agendar
+      const selW = state.windows.find(w => w.id === editState.w);
+      const esActual = selW && o[5] === selW.dia && o[6] === selW.turno;
+      const tardiaEd = !!(t && selW && !esActual && !(selW.en < t.h));
       const hist = (o[11] || []).map(h => `<li class="text-xs text-[var(--muted)] font-mono">${h}</li>`).join("") || '<li class="text-xs text-[var(--muted)]">Sin cambios registrados desde la emisión.</li>';
 
       $.innerHTML = `
@@ -1618,27 +1899,36 @@ const INITIAL_TRUCKS = [
                 ${state.windows.map(w => {
                   const isCurrent = o[5] === w.dia && o[6] === w.turno;
                   const isSelected = editState.w === w.id;
+                  const sinCupo = !isCurrent && w.libres <= 0;
+                  const llega = !t || w.en < t.h;
                   return `
-                    <button onclick="editState.w=${w.id}; renderEditOrder('${orderId}')" class="w-full text-left p-3 rounded-xl border transition-all text-xs ${isSelected ? 'border-blue-500 bg-blue-500/10 font-bold' : 'border-[var(--border)] bg-[var(--bg)]'}">
+                    <button ${sinCupo ? "disabled" : `onclick="editState.w=${w.id}; editState.riesgoAceptado=false; renderEditOrder('${orderId}')"`} class="w-full text-left p-3 rounded-xl border transition-all text-xs ${isSelected ? 'border-blue-500 bg-blue-500/10 font-bold' : 'border-[var(--border)] bg-[var(--bg)]'} ${sinCupo ? 'opacity-40 cursor-not-allowed' : ''}">
                       <div>${w.dia} · ${w.turno}</div>
-                      <div class="text-[var(--muted)] font-mono">${isCurrent ? '(Ventana actual)' : `${w.libres} cupos libres`}</div>
+                      <div class="text-[var(--muted)] font-mono">${isCurrent ? '(Ventana actual)' : `${w.libres} cupos libres`} · en ${w.en} h</div>
+                      ${t ? `<div class="mt-1 font-semibold ${llega ? 'text-emerald-500' : 'text-rose-500'}">${llega ? `✓ Llega con ${t.h - w.en} h de margen` : `⚠️ Llega ${w.en - t.h} h después del umbral`}</div>` : ""}
                     </button>
                   `;
                 }).join("")}
               </div>
 
+              ${tardiaEd ? `
+                <label class="flex items-start gap-2 p-3 rounded-xl border-2 border-rose-500 bg-rose-500/10 cursor-pointer">
+                  <input type="checkbox" ${editState.riesgoAceptado ? "checked" : ""} onchange="editState.riesgoAceptado=this.checked; renderEditOrder('${orderId}')" class="mt-0.5 w-4 h-4 accent-rose-600">
+                  <span class="text-xs text-[var(--ink)]"><strong class="text-rose-500">Entiendo el riesgo:</strong> con esta ventana el neumático cruzará el umbral ${selW.en - t.h} h antes de la intervención. Quedará registrado en el historial.</span>
+                </label>` : ""}
+
               <div class="space-y-1">
-                <label class="text-xs font-semibold text-[var(--ink)]">Justificación de la Nota:</label>
-                <textarea oninput="editState.nota=this.value" class="w-full h-24 p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none">${editState.nota}</textarea>
+                <div class="text-xs font-semibold text-[var(--ink)]">Justificación original de la orden <span class="font-normal text-[var(--muted)]">(no se modifica)</span>:</div>
+                <div class="w-full p-3 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] text-xs text-[var(--muted)]">${o[4]}</div>
               </div>
 
               <div class="space-y-1">
-                <label class="text-xs font-semibold text-[var(--ink)]">Motivo del Cambio (Requerido para auditoría):</label>
-                <input type="text" placeholder="Ej: Cambio de prioridad por faena o retraso de repuesto" value="${editState.motivo}" oninput="editState.motivo=this.value; document.getElementById('btn-guardar-ot').disabled=!this.value.trim(); document.getElementById('error-motivo').classList.toggle('hidden', !!this.value.trim())" class="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none">
+                <label for="motivo-cambio" class="text-xs font-semibold text-[var(--ink)]">Motivo del cambio (obligatorio, queda en el historial):</label>
+                <textarea id="motivo-cambio" placeholder="Ej: el taller no tiene horas hombre en ese turno" oninput="editState.motivo=this.value; actualizarBotonGuardarOT()" class="w-full h-20 p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">${tfEsc(editState.motivo)}</textarea>
               </div>
 
               <p id="error-motivo" class="text-[11px] text-rose-400 ${editState.motivo.trim() ? 'hidden' : ''}">El motivo del cambio es obligatorio.</p>
-              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${editState.motivo.trim() ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
+              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${editState.motivo.trim() && (!tardiaEd || editState.riesgoAceptado) ? '' : 'disabled'} data-tardia="${tardiaEd && !editState.riesgoAceptado ? 1 : 0}" class="w-fullbg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
                 Guardar Modificaciones
               </button>
             </div>
@@ -1689,6 +1979,13 @@ const INITIAL_TRUCKS = [
       `;
     }
 
+    function actualizarBotonGuardarOT() {
+      const b = document.getElementById("btn-guardar-ot");
+      const ok = !!editState.motivo.trim();
+      if (b) b.disabled = !ok || b.dataset.tardia === "1";
+      document.getElementById("error-motivo")?.classList.toggle("hidden", ok);
+    }
+
     function guardarCambiosOrden(orderId) {
       const o = state.orders.find(x => x[0] === orderId);
       if (!o) return;
@@ -1703,7 +2000,10 @@ const INITIAL_TRUCKS = [
         showToast("El motivo del cambio es obligatorio.", "danger");
         return;
       }
-      const nota = editState.nota;
+      const tt = ST(o[2]);
+      const tardia = !!(cambiaVentana && tt && !(newWin.en < tt.h));
+      if (tardia && !editState.riesgoAceptado) { showToast("Debe confirmar el riesgo: la nueva ventana llega después del umbral.", "danger"); return; }
+      const motivoFinal = tardia ? `${motivo} · RIESGO ACEPTADO: la ventana llega ${newWin.en - tt.h} h después del umbral` : motivo;
       if (cambiaVentana) {
         if (curWin) curWin.libres++;
         newWin.libres--;
@@ -1711,14 +2011,13 @@ const INITIAL_TRUCKS = [
         o[6] = newWin.turno;
       }
 
-      o[4] = editState.nota;
-      o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · modificación de orden · motivo: ${motivo}`);
+      o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · modificación de orden · motivo: ${motivoFinal}`);
 
       saveState();
       editState = null;
-      showToast(`Orden ${orderId} actualizada correctamente`, "success");
+      showToast(tardia ? `Orden ${orderId} reprogramada con riesgo aceptado: llega ${newWin.en - tt.h} h tarde.` : `Orden ${orderId} actualizada correctamente`, tardia ? "warning" : "success");
       navigate("#/o");
-      persistir(() => DB.modificarOrden(orderId, { ventanaId: cambiaVentana ? newWin.id : null, nota, motivo }));
+      persistir(() => DB.modificarOrden(orderId, { ventanaId: cambiaVentana ? newWin.id : null, motivo: motivoFinal }));
     }
 
     function confirmarAnulacion(orderId) {
@@ -2525,6 +2824,7 @@ const INITIAL_TRUCKS = [
       datosCache[id] = { cargando: true, filas: [] };
       try {
         datosCache[id] = { filas: DB.activo ? await DB.leerTabla(id) : tablaLocal(id), origen: DB.activo ? "Supabase" : "modo local" };
+        delete TF["datos-" + id];   // los filtros se reinician al recargar la tabla
       } catch (e) {
         datosCache[id] = { filas: [], error: e.message };
       }
@@ -2537,20 +2837,31 @@ const INITIAL_TRUCKS = [
       return [...cols.filter(c => !esId(c)), ...cols.filter(esId)];   // los identificadores técnicos al final
     }
 
-    function filasFiltradasDatos() {
+    // PROP-11: columnas del explorador con tipo inferido (número, categoría o texto) para ordenar y filtrar
+    function columnasTipadas(id) {
+      const t = datosCache[id];
+      if (!t || !t.filas || !t.filas.length) return [];
+      if (t.cols) return t.cols;
+      t.cols = columnasDatos(t.filas).map(k => {
+        const vals = t.filas.map(f => f[k]).filter(v => v != null && v !== "");
+        const num = vals.length && vals.every(v => typeof v === "number" || (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v)));
+        const distintos = new Set(vals.map(String)).size;
+        const tipo = num ? "num" : distintos <= 25 ? "cat" : "texto";
+        return { k, label: k, tipo, v: num ? (f => f[k] == null || f[k] === "" ? null : Number(f[k])) : (f => f[k] == null ? null : String(f[k])) };
+      });
+      return t.cols;
+    }
+    function filasBaseDatos() {
       const t = datosCache[datosTabla];
       if (!t || !t.filas) return [];
       const q = datosBusqueda.trim().toLowerCase();
-      let filas = q ? t.filas.filter(f => Object.values(f).some(v => String(v ?? "").toLowerCase().includes(q))) : [...t.filas];
-      const col = datosOrden || TABLAS_DATOS.find(x => x.id === datosTabla).orden;
-      if (filas.length && col in filas[0]) {
-        filas.sort((a, b) => {
-          const x = a[col], y = b[col];
-          const r = typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""), "es", { numeric: true });
-          return datosDesc ? -r : r;
-        });
-      }
-      return filas;
+      return q ? t.filas.filter(f => Object.values(f).some(v => String(v ?? "").toLowerCase().includes(q))) : t.filas;
+    }
+    function filasFiltradasDatos() {
+      const cols = columnasTipadas(datosTabla);
+      const meta = TABLAS_DATOS.find(x => x.id === datosTabla);
+      tfEstado("datos-" + datosTabla, renderDatos, cols.some(c => c.k === meta.orden) ? { col: meta.orden, dir: "desc" } : null);
+      return tfAplicar("datos-" + datosTabla, filasBaseDatos(), cols);
     }
 
     function descargarCSVDatos() {
@@ -2581,11 +2892,13 @@ const INITIAL_TRUCKS = [
       if (!t) { cargarTablaDatos(datosTabla); }
       const meta = TABLAS_DATOS.find(x => x.id === datosTabla);
       const filas = filasFiltradasDatos();
-      const cols = filas.length ? columnasDatos(filas) : [];
+      const colsT = columnasTipadas(datosTabla);
+      const cols = colsT.map(c => c.k);
+      const idTF = "datos-" + datosTabla;
+      if (TF[idTF] && TF[idTF].reiniciar) { datosPagina = 1; TF[idTF].reiniciar = false; }
       const paginas = Math.max(1, Math.ceil(filas.length / DATOS_POR_PAGINA));
       datosPagina = Math.min(datosPagina, paginas);
       const visibles = filas.slice((datosPagina - 1) * DATOS_POR_PAGINA, datosPagina * DATOS_POR_PAGINA);
-      const colOrden = datosOrden || meta.orden;
 
       $.innerHTML = `
         <div class="space-y-5">
@@ -2600,7 +2913,7 @@ const INITIAL_TRUCKS = [
           <div class="flex flex-wrap gap-1.5">
             ${TABLAS_DATOS.map(x => {
               const n = datosCache[x.id]?.filas?.length;
-              return `<button onclick="datosTabla='${x.id}'; datosBusqueda=''; datosOrden=null; datosDesc=true; datosPagina=1; renderDatos()" class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${datosTabla === x.id ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
+              return `<button onclick="datosTabla='${x.id}'; datosBusqueda=''; datosPagina=1; renderDatos()"class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${datosTabla === x.id ? 'bg-blue-600 text-white shadow-md' : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'}">
                 ${x.nombre}${n != null && !datosCache[x.id].cargando ? ` <span class="opacity-70 font-mono">${n.toLocaleString("es-CL")}</span>` : ""}
               </button>`;
             }).join("")}
@@ -2621,15 +2934,13 @@ const INITIAL_TRUCKS = [
 
             ${!t || t.cargando ? `<div class="py-12 text-center text-sm text-[var(--muted)]">Cargando ${meta.nombre.toLowerCase()} desde ${DB.activo ? "Supabase" : "el navegador"}…</div>`
               : t.error ? `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-400">No se pudo leer la tabla: ${t.error}</div>`
-              : !filas.length ? `<div class="py-12 text-center text-sm text-[var(--muted)]">Sin filas${datosBusqueda ? " para esa búsqueda" : ""}.</div>`
               : `
+              ${tfPanel(idTF, colsT, filasBaseDatos(), filas.length)}
+              ${!filas.length ? `<div class="py-12 text-center text-sm text-[var(--muted)]">Sin filas para esa búsqueda o esos filtros.</div>` : `
               <div class="overflow-auto max-h-[65vh] rounded-xl border border-[var(--border)]">
                 <table class="w-full text-xs">
                   <thead class="sticky top-0 bg-[var(--bg)] z-10">
-                    <tr>${cols.map(c => `
-                      <th onclick="datosDesc = datosOrden === '${c}' ? !datosDesc : false; datosOrden='${c}'; renderDatos()" class="p-2 text-left font-mono text-[10px] uppercase tracking-wider text-[var(--muted)] whitespace-nowrap cursor-pointer hover:text-[var(--ink)]">
-                        ${c}${c === colOrden ? (datosDesc ? " ▼" : " ▲") : ""}
-                      </th>`).join("")}</tr>
+                    <tr class="font-mono text-[10px] text-[var(--muted)]">${colsT.map(c => tfEncabezado(idTF, c)).join("")}</tr>
                   </thead>
                   <tbody>
                     ${visibles.map(f => `<tr class="border-t border-[var(--border)] hover:bg-[var(--card-hover)]">${cols.map(c => `<td class="p-2 font-mono whitespace-nowrap text-[var(--ink)]">${formatoCelda(c, f[c])}</td>`).join("")}</tr>`).join("")}
@@ -2637,13 +2948,13 @@ const INITIAL_TRUCKS = [
                 </table>
               </div>
               <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-[var(--muted)]">
-                <span>Filas ${((datosPagina - 1) * DATOS_POR_PAGINA + 1).toLocaleString("es-CL")} a ${Math.min(datosPagina * DATOS_POR_PAGINA, filas.length).toLocaleString("es-CL")} de ${filas.length.toLocaleString("es-CL")} · ${cols.length} columnas · clic en un encabezado para ordenar</span>
+                <span>Filas ${((datosPagina - 1) * DATOS_POR_PAGINA + 1).toLocaleString("es-CL")} a ${Math.min(datosPagina * DATOS_POR_PAGINA, filas.length).toLocaleString("es-CL")} de ${filas.length.toLocaleString("es-CL")} · ${cols.length} columnas · en cada encabezado: clic en el nombre para ordenar y en el embudo para filtrar</span>
                 <div class="flex items-center gap-1">
                   <button onclick="datosPagina=Math.max(1,datosPagina-1); renderDatos()" ${datosPagina === 1 ? "disabled" : ""} class="px-2.5 py-1 rounded-lg border border-[var(--border)] disabled:opacity-30">‹ Ant</button>
                   <span class="px-2 font-mono">${datosPagina} / ${paginas}</span>
                   <button onclick="datosPagina=Math.min(${paginas},datosPagina+1); renderDatos()" ${datosPagina === paginas ? "disabled" : ""} class="px-2.5 py-1 rounded-lg border border-[var(--border)] disabled:opacity-30">Sig ›</button>
                 </div>
-              </div>`}
+              </div>`}`}
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[var(--muted)]">

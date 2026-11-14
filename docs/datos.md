@@ -243,6 +243,12 @@ Datos **reales** de una faena, con `origen = 'real'`. Los equipos y sensores van
 
 `historial_ordenes.autor` pasa a guardar el **email** de quien emite, modifica o anula una orden (VARCHAR(254)); los registros anteriores conservan `planificador`. La app no lee esa columna: usa **`vista_historial_ordenes`**, que entrega el código de la orden y el autor abreviado (`ma***@usach.cl`). Después de publicar PROP-08, la clave pública solo puede leer las demás columnas de la tabla. El tratamiento de este dato está en [`etica.md`](etica.md#2-ficha-de-tratamiento-de-datos-personales).
 
+### 2.12 Horas de uso, detección conservada y autor de las correcciones de daño (PROP-11)
+
+- **`neumaticos.horometro_montaje_h`** (INTEGER): horómetro del CAEX cuando se montó el neumático. En el prototipo es un **dato sintético**: se calculó para que las horas de uso sean coherentes con el desgaste, con una banda nueva de 95 mm (`horas de uso ≈ (95 − profundidad) / tasa × 100`).
+- **`vista_tablero_turno`** agrega al final: `horometro_montaje_h`, **`horas_uso_h`** (horómetro actual del camión − horómetro al montaje) y la **última detección de la visión artificial** (`nivel_detectado`, `detalle_detectado`, `confianza_detectada`), que una corrección humana no reemplaza. Los daños se leen con columnas explícitas, sin `usuario_validador`.
+- **`danos_neumaticos.usuario_validador`** pasa a VARCHAR(254) y guarda el **email** de quien corrige un daño. Una corrección conserva la descripción y la confianza de la detección y cambia solo el nivel. La app lee los daños desde **`vista_danos_neumaticos`**, con el validador abreviado; después de publicar PROP-11, la clave pública no puede leer esa columna completa.
+
 ## 3. Reglas de Tidy Data (Wickham)
 
 | Regla | Cómo se cumple |

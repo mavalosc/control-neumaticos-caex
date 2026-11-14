@@ -201,6 +201,18 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 
 ---
 
+## IA-19 · Cambios de la app tras la sesión 1 con usuario (PROP-11)
+**Herramienta:** Claude Code · **Fecha:** 14-11-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Los hallazgos de la sesión 1 (PROP-10) se convierten en cambios de la app. El equipo revisó la lista y decidió el alcance: todo en PROP-11, Camiones incluido, horas de uso con el horómetro al montaje (dato sintético) y el manual actualizado. |
+| **Intención** | «5: […] déjalo en el centro de la pantalla con un color con contraste que se vea mucho. 7: los encabezados de la tabla de camiones y datos deben tener funciones de filtro […]. 9: agrega una celda de horas acumuladas de uso del neumático al lado de horas remanentes». |
+| **Restricciones** | Metodología de propuestas; no romper la app publicada antes de ejecutar el SQL; no exponer emails; no escribir en la base durante las pruebas. |
+| **Verificación** | **Hallazgo de la IA:** registrar el email en las correcciones de daño lo dejaba legible con la clave pública; se aplicó la misma solución de PROP-08 (vista abreviada y permisos por columna). Además, la vista del tablero leía `danos_neumaticos` con `SELECT *`, que fallaría al quitar el permiso de esa columna: se reescribió con columnas explícitas. 25 pruebas automáticas en modo local con jsdom, sin errores de consola, y una lectura real desde Supabase antes de la migración. |
+
+---
+
 ## Qué debe saber explicar cada integrante
 
 La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragmento del repositorio, el ítem se reprueba. Antes de la entrega, cada persona revisa estos puntos:
@@ -221,4 +233,7 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `docs/etica.md` | Quién queda fuera (el conductor del CAEX), qué dato personal se guarda (el email), quién lo ve, cuánto se conserva y por qué la app no puede leerlo completo. |
 | `src/index.html`, función `renderIngreso()` y `src/db.js`, `fijarUsuario()` | Por qué el ingreso no es una contraseña, dónde queda el email y por qué el historial se lee desde `vista_historial_ordenes`. |
 | `docs/prueba-usuarios.md` y `docs/pauta-validacion.md` | Por qué la prueba busca fallas y no éxito, qué umbrales se fijaron antes, qué no debe decir el facilitador y cómo se calcula el SUS. |
+| `src/index.html`, funciones `tfAplicar()`, `tfEncabezado()` y `tfPanel()` | Cómo se ordena y filtra cualquier tabla con una lista de columnas (número, categoría o texto) y por qué el panel de filtro se dibuja fuera de la tabla. |
+| `src/index.html`, `renderSchedule()` y `renderEditOrder()` | Por qué una ventana tardía exige confirmar el riesgo y dónde queda registrado. |
+| `docs/migraciones/2026-11-14_PROP-11_horas_uso_y_correcciones.sql` | De dónde salen las horas de uso (dato sintético), por qué la vista del tablero ya no usa `SELECT *` sobre los daños y por qué la migración tiene tres partes. |
 | `docs/prueba-usuarios.md`, sección 6 | Qué indicio deja cada hipótesis en la sesión 1, por qué T3 y T4 no eran evaluables y cuál fue la desviación del facilitador que cambió un resultado. |

@@ -45,8 +45,8 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 ## 2. Primeros pasos
 
 1. Abra la aplicación en el navegador (Chrome, Edge o Firefox actualizados).
-2. **Ingrese su email** en la pantalla de inicio y pulse **Entrar**. No es una contraseña: sirve para que quede registrado quién emite, modifica o anula órdenes del taller. Si prefiere no usar su email personal, puede escribir un código (por ejemplo, `p1@prueba.cl`).
-   - En la aplicación su email aparece **abreviado** (`ma***@usach.cl`), arriba a la derecha y en el historial de cada orden. El email completo solo lo ve el equipo del proyecto y se elimina el 31-12-2026.
+2. **Ingrese su email** en la pantalla de inicio y pulse **Entrar**. Este dato sirve para que quede registrado quién emite, modifica o anula órdenes del taller y quién corrige la clasificación de un daño. Si prefiere no usar su email personal, puede escribir un código (por ejemplo, `p1@prueba.cl`).
+   - En la aplicación su email aparece **abreviado** (`ma***@usach.cl`), arriba a la derecha, en el historial de cada orden y en las correcciones de daño. El email completo solo lo ve el equipo del proyecto y se elimina el 31-12-2026.
    - Para ingresar con otro email, pulse su usuario arriba a la derecha.
    - La **Ayuda** se puede leer sin ingresar.
 3. Revise el **indicador de origen de datos**, arriba a la derecha:
@@ -65,6 +65,7 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 | Simulador Pórtico | `#/sim` | Simular la pasada de un CAEX |
 
 5. Otros controles: el ícono de luna cambia entre tema oscuro y claro; **↺ Reset** vuelve a leer los datos desde Supabase (en modo local restaura los datos de demostración).
+6. **Avisos:** cada confirmación o error aparece **al centro de la pantalla**, en un recuadro de color (verde: guardado; rojo: error o alerta; ámbar: guardado con riesgo aceptado; azul: información). Se cierra solo a los 5 segundos, con un clic o con la tecla **Esc**.
 
 ---
 
@@ -76,17 +77,26 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
 **Cuándo:** al inicio de cada turno.
 
 1. Lea las **cuatro tarjetas** de arriba: cuántos neumáticos hay en zona roja, amarilla, verde y sin proyección. Un clic en una tarjeta filtra la tabla por esa zona.
-2. La **tabla** muestra los neumáticos ordenados de **menor a mayor horas remanentes**: los primeros son los más urgentes. Hay dos columnas de horas:
-   - **Horas rem.:** la fórmula con la profundidad y la tasa medidas por el pórtico. Es la que ordena la tabla.
+2. La **tabla** parte ordenada de **menor a mayor horas remanentes**: los primeros son los más urgentes. Hay tres columnas de horas:
+   - **Horas uso:** horas que lleva el neumático desde que se montó. En el prototipo es un **dato sintético**, calculado para que sea coherente con el desgaste.
+   - **Horas rem.:** la fórmula con la profundidad y la tasa medidas por el pórtico.
    - **Modelo** (etiqueta *sim*): lo que estima el modelo Gradient Boosting, entrenado con **datos de terreno simulados**. Sirve para comparar, no para decidir.
 3. Para acotar la lista:
    - **Buscar:** escriba un serial, un camión (ej. `CAEX-102`) o una posición.
    - **Zona:** Todas, Rojo, Amarillo o Verde.
    - **Tasa:** observada (medida en el neumático) o nominal (valor de referencia).
-4. Abajo puede cambiar cuántas filas ver (25, 50, 100 o todas) y avanzar de página.
-5. Un clic en **Ficha ›** abre el detalle de ese neumático.
+4. **Ordenar y filtrar por columna:** cada encabezado tiene dos controles.
+   - Un clic en el **nombre** ordena por esa columna; otro clic invierte el orden. La flecha ▲ o ▼ indica el orden actual. En las columnas numéricas, el primer clic ordena de **mayor a menor**.
+   - El **embudo** abre el panel de filtro sobre la tabla:
+     - columnas de **categorías** (Tipo de tasa, Condición, Severidad del daño): marque las categorías que quiere ver, por ejemplo solo *3 · Crítico* y *2 · Moderado*;
+     - columnas **numéricas** (profundidad, tasa, horas, temperatura): escriba un mínimo, un máximo o ambos y presione Enter;
+     - columnas de **texto** (camión, serial): escriba el texto que debe contener.
+   - Los filtros activos aparecen como etiquetas azules; un clic en una etiqueta la quita y **Limpiar filtros** las quita todas.
+   - Ejemplo para priorizar como un experto: ordene por **Severidad del daño** y filtre **Horas rem.** con un máximo de 200.
+5. Abajo puede cambiar cuántas filas ver (25, 50, 100 o todas) y avanzar de página.
+6. Un clic en **Ficha ›** abre el detalle de ese neumático.
 
-Si la búsqueda no encuentra nada, aparece *«No se encontraron neumáticos con los filtros seleccionados»*: limpie el buscador o elija la zona **Todas**.
+Si la búsqueda no encuentra nada, aparece *«No se encontraron neumáticos con los filtros seleccionados»*: limpie el buscador, elija la zona **Todas** o presione **Limpiar filtros**.
 
 ---
 
@@ -111,6 +121,7 @@ Cuando un neumático tiene **daño nivel 3** (corte profundo, sobrecalentamiento
 2. Cada posición muestra sus horas remanentes con el color de su zona. Sirve para detectar **desgaste desigual entre ejes** y decidir rotaciones.
 3. Filtre por estado (**Con Zona Roja**, **En Zona Amarilla**, **100 % Verdes**) o busque un camión.
 4. Un clic en una posición abre la ficha de ese neumático.
+5. **Ver como tabla:** el botón **Tabla (ordenar y filtrar)** muestra un camión por fila, con modelo, horómetro, neumáticos en zona roja y amarilla, menor horas remanentes, mayor horas de uso y peor daño. Cada encabezado ordena y filtra igual que en el Tablero. **Ver posiciones ›** vuelve a las tarjetas con ese camión. Los filtros de la tabla también se aplican a las tarjetas.
 
 ---
 
@@ -123,7 +134,7 @@ La ficha reúne la evidencia para decidir el retiro:
 
 | Elemento | Qué muestra |
 |---|---|
-| Tarjetas superiores | Horas remanentes, profundidad contra el umbral de 20 mm, tasa de desgaste y temperatura del flanco |
+| Tarjetas superiores | **Horas de uso** desde el montaje (dato sintético), horas remanentes, profundidad contra el umbral de 20 mm, tasa de desgaste y temperatura del flanco |
 | Escáner 3D y cámaras | Imagen de la banda con el daño marcado y su **confianza** (%) |
 | Evolución y proyección | Profundidad en las últimas pasadas y la línea punteada del umbral de retiro |
 | Acción recomendada | Si conviene intervenir o seguir operando |
@@ -134,12 +145,16 @@ La ficha reúne la evidencia para decidir el retiro:
 Debajo de las tarjetas aparece la **Predicción del modelo (Gradient Boosting)**, marcada como *«Modelo entrenado con datos de terreno simulados»*:
 - **Horas remanentes según el modelo**, comparadas con las de la fórmula.
 - **Tasa de desgaste prevista**, comparada con la medida por el pórtico.
-- **Por qué:** las 3 variables que más pesan en la predicción, con su peso y si **aumentan** o **reducen** el desgaste.
+- **Por qué:** las 3 variables que más pesan en la predicción, con su peso y su **efecto sobre el desgaste**: *▲ aumenta el desgaste* o *▼ reduce el desgaste*. Indica el efecto de la variable, no su valor: «Presión de inflado · ▼ reduce el desgaste» **no** significa que la presión esté baja.
 
 Las causas muestran **qué variables pesan** en la predicción, **no prueban causalidad**. Si todavía no hay predicción para un neumático, aparece un aviso.
 
 ### Corregir la clasificación de daño
-Si el modelo de visión se equivocó, en **Validación del Planificador (Industria 5.0)** elija el nivel correcto (**Sin daño**, **Leve**, **Moderado** o **Crítico**). La corrección queda registrada con su fecha y como **validada por una persona**; el juicio del planificador prevalece sobre la inteligencia artificial.
+Si el modelo de visión se equivocó, en **Validación del Planificador (Industria 5.0)** elija el nivel correcto (**Sin daño**, **Leve**, **Moderado** o **Crítico**).
+- La corrección **se guarda de inmediato**, sin botón Guardar. Lo confirman un aviso al centro de la pantalla y un recuadro verde bajo los botones: *«Guardado: Crítico → Leve · hora · su usuario»*.
+- La corrección cambia **el nivel**, no lo que detectó la cámara: la **descripción** y la **confianza** siguen siendo las de la detección, y la ficha indica que el nivel lo corrigió el planificador.
+- Queda registrada con su fecha, como **validada por una persona** y a nombre de su email (abreviado en la aplicación). El juicio del planificador prevalece sobre la inteligencia artificial.
+- Cada clic queda en la auditoría: elija el nivel una sola vez, no lo use para probar.
 
 ### Cuándo no se puede agendar
 Si el neumático está en **zona verde** y su daño es bajo, el botón **Agendar Intervención en Taller** aparece deshabilitado y la acción recomendada dice *«Neumático en condiciones óptimas para continuar operación»*.
@@ -155,9 +170,10 @@ Si el neumático está en **zona verde** y su daño es bajo, el botón **Agendar
 2. Elija una **ventana del taller** (día y turno). Cada una muestra sus cupos libres (máximo 3).
    - Una ventana **sin cupos** aparece atenuada y no se puede elegir.
    - Si la ventana llega **antes** del cruce del umbral: *«✓ Ventana oportuna…»*, con las horas de margen.
-   - Si llega **después**: *«⚠️ Advertencia de riesgo: el neumático cruzará el umbral…»*. Elija una ventana más próxima.
+   - Si llega **después**: *«⚠️ Advertencia de riesgo: el neumático cruzará el umbral…»*. Elija una ventana más próxima. Si igual quiere usarla, debe marcar **«Entiendo el riesgo y emito la orden igual»**: sin esa marca el botón queda deshabilitado, y la orden registra que el riesgo fue aceptado y por quién.
+   - Si **ninguna ventana con cupo** llega a tiempo, aparece arriba un recuadro rojo con el botón **Avisar a despacho para sacar el CAEX del ciclo**.
 3. Revise la **trazabilidad** que se escribirá en la orden: profundidad, tasa, serial de reemplazo y destino del neumático retirado.
-4. Presione **Confirmar y Emitir Orden en SAP PM**.
+4. Presione **Confirmar y Emitir Orden en SAP PM** (o **Confirmar con riesgo aceptado y emitir orden**, si la ventana llega tarde).
 
 La orden queda **programada**, el cupo de la ventana baja en 1 y aparece el aviso *«Orden ot-XXXX emitida con éxito»*. Si otra persona ocupó el último cupo justo antes, la base rechaza la orden y verá *«No se pudo guardar en Supabase…»*.
 
@@ -183,10 +199,11 @@ La orden queda **programada**, el cupo de la ventana baja en 1 y aparece el avis
 Solo las órdenes **programadas** se pueden cambiar. Presione **Modificar** en la orden.
 
 **Para modificarla:**
-1. En **Reasignar Ventana de Taller**, elija otra ventana con cupo (opcional).
-2. Edite la **Justificación de la Nota** si corresponde.
-3. Escriba el **Motivo del Cambio**. Es **obligatorio**: sin motivo, el botón **Guardar Modificaciones** queda deshabilitado.
-4. Guarde. El cupo de la ventana anterior se libera y el de la nueva se descuenta.
+1. En **Reasignar Ventana de Taller**, elija otra ventana con cupo (opcional). Cada ventana indica si **llega con margen** o **cuántas horas después del umbral** llega. Las ventanas sin cupo no se pueden elegir.
+2. Si la nueva ventana llega tarde, marque **«Entiendo el riesgo»**; queda registrado en el historial.
+3. La **justificación original** de la orden se muestra pero **no se edita**: así se conserva el respaldo técnico de la emisión.
+4. Escriba el **Motivo del cambio** en el único campo de texto. Es **obligatorio**: sin motivo, el botón **Guardar Modificaciones** queda deshabilitado.
+5. Guarde. El cupo de la ventana anterior se libera y el de la nueva se descuenta.
 
 **Para anularla:**
 1. En **Anular esta Orden**, elija un motivo.
@@ -232,8 +249,8 @@ El simulador reproduce lo que verá el **operador del pórtico** cuando un CAEX 
 
 1. Abra **Datos** (ícono de base de datos).
 2. Elija una tabla en las pestañas. La más importante es **Mediciones**: una fila por neumático en cada pasada. Las pestañas **Ciclos de terreno (simulado)**, **Predicciones del modelo** y **Versiones del modelo** muestran los datos que se generan cada día con datos simulados; *Ciclos de terreno* es la más grande y puede tardar unos segundos. Las pestañas marcadas **(real)** traen datos reales anonimizados de una faena: **Alertas TPMS**, **Excesos de velocidad** y **Riesgo por posición**.
-3. **Buscar** filtra en todas las columnas; un clic en un **encabezado** ordena por esa columna (otro clic invierte el orden).
-4. **Descargar CSV** baja la tabla filtrada; se abre en Excel.
+3. **Buscar** filtra en todas las columnas. En cada **encabezado**, un clic en el nombre ordena (otro clic invierte el orden) y el **embudo** abre el filtro de esa columna: categorías para columnas con pocos valores, mínimo y máximo para números y «contiene» para texto. **Limpiar filtros** quita todos.
+4. **Descargar CSV** baja la tabla con la búsqueda y los filtros aplicados; se abre en Excel.
 5. **↻ Recargar** vuelve a leer la tabla desde la base.
 
 Los identificadores técnicos (`id`, `…_id`) aparecen al final y abreviados; pase el mouse sobre ellos para ver el valor completo.
@@ -269,6 +286,8 @@ La página también enlaza el **respaldo bibliográfico** de cada método y par�
 |---|---|
 | Zona | 🔴 < 200 h · 🟡 200-500 h · 🟢 ≥ 500 h · ⚪ sin proyección |
 | Nivel de daño | 0 Sin daño · 1 Leve · 2 Moderado · 3 Crítico (genera alerta) |
+| Horas de uso | Horas desde el montaje del neumático (dato sintético en el prototipo) |
+| Causas del modelo (SHAP) | ▲ aumenta el desgaste · ▼ reduce el desgaste (efecto, no valor de la variable) |
 | Confianza del daño | Bajo 70 %: «por confirmar» |
 | Temperatura del flanco | Normal < 85 °C · Advertencia 85-95 °C · Crítico > 95 °C |
 | Presión (TPMS) | Nominal 110 psi · Advertencia sobre ±5 % · Crítico sobre ±10 % |
