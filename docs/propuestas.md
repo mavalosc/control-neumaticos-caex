@@ -22,7 +22,7 @@
 | PROP-07 | Datos reales de TPMS y velocidad (anonimizados) y modelo de riesgo | **Publicada** (PR #9, 09-11-2026) | v1 | 28-10-2026 | 29-10-2026 a 07-11-2026 |
 | PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | **Publicada** (PR #10, 12-11-2026) · SQL partes 1 y 2 ejecutadas · ajuste v2 publicado (PR #11, 14-11-2026) | v2 | 12-11-2026 | 12-11-2026 |
 | PROP-09 | Diseño de la prueba con usuarios y pauta de validación | **Publicada** (PR #10, 12-11-2026) | v1 | 12-11-2026 | 12-11-2026 |
-| PROP-10 | Resultados de la sesión 1 con usuario (P1) | **Publicada** (PR #12, 14-11-2026) | v2 | 14-11-2026 | 14-11-2026 |
+| PROP-10 | Resultados de la sesión 1 con usuario (P1) | **Publicada** (PR #12, 14-11-2026) · v3 en publicación | v3 | 14-11-2026 | 14-11-2026 |
 
 ---
 
@@ -114,7 +114,7 @@
 - **Archivos:** `docs/prueba-usuarios.md`, `docs/pauta-validacion.md`, `docs/etica.md` (R3 y R11), `docs/propuestas.md`, `CHANGELOG.md`, `docs/bitacora-ia.md`.
 - **Riesgos:** con una sola sesión los resultados son indicios; dos tareas tenían datos de partida inconsistentes; la grabación pasó por una herramienta de IA externa que no estaba en el consentimiento (R11).
 - **Pendiente:** confirmar en la grabación el ítem 3 del SUS (minuto 17:27) y subir la grabación a la carpeta de Drive restringida.
-- **Historial:** 14-11-2026 · v1 propuesta tras la primera entrega de la IA externa (solo audio); v2 con la segunda entrega (pantalla) y los datos de Supabase; aprobada («sí apruebo prop-10») e implementada en la rama `feature/prop-10-resultados-p1`. Ajuste a pedido del equipo: Gemini nombrado en R11 y en la bitácora, perfil de la sesión 2 y uso de IA en el consentimiento. Presentación de avance para la clase hecha con Gemini y revisada (fuera del repositorio). Publicada con el PR #12, aprobado por Héctor.
+- **Historial:** 14-11-2026 · v1 propuesta tras la primera entrega de la IA externa (solo audio); v2 con la segunda entrega (pantalla) y los datos de Supabase; aprobada («sí apruebo prop-10») e implementada en la rama `feature/prop-10-resultados-p1`. Ajuste a pedido del equipo: Gemini nombrado en R11 y en la bitácora, perfil de la sesión 2 y uso de IA en el consentimiento. Presentación de avance para la clase hecha con Gemini y revisada (fuera del repositorio). Publicada con el PR #12, aprobado por Héctor. 14-11-2026 · v3: aprobada («hazlo»); anexo `docs/sesiones/sesion-1-P1.md` con las tablas de la pauta completadas para la sesión 1 (la pauta queda en blanco para la sesión 2).
 
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
