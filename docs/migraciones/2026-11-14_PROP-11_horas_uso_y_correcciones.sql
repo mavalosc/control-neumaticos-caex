@@ -21,9 +21,9 @@ COMMENT ON COLUMN neumaticos.horometro_montaje_h IS
 UPDATE neumaticos n
 SET horometro_montaje_h = GREATEST(0, c.horometro_h - ROUND((95 - m.profundidad_mm) / NULLIF(m.tasa_desgaste_por_100h, 0) * 100))
 FROM camiones c,
-     LATERAL (SELECT profundidad_mm, tasa_desgaste_por_100h FROM mediciones
-              WHERE neumatico_id = n.id ORDER BY fecha_pasada DESC LIMIT 1) m
-WHERE c.id = n.caex_id AND n.horometro_montaje_h IS NULL;
+     (SELECT DISTINCT ON (neumatico_id) neumatico_id, profundidad_mm, tasa_desgaste_por_100h
+      FROM mediciones ORDER BY neumatico_id, fecha_pasada DESC) m      -- última medición de cada neumático
+WHERE c.id = n.caex_id AND m.neumatico_id = n.id AND n.horometro_montaje_h IS NULL;
 
 -- (c) Un email puede tener hasta 254 caracteres
 ALTER TABLE danos_neumaticos ALTER COLUMN usuario_validador TYPE VARCHAR(254);
