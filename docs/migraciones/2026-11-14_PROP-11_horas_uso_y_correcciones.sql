@@ -25,34 +25,9 @@ FROM camiones c,
       FROM mediciones ORDER BY neumatico_id, fecha_pasada DESC) m      -- última medición de cada neumático
 WHERE c.id = n.caex_id AND m.neumatico_id = n.id AND n.horometro_montaje_h IS NULL;
 
--- (c) Un email puede tener hasta 254 caracteres
-ALTER TABLE danos_neumaticos ALTER COLUMN usuario_validador TYPE VARCHAR(254);
-
--- Vista de daños con el validador abreviado. Se ejecuta con los permisos de su dueño
--- (no security_invoker), así la app lee los daños sin acceso a la columna completa.
-DROP VIEW IF EXISTS vista_danos_neumaticos;
-CREATE VIEW vista_danos_neumaticos AS
-SELECT d.id,
-       n.serial,
-       m.codigo_medicion,
-       d.severidad,
-       d.descripcion,
-       d.confianza_ia,
-       d.validado_por_humano,
-       CASE WHEN position('@' IN d.usuario_validador) > 1
-            THEN left(d.usuario_validador, 2) || '***@' || split_part(d.usuario_validador, '@', 2)
-            ELSE d.usuario_validador
-       END AS usuario_validador,
-       d.fecha_registro,
-       d.neumatico_id,
-       d.medicion_id
-FROM danos_neumaticos d
-JOIN neumaticos n ON n.id = d.neumatico_id
-LEFT JOIN mediciones m ON m.id = d.medicion_id;
-
-GRANT SELECT ON vista_danos_neumaticos TO anon, authenticated;
-
--- Vista del tablero: mismas columnas, en el mismo orden, y cinco nuevas al final.
+-- Vista del tablero: va ANTES del cambio de tipo de usuario_validador, porque la vista anterior
+-- leía los daños con SELECT * y Postgres no deja cambiar una columna que usa una vista.
+-- Mismas columnas, en el mismo orden, y cinco nuevas al final.
 -- Los daños se leen con columnas explícitas (sin usuario_validador) para que la vista
 -- siga funcionando cuando la parte 2 quite el acceso a esa columna.
 CREATE OR REPLACE VIEW vista_tablero_turno WITH (security_invoker = on) AS
@@ -101,6 +76,33 @@ LEFT JOIN LATERAL (   -- última detección de la visión artificial (no corregi
     ORDER BY fecha_registro DESC
     LIMIT 1
 ) det ON TRUE;
+
+-- (c) Un email puede tener hasta 254 caracteres
+ALTER TABLE danos_neumaticos ALTER COLUMN usuario_validador TYPE VARCHAR(254);
+
+-- Vista de daños con el validador abreviado. Se ejecuta con los permisos de su dueño
+-- (no security_invoker), así la app lee los daños sin acceso a la columna completa.
+DROP VIEW IF EXISTS vista_danos_neumaticos;
+CREATE VIEW vista_danos_neumaticos AS
+SELECT d.id,
+       n.serial,
+       m.codigo_medicion,
+       d.severidad,
+       d.descripcion,
+       d.confianza_ia,
+       d.validado_por_humano,
+       CASE WHEN position('@' IN d.usuario_validador) > 1
+            THEN left(d.usuario_validador, 2) || '***@' || split_part(d.usuario_validador, '@', 2)
+            ELSE d.usuario_validador
+       END AS usuario_validador,
+       d.fecha_registro,
+       d.neumatico_id,
+       d.medicion_id
+FROM danos_neumaticos d
+JOIN neumaticos n ON n.id = d.neumatico_id
+LEFT JOIN mediciones m ON m.id = d.medicion_id;
+
+GRANT SELECT ON vista_danos_neumaticos TO anon, authenticated;
 
 -- Verificación de la parte 1: 402 neumáticos con horas de uso y la vista de daños abreviada
 SELECT count(*) AS con_horas_uso FROM vista_tablero_turno WHERE horas_uso_h IS NOT NULL;
