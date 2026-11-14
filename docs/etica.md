@@ -105,7 +105,7 @@ Probabilidad e impacto: A alto · M medio · B bajo. Todo riesgo tiene responsab
 |---|---|---|---|---|---|---|
 | R1 | El email de quien opera queda visible para cualquiera con el enlace | A | M | **Mitigar:** la app lo muestra abreviado y la clave pública no puede leer la columna completa (migración PROP-08, parte 2) | Manuel | 21-11-2026 |
 | R2 | Cualquiera puede escribir el email de otra persona (no hay verificación) | M | M | **Aceptar** en el prototipo, declarado en la Ayuda; autenticación con enlace por correo en la Semana 10 | Manuel | Semana 10 |
-| R3 | Sesgo de automatización: decidir con la columna «Modelo», entrenada con datos simulados | M | A | **Mitigar:** etiquetas *sim*, nota obligatoria en la orden; se mide en la prueba con usuarios (hipótesis H4) | Nicolás | 21-11-2026 |
+| R3 | Sesgo de automatización: decidir con la columna «Modelo», entrenada con datos simulados | M | A | **Mitigar:** etiquetas *sim*, nota obligatoria en la orden; se mide en la prueba con usuarios (hipótesis H4). *Sesión 1: P1 no usó el modelo, pero ignoró la advertencia de ventana tardía y leyó al revés una causa SHAP (PROP-10, hallazgos 1 y 3)* | Nicolás | 21-11-2026 |
 | R4 | Uso de los datos de velocidad o presión para evaluar a conductores | B | A | **Evitar:** datos sin turno ni conductor; compromiso escrito de no cruzarlos con nóminas | Héctor | Semana 13 |
 | R5 | Una posición sin datos (sensor caído) o un aviso a despacho no guardado se leen como «sin problema» | M | A | **Mitigar:** advertencias en Modelos; pendiente estado «sin datos recientes» y guardar el aviso (ESP-F-03) | Manuel | Semana 9 |
 | R6 | Personas que usan teclado, lector de pantalla o tema claro no pueden completar el flujo | M | M | **Mitigar:** correcciones de la sección 3.3 | Manuel | Semana 9 |
@@ -113,6 +113,7 @@ Probabilidad e impacto: A alto · M medio · B bajo. Todo riesgo tiene responsab
 | R8 | La grabación de la prueba expone la voz o datos del voluntario | M | M | **Mitigar:** consentimiento, cámara apagada, Drive restringido, códigos en vez de nombres y eliminación el 31-12-2026 | Nicolás | 21-11-2026 |
 | R9 | Los datos reales permiten identificar a la faena | B | A | **Mitigar:** anonimización (PROP-07); confirmar con la faena el uso de los datos | Héctor | Semana 13 |
 | R10 | Cualquier persona con el enlace puede emitir o anular órdenes | A | B | **Aceptar** en el prototipo (datos sintéticos); permisos por rol en la Semana 10 (ESP-NF-11) | Manuel | Semana 10 |
+| R11 | La grabación completa de la sesión 1 se subió a **Gemini** (Google) para transcribirla y analizarla, y eso no estaba en el consentimiento | A | M | **Mitigar:** informar al voluntario y pedir su conformidad; desde la sesión 2 el consentimiento lo menciona (pauta v2); solo la versión anonimizada entra al repositorio y el registro de trabajo de Gemini no se comparte | Equipo | 21-11-2026 |
 
 ---
 
