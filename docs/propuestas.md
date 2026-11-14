@@ -118,3 +118,4 @@
 
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
+- **Commit 43be34f (14-11-2026):** subido directo a `main` por el propietario del repositorio, saltando la regla que exige un PR con aprobación, para que el estado de PROP-10 se viera de inmediato antes de la exposición en clase. Solo cambia el estado de PROP-10 en este registro (de «en publicación» a «Publicada»). Se pidió a Héctor (QA) que lo revise después; queda pendiente su revisión para normalizar. Esta nota también se subió directo a `main`.
