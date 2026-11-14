@@ -190,14 +190,14 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 ---
 
 ## IA-18 · Resultados de la sesión 1 con usuario (PROP-10)
-**Herramientas:** una IA externa (transcripción y análisis de la grabación) y Claude Code (contraste y documentación) · **Fecha:** 14-11-2026 · **Autor:** Manuel Ávalos
+**Herramientas:** Gemini (transcripción y análisis de la grabación, y presentación para la clase) y Claude Code (contraste y documentación) · **Fecha:** 14-11-2026 · **Autor:** Manuel Ávalos
 
 | Componente | Detalle |
 |---|---|
-| **Contexto** | Sesión de validación del 13-11-2026 con un voluntario (P1), grabada en Meet. La grabación la procesó otra IA. Claude Code no procesó el video: le redactó a esa IA las instrucciones (anonimizar, separar lo observado de lo interpretado, minutos y `NO CONSTA` cuando faltara un dato). |
+| **Contexto** | Sesión de validación del 13-11-2026 con un voluntario (P1), grabada en Meet. La grabación completa se subió a Gemini, que la transcribió, la analizó y armó la presentación de avance con capturas reales. Claude Code no procesó el video: le redactó a Gemini las instrucciones (anonimizar, separar lo observado de lo interpretado, minutos y `NO CONSTA` cuando faltara un dato). |
 | **Intención** | «No proceses el video, te lo pasaré escrito para IA» y «dame las instrucciones para pedirle a la otra IA lo que te falta». |
 | **Restricciones** | Sin nombre del voluntario ni de la faena en el repositorio; metodología de propuestas (PROP-10 aprobada); los umbrales de las hipótesis no se cambian después de ver los resultados. |
-| **Verificación** | **Hallazgos al contrastar con Supabase:** la primera entrega (solo audio) daba todas las tareas como completadas; los registros mostraron que la orden se emitió para una ventana que llegaba 36 h tarde, que el neumático de T4 ya estaba en Moderado por pruebas del equipo del 17-10 y que en T6 P1 respondió sobre otro neumático. La segunda entrega (con pantalla) coincidió con las horas de la base con 10 a 15 s de diferencia, pero **calculó mal el SUS** (60 en vez de 70). **Riesgo ético detectado:** el consentimiento no mencionaba el uso de una IA externa (R11). |
+| **Verificación** | **Hallazgos al contrastar con Supabase:** la primera entrega (solo audio) daba todas las tareas como completadas; los registros mostraron que la orden se emitió para una ventana que llegaba 36 h tarde, que el neumático de T4 ya estaba en Moderado por pruebas del equipo del 17-10 y que en T6 P1 respondió sobre otro neumático. La segunda entrega (con pantalla) coincidió con las horas de la base con 10 a 15 s de diferencia, pero **calculó mal el SUS** (60 en vez de 70). **Riesgo ético detectado:** el consentimiento no mencionaba el uso de una IA externa (R11). **Revisión de la presentación:** la primera versión de Gemini traía las hipótesis H1, H2 y H4 cambiadas y pantallas reconstruidas en vez de capturas; la segunda se corrigió con capturas reales, pero decía que el botón «Reset» restaura la base, y no es así: con Supabase solo recarga los datos. |
 
 ---
 

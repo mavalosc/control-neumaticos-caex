@@ -47,7 +47,7 @@ Los umbrales se fijaron el 12-11-2026, **antes de ver resultados**. Si no se cum
 | Operador del pórtico | Usuario secundario | Simular una pasada y confirmar la captura | Ronda posterior |
 | Jefatura de mantención o de neumáticos | **Stakeholder** | No ejecuta tareas: se le pregunta por condiciones de adopción (sección 6 de la pauta) | 1, si es posible |
 
-- **Reclutamiento:** Nicolás Echeverría consigue al voluntario. *Sesión 1: el voluntario lo consiguió Francisco, porque Nicolás no consiguió uno; es un conocido y se declara como sesgo.* Se prefiere a alguien que planifique o ejecute mantención de neumáticos o de equipos mineros; Héctor Medina puede sugerir contactos del área de reparación de neumáticos.
+- **Reclutamiento:** Nicolás Echeverría consigue al voluntario. *Sesión 1: el voluntario lo consiguió Francisco, porque Nicolás no consiguió uno; es un conocido y se declara como sesgo.* **Desde la sesión 2 (decisión del equipo, 14-11-2026): un planificador de neumáticos o de flota sin vínculo con el equipo.** Se prefiere a alguien que planifique o ejecute mantención de neumáticos o de equipos mineros; Héctor Medina puede sugerir contactos del área de reparación de neumáticos.
 - **Exclusiones:** integrantes del equipo y personas que ya vieron el prototipo funcionando. Si el voluntario no tiene el perfil de planificador, la sesión se hace igual y el resultado se informa como **perfil aproximado**.
 - **Quién queda fuera** (ver `etica.md`): si se recluta solo a personas con práctica digital, la prueba valida al usuario implícito del equipo. Se pregunta al inicio por su uso habitual de computador o tablet.
 
@@ -93,7 +93,7 @@ Cada hallazgo que bloquea termina en una de tres decisiones: **cambio comprometi
 | Reclutamiento | Conocido de Francisco, integrante del equipo (Nicolás no consiguió voluntario). Se declara **sesgo de amabilidad**: un conocido tiende a evaluar mejor |
 | Enlace a la grabación (Drive restringido) | Pendiente: carpeta de Drive del proyecto |
 | Consentimiento grabado | Sí (04:52) · email usado en la app: `p1@prueba.cl` |
-| Cómo se analizó | La grabación se procesó con una herramienta de IA externa, con instrucciones de anonimizar y separar lo observado de lo interpretado (dos entregas: la primera solo con audio y la segunda con pantalla). Los minutos se contrastaron con los registros de Supabase: la hora de la orden, de su modificación y de las correcciones de daño coincide con el video con 10 a 15 s de diferencia. La IA calculó mal el SUS (60); el valor correcto es 70 |
+| Cómo se analizó | La grabación completa se subió a **Gemini**, que la procesó con instrucciones de anonimizar y separar lo observado de lo interpretado (dos entregas: la primera solo con audio y la segunda con pantalla). Los minutos se contrastaron con los registros de Supabase: la hora de la orden, de su modificación y de las correcciones de daño coincide con el video con 10 a 15 s de diferencia. La IA calculó mal el SUS (60); el valor correcto es 70 |
 
 **Datos de partida inconsistentes (falla del diseño de la prueba, no del participante)**
 

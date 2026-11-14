@@ -113,7 +113,7 @@ Probabilidad e impacto: A alto · M medio · B bajo. Todo riesgo tiene responsab
 | R8 | La grabación de la prueba expone la voz o datos del voluntario | M | M | **Mitigar:** consentimiento, cámara apagada, Drive restringido, códigos en vez de nombres y eliminación el 31-12-2026 | Nicolás | 21-11-2026 |
 | R9 | Los datos reales permiten identificar a la faena | B | A | **Mitigar:** anonimización (PROP-07); confirmar con la faena el uso de los datos | Héctor | Semana 13 |
 | R10 | Cualquier persona con el enlace puede emitir o anular órdenes | A | B | **Aceptar** en el prototipo (datos sintéticos); permisos por rol en la Semana 10 (ESP-NF-11) | Manuel | Semana 10 |
-| R11 | La grabación de la sesión 1 se procesó con una herramienta de IA externa, que no estaba mencionada en el consentimiento | A | M | **Mitigar:** informar al voluntario y pedir su conformidad; en las próximas sesiones mencionarlo en el consentimiento o no usar IA externa; solo la versión anonimizada entra al repositorio | Equipo | 21-11-2026 |
+| R11 | La grabación completa de la sesión 1 se subió a **Gemini** (Google) para transcribirla y analizarla, y eso no estaba en el consentimiento | A | M | **Mitigar:** informar al voluntario y pedir su conformidad; desde la sesión 2 el consentimiento lo menciona (pauta v2); solo la versión anonimizada entra al repositorio y el registro de trabajo de Gemini no se comparte | Equipo | 21-11-2026 |
 
 ---
 

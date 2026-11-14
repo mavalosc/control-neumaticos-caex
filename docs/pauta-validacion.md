@@ -5,7 +5,7 @@
 >
 > Duración estimada: **40 minutos** · Modalidad: Google Meet con pantalla compartida y grabación.
 >
-> Versión 2 · 14-11-2026: ajustes después de la sesión 1 (PROP-10): datos de partida, T3 a T6 con camión y posición explícitos y nuevas reglas para el facilitador.
+> Versión 2 · 14-11-2026: ajustes después de la sesión 1 (PROP-10): datos de partida, T3 a T6 con camión y posición explícitos, nuevas reglas para el facilitador, uso de IA declarado en el consentimiento y participante planificador sin vínculo con el equipo.
 
 ---
 
@@ -39,7 +39,7 @@
 
 **Consentimiento** (leerlo y, ya grabando, pedir la aceptación en voz alta):
 
-> «Vamos a **grabar la pantalla y la voz**, con la cámara apagada. La grabación la verán solo el equipo del proyecto y el profesor del curso, se guarda en una carpeta privada y se elimina el 31 de diciembre de 2026. En nuestras notas aparecerá como "P1", sin su nombre.
+> «Vamos a **grabar la pantalla y la voz**, con la cámara apagada. La grabación la verán solo el equipo del proyecto y el profesor del curso, se guarda en una carpeta privada y se elimina el 31 de diciembre de 2026. En nuestras notas aparecerá como "P1", sin su nombre. Para transcribir y analizar la grabación usaremos una herramienta de inteligencia artificial (Gemini, de Google); en lo que publiquemos no aparecerán su nombre ni el de su empresa.
 >
 > La herramienta le pedirá un email para registrar quién hace cada cambio. Puede usar el suyo o, si lo prefiere, escribir **p1@prueba.cl**. Las órdenes que cree se anularán al terminar.
 >
