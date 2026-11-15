@@ -23,6 +23,8 @@
 | PROP-08 | Análisis ético y de sostenibilidad, e ingreso con email | **Publicada** (PR #10, 12-11-2026) · SQL partes 1 y 2 ejecutadas · ajuste v2 publicado (PR #11, 14-11-2026) | v2 | 12-11-2026 | 12-11-2026 |
 | PROP-09 | Diseño de la prueba con usuarios y pauta de validación | **Publicada** (PR #10, 12-11-2026) | v1 | 12-11-2026 | 12-11-2026 |
 | PROP-10 | Resultados de la sesión 1 con usuario (P1) | **Publicada** (PR #12, 14-11-2026) · v3 en publicación | v3 | 14-11-2026 | 14-11-2026 |
+| PROP-11 | Cambios de la app tras la sesión 1 con usuario | **Publicada** (PR #14, 14-11-2026, sin revisión previa de QA) · SQL partes 1 y 2 | v1 | 14-11-2026 | 14-11-2026 |
+| PROP-10 | Resultados de la sesión 1 con usuario (P1) | **Publicada** (PR #12, 14-11-2026) | v2 | 14-11-2026 | 14-11-2026 |
 
 ---
 
@@ -116,6 +118,26 @@
 - **Pendiente:** confirmar en la grabación el ítem 3 del SUS (minuto 17:27) y subir la grabación a la carpeta de Drive restringida.
 - **Historial:** 14-11-2026 · v1 propuesta tras la primera entrega de la IA externa (solo audio); v2 con la segunda entrega (pantalla) y los datos de Supabase; aprobada («sí apruebo prop-10») e implementada en la rama `feature/prop-10-resultados-p1`. Ajuste a pedido del equipo: Gemini nombrado en R11 y en la bitácora, perfil de la sesión 2 y uso de IA en el consentimiento. Presentación de avance para la clase hecha con Gemini y revisada (fuera del repositorio). Publicada con el PR #12, aprobado por Héctor. 14-11-2026 · v3: aprobada («hazlo»); anexo `docs/sesiones/sesion-1-P1.md` con las tablas de la pauta completadas para la sesión 1 (la pauta queda en blanco para la sesión 2).
 
+## PROP-11 · Cambios de la app tras la sesión 1 con usuario
+- **Qué:** los 9 cambios que salieron de la sesión 1 (`prueba-usuarios.md`, sección 6):
+  1. advertencia de ventana tardía que **se confirma** al emitir; si ninguna ventana con cupo llega a tiempo, se ofrece avisar a despacho;
+  2. la misma validación **al modificar** una orden;
+  3. causas SHAP redactadas con su efecto: «▲ aumenta el desgaste» o «▼ reduce el desgaste»;
+  4. la **justificación original** de la orden no se edita y queda un solo campo de **motivo**;
+  5. **avisos al centro de la pantalla**, grandes y de alto contraste, y confirmación de guardado junto a los botones de corrección;
+  6. la corrección de daño **conserva la descripción** detectada y cambia solo el nivel;
+  7. **ordenar y filtrar** desde cada encabezado en el Tablero, en Camiones (nueva vista tabla) y en Datos;
+  8. el **email** de quien corrige un daño queda en `danos_neumaticos.usuario_validador`, abreviado en la app;
+  9. **horas de uso** del neumático junto a las horas remanentes (Tablero, Ficha y Camiones).
+- **Decisiones del equipo (14-11-2026):** todo en una sola propuesta; Camiones incluido; horas de uso con la opción A (horómetro al montaje en la base, dato sintético); aviso centrado y de alto contraste; actualizar el manual.
+- **Riesgo encontrado al implementar:** guardar el email en las correcciones lo dejaba legible con la clave pública. Se resolvió como en PROP-08: vista abreviada y permisos por columna, en una migración de tres partes.
+- **Archivos:** `src/index.html`, `src/db.js`, `src/manual.md`; `docs/migraciones/2026-11-14_PROP-11_horas_uso_y_correcciones.sql` y `docs/schema.sql`; `docs/datos.md`, `docs/etica.md`, `docs/experiencia-usuario.md`, `CHANGELOG.md`, `docs/bitacora-ia.md`.
+- **Riesgos:** las horas de uso son sintéticas; si la parte 1 del SQL no se ejecuta, la app las estima desde el desgaste y lee los daños desde la tabla (no se rompe); si la parte 2 no se ejecuta, los emails de las correcciones quedan legibles con la clave pública.
+- **Verificación:** 25 pruebas automáticas en modo local (sin escribir en la base): columnas y filtros del Tablero, Camiones y Datos; aviso centrado; corrección que conserva la descripción; emisión y modificación que exigen confirmar el riesgo y lo registran; justificación sin cambios. Lectura real desde Supabase antes de la migración sin errores (402 neumáticos). Sintaxis de `index.html` y `db.js` verificada con Node.
+- **Pendiente:** capturas del manual (el arnés con usuario de ejemplo sigue bloqueado por permisos); restaurar el daño del P3 del CAEX-102, cambiado a Leve el 14-11 a las 16:12, antes de la sesión 2.
+- **Historial:** 14-11-2026 · v1 propuesta tras la sesión 1; aprobada con las respuestas del equipo (Camiones sí, opción A, incluir 1, 2, 3, 6 y 8, actualizar el manual) e implementada en la rama `feature/prop-11-cambios-sesion1`.
+
 ## Notas de publicación
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
 - **Commit 43be34f (14-11-2026):** subido directo a `main` por el propietario del repositorio, saltando la regla que exige un PR con aprobación, para que el estado de PROP-10 se viera de inmediato antes de la exposición en clase. Solo cambia el estado de PROP-10 en este registro (de «en publicación» a «Publicada»). Se pidió a Héctor (QA) que lo revise después; queda pendiente su revisión para normalizar. Esta nota también se subió directo a `main`.
+- **PR #14 · PROP-11 (14-11-2026):** fusionado por el propietario del repositorio sin la aprobación previa de Héctor (QA), a pedido del equipo, para avanzar con la parte 2 del SQL. La parte 1 del SQL se ejecutó y verificó antes de fusionar (402 neumáticos con horas de uso; vista de daños abreviada). Se pidió a Héctor que revise el PR #14 y las partes 1 y 2 del SQL en conjunto.

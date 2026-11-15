@@ -471,3 +471,15 @@ JOIN ordenes_trabajo o ON o.id = h.orden_id;
 GRANT SELECT ON vista_historial_ordenes TO anon, authenticated;
 REVOKE SELECT ON historial_ordenes FROM anon, authenticated;
 GRANT SELECT (id, orden_id, fecha_evento, accion, motivo, detalles) ON historial_ordenes TO anon, authenticated;
+
+-- =============================================================================
+-- PROP-11 (14-11-2026): horas de uso, detección conservada y email en las correcciones
+-- Detalle y orden de ejecución en docs/migraciones/2026-11-14_PROP-11_horas_uso_y_correcciones.sql
+-- =============================================================================
+ALTER TABLE neumaticos ADD COLUMN IF NOT EXISTS horometro_montaje_h INTEGER;   -- dato sintético en el prototipo
+ALTER TABLE danos_neumaticos ALTER COLUMN usuario_validador TYPE VARCHAR(254);
+-- vista_danos_neumaticos: daños con el validador abreviado (permisos del dueño)
+-- vista_tablero_turno: agrega horometro_montaje_h, horas_uso_h, nivel_detectado, detalle_detectado y confianza_detectada
+REVOKE SELECT ON danos_neumaticos FROM anon, authenticated;
+GRANT SELECT (id, medicion_id, neumatico_id, severidad, descripcion, confianza_ia, validado_por_humano, fecha_registro, creado_en)
+  ON danos_neumaticos TO anon, authenticated;
