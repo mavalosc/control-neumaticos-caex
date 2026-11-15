@@ -135,7 +135,7 @@ Una fila por observación. **Observado** = lo que otra persona podría verificar
 | T5 | | | | |
 | T6 | | | | |
 
-Los resultados se trasladan a la sección 6 de [`prueba-usuarios.md`](prueba-usuarios.md).
+Los resultados se trasladan a la sección 6 de [`prueba-usuarios.md`](prueba-usuarios.md). Ejemplo completo: [`sesiones/sesion-1-P1.md`](sesiones/sesion-1-P1.md).
 
 ---
 

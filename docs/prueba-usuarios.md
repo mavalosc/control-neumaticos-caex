@@ -86,6 +86,8 @@ Cada hallazgo que bloquea termina en una de tres decisiones: **cambio comprometi
 
 ### Sesión 1 · P1 · 13-11-2026
 
+Tablas de la pauta completadas (SUS, planilla de observaciones, resumen por tarea y respuestas): [`sesiones/sesion-1-P1.md`](sesiones/sesion-1-P1.md).
+
 | Dato | Valor |
 |---|---|
 | Fecha y duración | 13-11-2026 · grabación de 22:55 min; tareas entre 06:24 y 16:33 |
