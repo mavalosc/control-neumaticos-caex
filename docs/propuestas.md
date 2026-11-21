@@ -9,6 +9,11 @@
 6. **Revisión del resultado** con evidencias, antes de publicar.
 7. **Publicación:** Pull Request de `dev` a `main`, aprobación de Héctor y despliegue en Vercel.
 
+**Excepción: corrección de errores en un cambio ya aprobado (criterio del equipo, 21-11-2026).** Si un cambio aprobado quedó con un error introducido al implementarlo o en una modificación intermedia, la corrección se publica **directo en `main`, sin esperar la revisión de Héctor**, siempre que:
+- **devuelva lo que ya estaba aprobado**, sin agregar funciones ni cambiar el alcance (ejemplos: una clase de estilo mal escrita o el orden de las sentencias de un SQL);
+- **no** sea una función nueva, un cambio de diseño ni un ajuste pedido: esos siguen la metodología completa;
+- quede **registrada** en el historial de la propuesta y en las «Notas de publicación», con el commit y la frase «corrección de un error en un cambio aprobado», para que Héctor pueda revisarla después.
+
 ## Estado
 
 | Código | Nombre | Estado | Versión | Propuesta | Implementación |
@@ -141,3 +146,4 @@
 - **PR #6 (24-10-2026):** fusionado por el propietario del repositorio usando el **bypass** de la protección de `main`, sin la aprobación de un segundo revisor. Queda pendiente que Héctor (QA) deje su revisión en el PR para conservar la evidencia de revisión entre pares.
 - **Commit 43be34f (14-11-2026):** subido directo a `main` por el propietario del repositorio, saltando la regla que exige un PR con aprobación, para que el estado de PROP-10 se viera de inmediato antes de la exposición en clase. Solo cambia el estado de PROP-10 en este registro (de «en publicación» a «Publicada»). Se pidió a Héctor (QA) que lo revise después; queda pendiente su revisión para normalizar. Esta nota también se subió directo a `main`.
 - **PR #14 · PROP-11 (14-11-2026):** fusionado por el propietario del repositorio sin la aprobación previa de Héctor (QA), a pedido del equipo, para avanzar con la parte 2 del SQL. La parte 1 del SQL se ejecutó y verificó antes de fusionar (402 neumáticos con horas de uso; vista de daños abreviada). Se pidió a Héctor que revise el PR #14 y las partes 1 y 2 del SQL en conjunto.
+- **PR #15 · PROP-11 (21-11-2026):** corrección de un error en un cambio aprobado (3 clases de estilo sin espacio en Agendar y Modificar orden). Fusionado sin revisión previa de Héctor, aplicando la excepción de la metodología acordada ese día.
