@@ -93,7 +93,7 @@ Tablas de la pauta completadas (SUS, planilla de observaciones, resumen por tare
 | Fecha y duración | 13-11-2026 · grabación de 22:55 min; tareas entre 06:24 y 16:33 |
 | Perfil del participante | Mantenedor de neumáticos, 8 años de experiencia en neumáticos OTR, gran minería. En terreno usa un celular tipo tablet para controlar presiones. **Perfil aproximado:** ejecuta la mantención, no la planifica |
 | Reclutamiento | Conocido de Francisco, integrante del equipo (Nicolás no consiguió voluntario). Se declara **sesgo de amabilidad**: un conocido tiende a evaluar mejor |
-| Enlace a la grabación (Drive restringido) | Pendiente: carpeta de Drive del proyecto |
+| Enlace a la grabación (Drive restringido) | [Carpeta «Validacion»](https://drive.google.com/drive/folders/1Cz7VLNY-nuTnjSrtQkNRyPW4jft0NuVm): acceso restringido al equipo y al profesor (desde el 21-11-2026); quien no tenga permiso no puede abrirla |
 | Consentimiento grabado | Sí (04:52) · email usado en la app: `p1@prueba.cl` |
 | Cómo se analizó | La grabación completa se subió a **Gemini**, que la procesó con instrucciones de anonimizar y separar lo observado de lo interpretado (dos entregas: la primera solo con audio y la segunda con pantalla). Los minutos se contrastaron con los registros de Supabase: la hora de la orden, de su modificación y de las correcciones de daño coincide con el video con 10 a 15 s de diferencia. La IA calculó mal el SUS (60); el valor correcto es 70 |
 
