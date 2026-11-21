@@ -34,7 +34,7 @@ Documentación de los avances del proyecto:
 - **Entrega 3:** ambiente integrado, [bitácora de IA](docs/bitacora-ia.md) y [modelo de datos](docs/datos.md)
 - **Entrega 4:** [historias de usuario y criterios BDD](docs/historias.md), y [wireframes anotados](docs/wireframes/README.md)
 - **Semana 6:** [análisis ético y de sostenibilidad](docs/etica.md)
-- **Semanas 7-8:** [diseño de la prueba con usuarios](docs/prueba-usuarios.md) y [pauta de validación](docs/pauta-validacion.md). Grabaciones de las sesiones: carpeta de Drive con acceso restringido (enlace por agregar)
+- **Semanas 7-8:** [diseño de la prueba con usuarios](docs/prueba-usuarios.md) y [pauta de validación](docs/pauta-validacion.md). Grabaciones de las sesiones: [carpeta de Drive con acceso restringido](https://drive.google.com/drive/folders/1Cz7VLNY-nuTnjSrtQkNRyPW4jft0NuVm) (solo equipo y profesor)
 
 Ingeniería Digital en Acción: Datos con IA, MVP · Unidad 1 · Equipo 3
 Universidad de Santiago de Chile
