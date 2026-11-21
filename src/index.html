@@ -1592,7 +1592,7 @@ const INITIAL_TRUCKS = [
                 const arrivesOnTime = w.en < t.h;
 
                 return `
-                  <button onclick="${hasSlots ? `selectedWindowId=${w.id}; riesgoAceptado=false; renderSchedule('${serial}')` : ''}" class="w-fulltext-left p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)]'} ${!hasSlots ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}">
+                  <button onclick="${hasSlots ? `selectedWindowId=${w.id}; riesgoAceptado=false; renderSchedule('${serial}')` : ''}" class="w-full text-left p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-hover)]'} ${!hasSlots ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}">
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-base font-bold text-[var(--ink)]">${w.dia} · ${w.turno}</div>
@@ -1644,7 +1644,7 @@ const INITIAL_TRUCKS = [
 
           <!-- Botón de Confirmación -->
           <div class="pt-4">
-            <button onclick="emitirOrden('${serial}')" ${puedeEmitir ? '' : 'disabled'} class="w-fullbg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <button onclick="emitirOrden('${serial}')" ${puedeEmitir ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <span>${tardia ? "Confirmar con riesgo aceptado y emitir orden" : "Confirmar y Emitir Orden en SAP PM"}</span>
             </button>
@@ -1928,7 +1928,7 @@ const INITIAL_TRUCKS = [
               </div>
 
               <p id="error-motivo" class="text-[11px] text-rose-400 ${editState.motivo.trim() ? 'hidden' : ''}">El motivo del cambio es obligatorio.</p>
-              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${editState.motivo.trim() && (!tardiaEd || editState.riesgoAceptado) ? '' : 'disabled'} data-tardia="${tardiaEd && !editState.riesgoAceptado ? 1 : 0}" class="w-fullbg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
+              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${editState.motivo.trim() && (!tardiaEd || editState.riesgoAceptado) ? '' : 'disabled'} data-tardia="${tardiaEd && !editState.riesgoAceptado ? 1 : 0}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
                 Guardar Modificaciones
               </button>
             </div>
