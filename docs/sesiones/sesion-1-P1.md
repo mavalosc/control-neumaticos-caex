@@ -36,7 +36,7 @@
 |---|---|---|---|---|
 | 1 | Creo que me gustaría usar esta herramienta con frecuencia. | 4 | 17:08 | 3 |
 | 2 | Encontré la herramienta innecesariamente compleja. | 1 | 17:17 | 4 |
-| 3 | Pensé que la herramienta era fácil de usar. | 1 ⚠ | 17:27 | 0 |
+| 3 | Pensé que la herramienta era fácil de usar. | 1 (confirmado) | 17:27 | 0 |
 | 4 | Creo que necesitaría ayuda de una persona con conocimientos técnicos para usarla. | 3 | 17:39 | 2 |
 | 5 | Encontré que las distintas funciones de la herramienta estaban bien integradas. | 5 | 17:49 | 4 |
 | 6 | Pensé que había demasiadas inconsistencias en la herramienta. | 1 | 17:58 | 4 |
@@ -47,7 +47,7 @@
 
 **Puntaje:** impares (respuesta − 1) = 13; pares (5 − respuesta) = 15; (13 + 15) × 2,5 = **70** (referencia 68).
 
-⚠ **Ítem 3 por confirmar en la grabación:** un 1 contradice los ítems 2 y 8 y lo que dijo en el cierre («está fácil de interpretar»). Si fuera 5, el puntaje sería **80**. En ambos casos supera 68.
+**Ítem 3 confirmado en la grabación (21-11-2026):** P1 respondió 1. Contradice los ítems 2 y 8 y lo que dijo en el cierre («está fácil de interpretar»); puede ser una confusión con el sentido de la escala. El puntaje queda en **70**.
 
 ## 4.2 Preguntas abiertas
 
