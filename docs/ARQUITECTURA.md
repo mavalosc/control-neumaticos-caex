@@ -11,8 +11,8 @@ Las secciones siguientes describen la **arquitectura objetivo**. El prototipo pu
 | Componente de la arquitectura objetivo | Estado en el prototipo |
 |---|---|
 | Frontend SPA en Vercel | **Implementado** (`src/index.html`) |
-| Supabase (PostgreSQL) con triggers de cupos y RLS | **Implementado**. RLS con políticas permisivas de prototipo: la clave pública lee todo e inserta; desde PROP-12 ya no modifica órdenes directamente |
-| Microservicio FastAPI | **No implementado.** La app habla directo con Supabase; los cálculos están en el navegador y en los scripts de `modelo/` |
+| Supabase (PostgreSQL) con triggers de cupos y RLS | **Implementado. Es el backend del prototipo**: recibe cada solicitud de la app por internet y aplica las reglas antes de guardar. RLS con políticas permisivas de prototipo: la clave pública lee todo e inserta; desde PROP-12 ya no modifica órdenes directamente |
+| Microservicio FastAPI | **No publicado.** Hay código de ejemplo en `backend/` (proyección lineal, con pruebas), pero la app no lo usa: habla directo con Supabase, y los cálculos están en el navegador y en los scripts de `modelo/` |
 | ERP / SAP PM | **No conectado.** Las órdenes quedan solo en la base del prototipo; la app ya no dice que «sincroniza con ERP» |
 | Pórtico instrumentado | **Simulado** (pantalla Simulador y datos sintéticos) |
 
@@ -21,12 +21,14 @@ Las secciones siguientes describen la **arquitectura objetivo**. El prototipo pu
 | Capa | Dónde vive | Qué hace |
 |---|---|---|
 | **Navegador** | `src/index.html`, con las reglas de `src/reglas.js` | Valida mientras se escribe: mensaje propio, contador y botón deshabilitado, sin borrar lo escrito |
-| **Servidor** | Sin backend propio, son los **CHECK y triggers de Postgres** en Supabase (`docs/migraciones/2026-11-23_PROP-12_reglas_y_ordenes_cerradas.sql`) | Rechaza un motivo vacío o de más de 500 caracteres aunque alguien llame a la API REST directamente; aplica cada cambio de estado en una sola transacción; impide modificar o reactivar órdenes anuladas o ejecutadas |
+| **Servidor** | **Supabase**, el backend del prototipo: los **CHECK y triggers de Postgres** (`docs/migraciones/2026-11-23_PROP-12_reglas_y_ordenes_cerradas.sql`) | Rechaza un motivo vacío o de más de 500 caracteres aunque alguien llame a la API REST directamente; aplica cada cambio de estado en una sola transacción; impide modificar o reactivar órdenes anuladas o ejecutadas |
 | **Base de datos** | Tipos, `NOT NULL`, claves foráneas y `UNIQUE` del esquema (`docs/schema.sql`) | Estructura: no hay orden sin neumático ni ventana, ni dos órdenes con el mismo código |
+
+**Respuesta del profesor (23-11-2026):** «todos tienen capa de servidor, así que todos tienen backend». Supabase es nuestro backend y sus CHECK y triggers son la capa servidor que pide la Semana 9. La prueba R8 de `docs/pruebas-rotura.md` lo demuestra: llama a la API sin pasar por la pantalla.
 
 **Una regla vive en un solo archivo:** los límites se escriben en `src/reglas.js`. El SQL repite los mismos números, y la prueba `tests/reglas.test.js` falla si no coinciden.
 
-**Pendiente declarado:** con la clave pública se puede seguir **insertando** órdenes y eventos (con las reglas aplicadas). Cerrar eso requiere autenticación real y un backend, fuera del alcance de la Semana 9.
+**Pendiente declarado:** con la clave pública se puede seguir **insertando** órdenes y eventos (con las reglas aplicadas). Cerrar eso requiere autenticación real (usuarios con contraseña en Supabase), fuera del alcance de la Semana 9.
 
 ---
 

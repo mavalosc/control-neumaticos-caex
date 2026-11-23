@@ -4,7 +4,7 @@
 //   - Capa base de datos: la migración docs/migraciones/2026-11-23_PROP-12_reglas_y_ordenes_cerradas.sql
 //     repite los mismos números en restricciones CHECK y triggers de Postgres.
 //     La prueba tests/reglas.test.js falla si los números del SQL no coinciden con este archivo.
-// Sin backend propio, la «capa servidor» son los CHECK y triggers de Postgres en Supabase (ver docs/ARQUITECTURA.md).
+// El backend es Supabase: la «capa servidor» son los CHECK y triggers de Postgres (ver docs/ARQUITECTURA.md).
 (function () {
   const REGLAS = {
     // Motivo de modificar, anular o marcar como ejecutada una orden (historial_ordenes.motivo)
