@@ -483,3 +483,14 @@ ALTER TABLE danos_neumaticos ALTER COLUMN usuario_validador TYPE VARCHAR(254);
 REVOKE SELECT ON danos_neumaticos FROM anon, authenticated;
 GRANT SELECT (id, medicion_id, neumatico_id, severidad, descripcion, confianza_ia, validado_por_humano, fecha_registro, creado_en)
   ON danos_neumaticos TO anon, authenticated;
+
+-- =============================================================================
+-- PROP-12 (23-11-2026): reglas de largo, un cambio = un evento del historial y órdenes cerradas
+-- Detalle, respaldo, orden de ejecución y reversa en docs/migraciones/2026-11-23_PROP-12_reglas_y_ordenes_cerradas.sql
+-- =============================================================================
+-- chk_historial_motivo_largo:    char_length(btrim(motivo)) BETWEEN 3 AND 500             (src/reglas.js: motivo)
+-- chk_orden_justificacion_largo: char_length(btrim(justificacion_nota)) BETWEEN 10 AND 2000 (src/reglas.js: justificacion)
+-- trg_aplicar_evento_orden (BEFORE INSERT ON historial_ordenes): anulacion, ejecucion y modificacion
+--   (detalles.ventana_id) se aplican a la orden en la misma transacción.
+-- trg_proteger_orden_cerrada (BEFORE UPDATE ON ordenes_trabajo): una orden anulada o ejecutada no cambia.
+-- Parte 2: sin política prototipo_actualizacion ni permiso UPDATE de anon sobre ordenes_trabajo.

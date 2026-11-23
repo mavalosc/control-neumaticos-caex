@@ -959,7 +959,7 @@ ALTER TABLE ordenes_trabajo ENABLE TRIGGER trg_decrementar_cupo;
 INSERT INTO historial_ordenes (orden_id, fecha_evento, autor, accion, motivo)
 SELECT o.id, v.fecha::timestamptz, v.autor, v.accion, v.motivo
 FROM (VALUES
-('ot-0068', '2026-09-26 10:59-03', 'planificador', 'creacion', 'emisión inicial en SAP PM')
+('ot-0068', '2026-09-26 10:59-03', 'planificador', 'creacion', 'emisión inicial')
 ) AS v(orden, fecha, autor, accion, motivo)
 JOIN ordenes_trabajo o ON o.codigo = v.orden;
 

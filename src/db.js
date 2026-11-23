@@ -4,7 +4,10 @@
 (function () {
   const cfg = window.CAEX_CONFIG || {};
   const cliente = cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase
-    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+        // PROP-12: si la base no responde en 15 s, se avisa en vez de esperar sin fin
+        global: { fetch: (url, op = {}) => fetch(url, { ...op, signal: op.signal || AbortSignal.timeout(15000) }) }
+      })
     : null;
 
   // Índices auxiliares que se rellenan en cada carga
@@ -24,15 +27,16 @@
   const fechaHoraCL = ts => { const p = partes(ts); return `${p.day}-${p.month}-${p.year} ${p.hour === "24" ? "00" : p.hour}:${p.minute}`; };
   const diaCL = iso => iso.split("-").reverse().join("-"); // '2026-09-29' -> '29-09-2026'
   const zonaDe = h => h == null ? "gris" : h < 200 ? "rojo" : h < 500 ? "amarillo" : "verde";
-  const ACCION = { modificacion: "modificación de orden", anulacion: "orden anulada" };
+  const ACCION = { modificacion: "modificación de orden", anulacion: "orden anulada", ejecucion: "orden ejecutada" };
 
   // PROP-08: email de quien opera; queda en historial_ordenes.autor. La app solo lo lee abreviado
   // (vista_historial_ordenes); la columna completa no es legible con la clave pública.
   let autorActual = "planificador";
   const fijarUsuario = email => { autorActual = email || "planificador"; };
 
+  // PROP-12: el error conserva el código de Postgres para que la app lo traduzca a un mensaje propio
   function revisar({ data, error }) {
-    if (error) throw new Error(error.message);
+    if (error) throw Object.assign(new Error(error.message), { code: error.code, hint: error.hint, details: error.details });
     return data;
   }
 
@@ -97,8 +101,11 @@
     return revisar(await cliente.from("historial_ordenes").select("orden_id,fecha_evento,autor,accion,motivo").limit(10000));
   }
 
-  async function historial(codigo, accion, motivo) {
-    revisar(await cliente.from("historial_ordenes").insert({ orden_id: idOrden[codigo], autor: autorActual, accion, motivo }));
+  // PROP-12: cada cambio de una orden es UNA escritura en el historial; el trigger aplicar_evento_orden
+  // aplica el cambio a la orden en la misma transacción (docs/migraciones/2026-11-23_PROP-12_...).
+  async function historial(codigo, accion, motivo, detalles = null) {
+    if (!idOrden[codigo]) throw Object.assign(new Error(`La orden ${codigo} no existe.`), { code: "no_existe" });
+    revisar(await cliente.from("historial_ordenes").insert({ orden_id: idOrden[codigo], autor: autorActual, accion, motivo, detalles }));
   }
 
   async function emitirOrden({ codigo, serial, ventanaId, tipo, nota, horas, origen }) {
@@ -108,20 +115,22 @@
       origen_detalle: origen, estado: "programada"
     }).select("id").single());
     idOrden[codigo] = fila.id;
-    await historial(codigo, "creacion", "orden emitida y sincronizada con ERP");
+    // La orden ya quedó guardada: si falla solo la línea de creación del historial, no se informa
+    // «nada se guardó» (sería falso); se registra en la consola y la orden sigue válida.
+    try { await historial(codigo, "creacion", "orden emitida"); }
+    catch (e) { console.warn(`Orden ${codigo} guardada sin la línea de creación del historial`, e); }
   }
 
-  async function modificarOrden(codigo, { ventanaId, nota, motivo }) {
-    const cambios = { actualizado_en: new Date().toISOString() };
-    if (nota !== undefined) cambios.justificacion_nota = nota;
-    if (ventanaId) cambios.ventana_id = ventanaId;
-    revisar(await cliente.from("ordenes_trabajo").update(cambios).eq("codigo", codigo));
-    await historial(codigo, "modificacion", motivo);
+  async function modificarOrden(codigo, { ventanaId, motivo }) {
+    await historial(codigo, "modificacion", motivo, ventanaId ? { ventana_id: ventanaId } : null);
   }
 
   async function anularOrden(codigo, motivo) {
-    revisar(await cliente.from("ordenes_trabajo").update({ estado: "anulada", actualizado_en: new Date().toISOString() }).eq("codigo", codigo));
     await historial(codigo, "anulacion", motivo);
+  }
+
+  async function ejecutarOrden(codigo, motivo) {
+    await historial(codigo, "ejecucion", motivo);
   }
 
   // PROP-11: la corrección conserva la descripción y la confianza de la detección; el autor es el email (PROP-08)
@@ -213,5 +222,5 @@
     return { alertas: alertas.count, velocidad: velocidad.count, version, riesgo };
   }
 
-  window.DB = { activo: !!cliente, fijarUsuario, cargar, emitirOrden, modificarOrden, anularOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
+  window.DB = { activo: !!cliente, fijarUsuario, cargar, emitirOrden, modificarOrden, anularOrden, ejecutarOrden, registrarDano, registrarPasada, leerTabla, leerPredicciones, leerDatosReales };
 })();

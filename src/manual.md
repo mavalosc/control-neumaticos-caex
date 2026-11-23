@@ -51,7 +51,9 @@ Las zonas de 200 h y 500 h son **requisitos de planificación propuestos por el 
    - La **Ayuda** se puede leer sin ingresar.
 3. Revise el **indicador de origen de datos**, arriba a la derecha:
    - **● Supabase** (verde): los datos vienen de la base y sus cambios se guardan.
-   - **● modo local** (gris): no hay conexión. La aplicación funciona con datos guardados en su navegador; los cambios no los verán otras personas.
+   - **● cargando Supabase…** (ámbar): la pantalla dice *«Cargando datos…»* hasta que llegan los datos.
+   - **● sin conexión** (rojo): la base no respondió. La pantalla lo explica y ofrece **Reintentar**; la app no muestra datos ni guarda nada mientras tanto.
+   - **● modo local** (gris): solo en una copia de desarrollo sin conexión configurada; los cambios quedan en su navegador.
 4. Use la **barra de navegación** superior:
 
 | Botón | Pantalla | Para qué |
@@ -173,9 +175,14 @@ Si el neumático está en **zona verde** y su daño es bajo, el botón **Agendar
    - Si llega **después**: *«⚠️ Advertencia de riesgo: el neumático cruzará el umbral…»*. Elija una ventana más próxima. Si igual quiere usarla, debe marcar **«Entiendo el riesgo y emito la orden igual»**: sin esa marca el botón queda deshabilitado, y la orden registra que el riesgo fue aceptado y por quién.
    - Si **ninguna ventana con cupo** llega a tiempo, aparece arriba un recuadro rojo con el botón **Avisar a despacho para sacar el CAEX del ciclo**.
 3. Revise la **trazabilidad** que se escribirá en la orden: profundidad, tasa, serial de reemplazo y destino del neumático retirado.
-4. Presione **Confirmar y Emitir Orden en SAP PM** (o **Confirmar con riesgo aceptado y emitir orden**, si la ventana llega tarde).
+4. Presione **Confirmar y emitir orden** (o **Confirmar con riesgo aceptado y emitir orden**, si la ventana llega tarde).
 
-La orden queda **programada**, el cupo de la ventana baja en 1 y aparece el aviso *«Orden ot-XXXX emitida con éxito»*. Si otra persona ocupó el último cupo justo antes, la base rechaza la orden y verá *«No se pudo guardar en Supabase…»*.
+Mientras se guarda, el botón dice **«Guardando la orden…»** y no responde a un segundo clic. El aviso *«Orden ot-XXXX guardada en la base»* aparece **solo cuando la base confirmó**; recién entonces la orden queda **programada** y el cupo de la ventana baja en 1.
+
+Si algo falla, **nada se guarda** y usted sigue en la misma pantalla, con la ventana elegida:
+- *«Sin conexión con la base de datos…»*: revise la red e intente de nuevo.
+- *«La ventana elegida se quedó sin cupos…»*: otra persona ocupó el último cupo justo antes; elija otra ventana.
+- *«La base de datos no respondió a tiempo…»*: revise la lista de órdenes antes de reintentar, porque el cambio pudo haber quedado guardado.
 
 ---
 
@@ -184,15 +191,17 @@ La orden queda **programada**, el cupo de la ventana baja en 1 y aparece el avis
 
 ![Órdenes de trabajo](assets/manual/05-ordenes.png)
 
-1. Abra **Órdenes**. Arriba ve cuántas están **programadas**, **ejecutadas** y **anuladas**.
+1. Abra **Órdenes**. Arriba ve cuántas están **programadas**, **ejecutadas** y **anuladas** (son las de la lista; al hacer clic se filtra por ese estado).
 2. Busque por número de OT, serial o texto de la nota, y filtre por estado.
 3. Cada orden muestra el neumático, la nota, la ventana, las horas remanentes al emitirla y la **medición de origen**: esa es la trazabilidad que respalda el retiro frente al taller y al proveedor.
 4. **Exportar Informe para Proveedor** descarga un CSV con las órdenes para reclamos de garantía.
+5. Si ninguna orden coincide con la búsqueda, la tabla lo dice y ofrece **Ver todas las órdenes**.
+6. Las órdenes **anuladas** y **ejecutadas** tienen el botón **Ver**: se abren en **solo lectura**, con el motivo del cierre y el historial. No se pueden modificar ni reactivar.
 
 ---
 
 <a id="modificar"></a>
-## 9. Modificar o anular una orden
+## 9. Modificar, anular o marcar como ejecutada una orden
 
 ![Modificar o anular una orden](assets/manual/06-modificar.png)
 
@@ -202,14 +211,20 @@ Solo las órdenes **programadas** se pueden cambiar. Presione **Modificar** en l
 1. En **Reasignar Ventana de Taller**, elija otra ventana con cupo (opcional). Cada ventana indica si **llega con margen** o **cuántas horas después del umbral** llega. Las ventanas sin cupo no se pueden elegir.
 2. Si la nueva ventana llega tarde, marque **«Entiendo el riesgo»**; queda registrado en el historial.
 3. La **justificación original** de la orden se muestra pero **no se edita**: así se conserva el respaldo técnico de la emisión.
-4. Escriba el **Motivo del cambio** en el único campo de texto. Es **obligatorio**: sin motivo, el botón **Guardar Modificaciones** queda deshabilitado.
+4. Escriba el **Motivo del cambio**. Es **obligatorio** y admite entre 3 y 500 caracteres; el contador bajo el campo muestra cuántos lleva. Si el texto no cumple, el mensaje dice por qué y el botón **Guardar Modificaciones** queda deshabilitado, **sin borrar lo escrito**.
 5. Guarde. El cupo de la ventana anterior se libera y el de la nueva se descuenta.
 
+**Para marcarla como ejecutada** (cuando el taller hizo el retiro):
+1. En **Marcar como ejecutada**, escriba la **observación de cierre** (obligatoria).
+2. Presione **Marcar como ejecutada**. La orden queda cerrada y en solo lectura.
+
 **Para anularla:**
-1. En **Anular esta Orden**, elija un motivo.
+1. En **Anular esta Orden**, elija un motivo. Si elige **Otro motivo**, descríbalo (obligatorio).
 2. Presione **Anular Orden de Trabajo** y confirme con **Sí, anular**.
 
-Las órdenes **nunca se borran**: quedan como *anuladas*, con su motivo en el **Historial de Trazabilidad**.
+Las órdenes **nunca se borran**: quedan como *anuladas* o *ejecutadas*, con su motivo en el **Historial de Trazabilidad**. Si otra persona cerró la orden mientras usted la tenía abierta (por ejemplo, en otra pestaña), verá *«La orden … está anulada y no admite cambios»* y nada se guarda.
+
+**Si la orden no existe** (por ejemplo, una dirección escrita a mano), la app lo dice y ofrece volver a **Órdenes**.
 
 ---
 
@@ -303,9 +318,9 @@ Los umbrales de temperatura del flanco (85 °C y 95 °C) y las zonas de 200/500 
 <a id="preguntas-frecuentes"></a>
 ## 14. Preguntas frecuentes y problemas comunes
 
-**No veo mis cambios.** Recargue la página con **Ctrl + F5**. Si el indicador dice *modo local*, sus cambios quedaron solo en su navegador.
+**No veo mis cambios.** Recargue la página con **Ctrl + F5**. Un cambio solo está guardado si vio el aviso verde *«… guardada en la base»* o *«… guardado en la base»*; si vio un aviso rojo, no se guardó.
 
-**El indicador dice «modo local».** No hay conexión con la base. Revise su conexión a internet y recargue. Puede seguir usando la aplicación, pero otras personas no verán sus cambios.
+**Aparece «No se pudo conectar con la base de datos».** Revise su conexión a internet y presione **Reintentar**. La app no trabaja sin la base, para que ningún cambio se pierda sin aviso.
 
 **No puedo presionar «Agendar Intervención en Taller».** El neumático está en zona verde y sin daño relevante: no requiere intervención.
 
@@ -333,7 +348,7 @@ Los umbrales de temperatura del flanco (85 °C y 95 °C) y las zonas de 200/500 
 | **Horas remanentes** | Horas de operación que quedan hasta el umbral de 20 mm |
 | **Umbral de retiro** | 20 mm: bajo esa profundidad el neumático debe retirarse. Criterio experto de taller, ajustable según el neumático y la faena |
 | **Ventana del taller** | Turno del taller con cupos para intervenir neumáticos |
-| **OT** | Orden de trabajo enviada al taller (y al ERP SAP PM) |
+| **OT** | Orden de trabajo para el taller; queda guardada en la base de datos del prototipo (no está conectada a un ERP) |
 | **TPMS** | Sistema de monitoreo de presión de neumáticos (sensor en la válvula) |
 | **TKPH** | Toneladas-kilómetro por hora: carga por neumático × velocidad media; indica el esfuerzo térmico del neumático |
 | **Termografía** | Medición de temperatura por cámara infrarroja |

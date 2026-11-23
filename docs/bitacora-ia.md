@@ -213,6 +213,18 @@ Registro de las interacciones relevantes con asistentes de IA, según la pauta d
 
 ---
 
+## IA-20 · Avance funcional robustecido (PROP-12)
+**Herramientas:** Claude Code (análisis, consejo de 5 asesores, implementación y pruebas) y revisión de un integrante del equipo · **Fecha:** 22 y 23-11-2026 · **Autor:** Manuel Ávalos
+
+| Componente | Detalle |
+|---|---|
+| **Contexto** | Semana 9: CRUD de la orden con borrado lógico, reglas en 3 capas, mensajes propios, 4 estados y 5 intentos de rotura. Un plan generado por otra IA marcaba las pruebas como «Aprobado» sin ejecutarlas; se descartó por evidencia falsa. |
+| **Intención** | «juzga la propuesta anterior de trabajo y promueve tu propia propuesta, usa la skill del council para evaluar las alternativas»; luego «aprobado el prop-12 v2», con entrega el sábado 28-11. |
+| **Restricciones** | Metodología de propuestas; ninguna prueba se marca aprobada sin ejecutarla; la app publicada no se rompe mientras el SQL y el código no estén ambos aplicados; las órdenes de prueba en la base real se anulan con «PRUEBA DE ROTURA». |
+| **Verificación** | **Aporte humano:** la revisión de un integrante confirmó los 7 problemas que la IA había encontrado leyendo el código y sumó 7 que la IA no vio (orden fantasma sin conexión, modo local con éxitos falsos, orden anulada editable por su dirección, contadores con +54 y +7 fijos, anulación en dos escrituras, pantalla en blanco al cargar y mensajes de un ERP inexistente). Además ejecutó 3 de las 5 pruebas en el sitio publicado: la primera línea base real. 9 pruebas de reglas con Node, 35 de pantalla con una base simulada (jsdom) y las 25 de PROP-11 sin regresiones. |
+
+---
+
 ## Qué debe saber explicar cada integrante
 
 La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragmento del repositorio, el ítem se reprueba. Antes de la entrega, cada persona revisa estos puntos:
@@ -222,7 +234,9 @@ La pauta aplica **tolerancia cero**: si un integrante no puede explicar un fragm
 | `src/index.html` | Cómo `getTires()` arma los 402 neumáticos desde `state`; el enrutador `route()` por `#/`; la función `zona()` con sus umbrales de 200 h y 500 h. |
 | `src/db.js` | `cargar()` lee `vista_tablero_turno`, `ventanas_taller` y `ordenes_trabajo` y los convierte al formato de `state`; cada escritura inserta o actualiza una tabla y agrega una fila en `historial_ordenes`. |
 | `src/index.html`, función `enfocarAlFinal()` | Por qué los buscadores redibujan la pantalla en cada tecla y por qué hay que devolver el cursor al final (hallazgo IA-09). |
-| `src/index.html`, función `persistir()` | Patrón optimista: primero cambia la pantalla, luego escribe en Supabase y recarga. Si falla, muestra el error y vuelve al dato de la base. |
+| `src/index.html`, función `guardarEnBase()` | Desde PROP-12, guardado **sin optimismo**: primero escribe en Supabase y solo si la base confirma muestra el éxito; mientras tanto el botón dice «Guardando…» y no acepta otro clic; si falla, no cambia nada y lo escrito se conserva. `persistir()` (optimista) queda solo para el simulador y el botón Reset. |
+| `src/reglas.js` y `tests/reglas.test.js` | Por qué una regla vive en un solo archivo, cómo `validar()` arma el mensaje y cómo la prueba compara los números con el SQL. |
+| `docs/migraciones/2026-11-23_PROP-12_reglas_y_ordenes_cerradas.sql` | Por qué cada cambio de una orden es **una** fila en `historial_ordenes` que un trigger aplica en la misma transacción; qué hace `proteger_orden_cerrada()`; por qué la parte 2 va después de publicar y cómo se revierte. |
 | `docs/schema.sql` | Para qué sirve cada trigger de cupos; por qué las funciones son `SECURITY DEFINER`; qué permite cada política RLS y por qué no existe `DELETE`. |
 | `scripts/generar_seed.py` | Lee las constantes `INITIAL_*` del prototipo y genera `docs/seed.sql`, para que la base y el modo local tengan los mismos datos. |
 | `modelo/terreno/generar_terreno.py` y `entrenar_terreno.py` | Qué simula el generador cada día, por qué no duplica datos (`neumatico_id, vida, ciclo` único), cómo se calculan las horas del modelo y qué significan las 3 causas SHAP. |
