@@ -1,5 +1,13 @@
 # Avances
 
+## v0.14 (23-11-2026) · PROP-12
+- [x] Guardado sin optimismo: el éxito aparece solo cuando la base confirma; «Guardando…» y sin doble envío
+- [x] Pantallas de carga y de error con Reintentar; sin cambio silencioso a modo local
+- [x] Reglas en `src/reglas.js` repetidas en CHECK de Postgres; mensajes propios que no borran lo escrito
+- [x] Órdenes anuladas y ejecutadas en solo lectura; aviso de orden o neumático inexistente; marcar como ejecutada
+- [x] Contadores reales, estado vacío en Órdenes y sin menciones a un ERP inexistente
+- [ ] Pruebas de rotura en el sitio, antes y después (`docs/pruebas-rotura.md`)
+
 ## v0.13 (14-11-2026) · PROP-11
 - [x] Ventana tardía: confirmar el riesgo al agendar y al modificar; aviso para sacar el CAEX del ciclo
 - [x] Ordenar y filtrar desde los encabezados (Tablero, Camiones en vista tabla y Datos)

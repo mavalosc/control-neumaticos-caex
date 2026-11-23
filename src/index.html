@@ -13,6 +13,7 @@
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="db.js"></script>
+  <script src="reglas.js"></script>
   <!-- Manual de uso (src/manual.md) mostrado como página de ayuda -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   
@@ -316,7 +317,7 @@ const INITIAL_TRUCKS = [
     };
 
     const INITIAL_ORDERS = [
-      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar el neumático retirado en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial en SAP PM"]],
+      ["ot-0068", "26-09-2026 10:59", "5980R63-2531-1596", "retiro", "Retiro programado por proyección de 150 h remanentes a la tasa observada de 1,94 mm/100 h; banda en 22,9 mm contra umbral de 20 mm. Ingresa serial de bodega 5980R63-B-544. Coordinar con despacho para sacar el CAEX del ciclo al inicio de la ventana; dejar el neumático retirado en la cancha de garantía con el serial legible para el reclamo al proveedor.", "29-09-2026", "turno A, 08:00 a 12:00", 150, "med-2494", "22,9 mm, tasa observada", "programada", ["26-09-2026 10:59 · planificador · emisión inicial"]],
       ["ot-0067", "26-09-2026 09:24", "5980R63-2328-1590", "retiro", "Retiro programado por proyección de 95 h remanentes a la tasa observada de 1,79 mm/100 h; banda en 21,7 mm contra umbral de 20 mm.", "29-09-2026", "turno B, 20:00 a 00:00", 95, "med-2492", "21,7 mm, tasa observada", "programada", []],
       ["ot-0066", "25-09-2026 16:40", "5980R63-2345-1534", "retiro", "Retiro programado por proyección de 106 h remanentes.", "30-09-2026", "turno A, 08:00 a 12:00", 106, "med-2490", "21,2 mm, tasa observada", "programada", []],
       ["ot-0065", "25-09-2026 11:05", "5980R63-2312-1561", "retiro", "Retiro programado por proyección de 168 h remanentes.", "30-09-2026", "turno B, 20:00 a 00:00", 168, "med-2488", "24,1 mm, tasa observada", "programada", []],
@@ -389,6 +390,109 @@ const INITIAL_TRUCKS = [
       } finally {
         route();
       }
+    }
+
+    // PROP-12: guardar sin optimismo. Primero se escribe en la base; solo si la base confirma se
+    // muestra el éxito. Mientras tanto el botón queda «Guardando…» y deshabilitado (el segundo clic
+    // no hace nada). Si falla, nada cambia en pantalla, lo escrito se conserva y el mensaje explica qué pasó.
+    let guardando = false;
+    const SPINNER = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".3"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3"/></svg>`;
+    async function guardarEnBase(escritura, botonId, textoGuardando = "Guardando…") {
+      if (guardando) return false;
+      if (!navigator.onLine) { showToast(mensajeError(new Error("Failed to fetch")), "danger"); return false; }
+      guardando = true;
+      const b = botonId && document.getElementById(botonId);
+      const original = b ? b.innerHTML : "";
+      if (b) { b.disabled = true; b.setAttribute("aria-busy", "true"); b.innerHTML = `<span class="inline-flex items-center gap-2">${SPINNER}${textoGuardando}</span>`; }
+      try {
+        await escritura();
+      } catch (e) {
+        console.error(e);
+        guardando = false;
+        if (b) { b.disabled = false; b.removeAttribute("aria-busy"); b.innerHTML = original; }
+        showToast(mensajeError(e), "danger");
+        sincronizarDesdeBase().catch(() => {});   // trae lo que la base tenga ahora, sin redibujar lo escrito
+        return false;
+      }
+      try { await sincronizarDesdeBase(); } catch (e) { console.warn("Guardado, pero no se pudo recargar", e); }
+      guardando = false;
+      return true;
+    }
+
+    // PROP-12: mensajes propios en vez del error técnico de la base
+    function mensajeError(e) {
+      const m = String((e && e.message) || e);
+      const nada = " Nada se guardó; lo que escribió sigue en pantalla.";
+      if (!navigator.onLine || /failed to fetch|networkerror|load failed|network request failed/i.test(m))
+        return "Sin conexión con la base de datos." + nada + " Revise la red e intente de nuevo.";
+      if ((e && e.name === "TimeoutError") || /timeout|aborted/i.test(m))
+        return "La base de datos no respondió a tiempo. Revise la lista de órdenes antes de reintentar: el cambio pudo haber quedado guardado.";
+      if ((e && e.hint === "orden_cerrada") || /no admite cambios/.test(m))
+        return m.replace(/\.$/, "") + " (quizá la cerraron en otra pestaña o en otro equipo). Nada se guardó.";
+      if (/cupos libres/i.test(m)) return "La ventana elegida se quedó sin cupos: otra orden la tomó. Nada se guardó; elija otra ventana.";
+      if (e && e.code === "23505") return "Otra orden se emitió con el mismo número al mismo tiempo. Nada se guardó; la lista ya se actualizó, intente de nuevo.";
+      if (e && e.code === "23514") {
+        const r = REGLAS_CAEX.REGLAS[/justificacion/.test(m) ? "justificacion" : "motivo"];
+        return `La base de datos rechazó el texto: ${r.nombre.toLowerCase()} debe tener entre ${r.min} y ${r.max} caracteres.` + nada;
+      }
+      if (e && e.code === "no_existe") return m + " Nada se guardó.";
+      return `No se pudo guardar (detalle técnico: ${m}).` + nada;
+    }
+
+    // PROP-12: estado «no encontrado» con explicación, en vez de volver a otra pantalla sin decir nada
+    function renderNoEncontrado(titulo, detalle, volverHash, volverTexto) {
+      updateActiveNav("");
+      $.innerHTML = `
+        <div role="alert" class="max-w-xl mx-auto mt-10 p-8 rounded-2xl bg-[var(--card)] border-2 border-amber-500/60 text-center space-y-3">
+          <div class="text-4xl" aria-hidden="true">🔎</div>
+          <h1 class="text-xl font-bold text-[var(--ink)]">${titulo}</h1>
+          <p class="text-sm text-[var(--muted)]">${detalle}</p>
+          <button onclick="navigate('${volverHash}')" class="mt-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">${volverTexto}</button>
+        </div>`;
+    }
+
+    // PROP-12: estados de carga y de error al abrir la app (antes: pantalla en blanco, o «modo local» que
+    // aparentaba guardar cuando la base no respondía)
+    let cargaInicial = "lista";   // "cargando" | "error" | "lista"
+    let errorCarga = "";
+    function renderCargando() {
+      $.innerHTML = `
+        <div role="status" aria-live="polite" class="max-w-xl mx-auto mt-16 p-8 rounded-2xl bg-[var(--card)] border border-[var(--border)] text-center space-y-3">
+          <div class="flex justify-center text-blue-500">${SPINNER.replace("w-4 h-4", "w-8 h-8")}</div>
+          <h1 class="text-lg font-bold text-[var(--ink)]">Cargando datos…</h1>
+          <p class="text-sm text-[var(--muted)]">Leyendo neumáticos, órdenes y ventanas de taller desde la base de datos.</p>
+        </div>`;
+    }
+    function renderErrorCarga() {
+      $.innerHTML = `
+        <div role="alert" class="max-w-xl mx-auto mt-16 p-8 rounded-2xl bg-[var(--card)] border-2 border-rose-500 text-center space-y-3">
+          <div class="text-4xl" aria-hidden="true">⚠️</div>
+          <h1 class="text-lg font-bold text-[var(--ink)]">No se pudo conectar con la base de datos</h1>
+          <p class="text-sm text-[var(--muted)]">${errorCarga}</p>
+          <p class="text-xs text-[var(--muted)]">Para no mostrar datos desactualizados, la app no trabaja sin la base: nada de lo que haga se perdería sin aviso.</p>
+          <button onclick="iniciarDatos()" class="mt-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Reintentar</button>
+        </div>`;
+    }
+    async function iniciarDatos() {
+      cargaInicial = "cargando";
+      marcarOrigenDatos("cargando Supabase…", "bg-amber-400");
+      route();
+      try {
+        if (!navigator.onLine) throw new Error("Failed to fetch");
+        await sincronizarDesdeBase();
+        cargaInicial = "lista";
+        marcarOrigenDatos("Supabase", "bg-emerald-400");
+      } catch (e) {
+        console.error(e);
+        cargaInicial = "error";
+        errorCarga = /failed to fetch|networkerror|load failed/i.test(String(e.message)) || !navigator.onLine
+          ? "No hay conexión a internet o la base no responde. Revise la red y presione Reintentar."
+          : (e.name === "TimeoutError" || /timeout|aborted/i.test(String(e.message)))
+            ? "La base de datos no respondió en 15 segundos. Presione Reintentar."
+            : `La base respondió con un error (detalle técnico: ${e.message}).`;
+        marcarOrigenDatos("sin conexión", "bg-rose-500");
+      }
+      route();
     }
 
     async function sincronizarDesdeBase() {
@@ -1198,11 +1302,7 @@ const INITIAL_TRUCKS = [
     function renderTireDetail(serial) {
       updateActiveNav("");
       const t = ST(serial);
-      if (!t) {
-        showToast("Neumático no encontrado", "danger");
-        navigate("#/");
-        return;
-      }
+      if (!t) return renderNoEncontrado(`El neumático ${tfEsc(serial)} no existe`, "Revise el serial: no está en la flota cargada desde la base de datos.", "#/", "Ir al Tablero");
 
       const z = zona(t.h);
       const isInterventionNeeded = z !== "verde" || t.nivel >= 2;
@@ -1527,7 +1627,7 @@ const INITIAL_TRUCKS = [
     // PROP-11 (hallazgos 5, 6 y 13): la corrección cambia el NIVEL, conserva la descripción y la confianza
     // de la detección, confirma el guardado junto a los botones y queda a nombre de quien la hizo.
     const ultimaCorreccion = {};
-    function corregirClasificacion(serial, newLevel) {
+    async function corregirClasificacion(serial, newLevel) {
       const t = ST(serial);
       if (!t) return;
       const prevLevel = t.nivel;
@@ -1538,14 +1638,16 @@ const INITIAL_TRUCKS = [
       const det = state.deteccion[key] || null;
       const desc = det ? det[1] : (t.dmg[0]?.t || "clasificado por el planificador");
       const conf = det ? det[2] : null;
-      state.damages[key] = newLevel > 0 ? [newLevel, desc, conf ?? 1, true] : null;
-
-      saveState();
+      if (DB.activo) {
+        if (!(await guardarEnBase(() => DB.registrarDano(serial, newLevel, desc, conf)))) return;
+      } else {
+        state.damages[key] = newLevel > 0 ? [newLevel, desc, conf ?? 1, true] : null;
+        saveState();
+      }
       const hora = new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
       ultimaCorreccion[serial] = `${DAMAGE_NAMES[prevLevel]} → ${DAMAGE_NAMES[newLevel]} · ${hora} · ${autorVisible()}`;
       showToast(`Corrección guardada: ${DAMAGE_NAMES[prevLevel]} → ${DAMAGE_NAMES[newLevel]}. Queda en la auditoría a nombre de ${autorVisible()}.`, "success");
       renderTireDetail(serial);
-      persistir(() => DB.registrarDano(serial, newLevel, desc, conf));
     }
 
     // --- PANTALLA 4: AGENDAR INTERVENCIÓN EN TALLER ---
@@ -1555,7 +1657,7 @@ const INITIAL_TRUCKS = [
     function renderSchedule(serial) {
       updateActiveNav("");
       const t = ST(serial);
-      if (!t) return navigate("#/");
+      if (!t) return renderNoEncontrado(`No se puede agendar: el neumático ${tfEsc(serial)} no existe`, "Revise el serial: no está en la flota cargada desde la base de datos. No se creó ninguna orden.", "#/", "Ir al Tablero");
 
       const selectedWin = state.windows.find(w => w.id === selectedWindowId);
       const tardia = !!selectedWin && !(selectedWin.en < t.h);
@@ -1626,7 +1728,7 @@ const INITIAL_TRUCKS = [
 
           <!-- Resumen de la Orden a Emitir -->
           <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-3">
-            <h3 class="text-sm font-bold text-[var(--ink)]">Trazabilidad Dimensional que se escribirá en el ERP:</h3>
+            <h3 class="text-sm font-bold text-[var(--ink)]">Trazabilidad que quedará registrada en la orden:</h3>
             <div class="p-3 bg-[var(--bg)] rounded-xl text-xs font-mono text-[var(--muted)] space-y-1">
               <div>Tipo de Intervención: <strong>RETIRO PROGRAMADO</strong></div>
               <div>Banda Medida: <strong>${f(t.mm)} mm</strong> (contra umbral 20,0 mm)</div>
@@ -1644,9 +1746,9 @@ const INITIAL_TRUCKS = [
 
           <!-- Botón de Confirmación -->
           <div class="pt-4">
-            <button onclick="emitirOrden('${serial}')" ${puedeEmitir ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <button id="btn-emitir" onclick="emitirOrden('${serial}')" ${puedeEmitir ? '' : 'disabled'} class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>${tardia ? "Confirmar con riesgo aceptado y emitir orden" : "Confirmar y Emitir Orden en SAP PM"}</span>
+              <span>${tardia ? "Confirmar con riesgo aceptado y emitir orden" : "Confirmar y emitir orden"}</span>
             </button>
           </div>
 
@@ -1654,42 +1756,39 @@ const INITIAL_TRUCKS = [
       `;
     }
 
-    function emitirOrden(serial) {
+    async function emitirOrden(serial) {
       const t = ST(serial);
       const w = state.windows.find(x => x.id === selectedWindowId);
       if (!t || !w) return;
       const tardia = !(w.en < t.h);
       if (tardia && !riesgoAceptado) { showToast("Debe confirmar el riesgo: la ventana llega después del umbral.", "danger"); return; }
 
-      w.libres--;
       const newId = siguienteCodigoOrden();
       const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      const nota = `Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length ? " Daño: " + t.dmg[0].t + "." : ""} Ingresa serial de bodega 5980R63-B-544. Dejar en cancha de garantía para informe semanal.${tardia ? ` RIESGO ACEPTADO por ${autorVisible()}: la ventana llega ${w.en - t.h} h después del cruce del umbral.` : ""}`;
+      const errorNota = REGLAS_CAEX.validar("justificacion", nota);
+      if (errorNota) { showToast(errorNota, "danger"); return; }
+      const origen = `${f(t.mm)} mm, tasa ${t.seg}`;
 
-      const newOrder = [
-        newId,
-        nowStr,
-        serial,
-        "retiro",
-        `Retiro programado por proyección de ${t.h} h remanentes a la tasa ${t.seg} de ${f(t.rate)} mm/100 h; banda en ${f(t.mm)} mm contra umbral de 20 mm.${t.dmg.length ? " Daño: " + t.dmg[0].t + "." : ""} Ingresa serial de bodega 5980R63-B-544. Dejar en cancha de garantía para informe semanal.${tardia ? ` RIESGO ACEPTADO por ${autorVisible()}: la ventana llega ${w.en - t.h} h después del cruce del umbral.` : ""}`,
-        w.dia,
-        w.turno,
-        t.h,
-        "med-2498",
-        `${f(t.mm)} mm, tasa ${t.seg}`,
-        "programada",
-        [`${nowStr} · ${autorVisible()} · orden emitida con éxito y sincronizada con ERP`]
-      ];
-
-      state.orders.unshift(newOrder);
-      saveState();
+      if (DB.activo) {
+        const ok = await guardarEnBase(() => DB.emitirOrden({
+          codigo: newId, serial, ventanaId: w.id, tipo: "retiro", nota, horas: t.h, origen
+        }), "btn-emitir", "Guardando la orden…");
+        if (!ok) return;
+      } else {
+        w.libres--;
+        state.orders.unshift([newId, nowStr, serial, "retiro", nota, w.dia, w.turno, t.h, "med-2498", origen, "programada",
+          [`${nowStr} · ${autorVisible()} · orden emitida`]]);
+        saveState();
+      }
 
       selectedWindowId = null;
       riesgoAceptado = false;
-      showToast(tardia ? `Orden ${newId} emitida con riesgo aceptado: la ventana llega ${w.en - t.h} h tarde.` : `Orden ${newId} emitida con éxito en ERP. Taller notificado.`, tardia ? "warning" : "success");
+      const donde = DB.activo ? "guardada en la base" : "guardada en este navegador (modo local)";
+      showToast(tardia
+        ? `Orden ${newId} ${donde} con riesgo aceptado: la ventana llega ${w.en - t.h} h tarde.`
+        : `Orden ${newId} ${donde}. Cupo reservado en el taller: ${w.dia}, ${w.turno}.`, tardia ? "warning" : "success");
       navigate("#/o");
-      persistir(() => DB.emitirOrden({
-        codigo: newId, serial, ventanaId: w.id, tipo: "retiro", nota: newOrder[4], horas: t.h, origen: newOrder[9]
-      }));
     }
 
     // --- PANTALLA 5: ÓRDENES DE TRABAJO ---
@@ -1702,8 +1801,8 @@ const INITIAL_TRUCKS = [
       updateActiveNav("nav-ordenes");
       const counts = {
         programada: state.orders.filter(o => o[10] === "programada").length,
-        ejecutada: state.orders.filter(o => o[10] === "ejecutada").length + 54,
-        anulada: state.orders.filter(o => o[10] === "anulada").length + 7
+        ejecutada: state.orders.filter(o => o[10] === "ejecutada").length,
+        anulada: state.orders.filter(o => o[10] === "anulada").length
       };
 
       const filtered = state.orders.filter(o => {
@@ -1820,12 +1919,20 @@ const INITIAL_TRUCKS = [
                               Modificar
                             </button>
                           ` : `
-                            <span class="text-xs text-[var(--muted)]">Histórico</span>
+                            <button onclick="navigate('#/e/${o[0]}')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--bg)] hover:bg-[var(--card-hover)] text-[var(--muted)] border border-[var(--border)] transition-all" title="Solo lectura: motivo e historial">
+                              Ver
+                            </button>
                           `}
                         </td>
                       </tr>
                     `;
                   }).join("")}
+                  ${filtered.length ? "" : `
+                    <tr><td colspan="8" class="py-12 px-4 text-center">
+                      <div class="text-sm font-semibold text-[var(--ink)]">${state.orders.length ? "Ninguna orden coincide con la búsqueda o el filtro." : "Aún no hay órdenes de trabajo."}</div>
+                      <div class="text-xs text-[var(--muted)] mt-1">${state.orders.length ? "Pruebe con otro texto o vea todas las órdenes." : "Se emiten desde la Ficha de un neumático, con el botón Agendar."}</div>
+                      ${state.orders.length ? `<button onclick="filterOrderStatus='todos'; filterOrderType='todos'; searchOrderQuery=''; renderOrders()" class="mt-3 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">Ver todas las órdenes</button>` : ""}
+                    </td></tr>`}
                 </tbody>
               </table>
             </div>
@@ -1850,13 +1957,98 @@ const INITIAL_TRUCKS = [
       showToast("Informe descargado en formato CSV para reunión y reclamo de garantía", "success");
     }
 
-    // --- PANTALLA 6: MODIFICAR / ANULAR ORDEN ---
+    // --- PANTALLA 6: VER, MODIFICAR, ANULAR Y MARCAR COMO EJECUTADA ---
+    // PROP-12: una orden anulada o ejecutada se abre en solo lectura (antes se podía editar por su dirección);
+    // una orden que no existe muestra un aviso (antes volvía a Órdenes sin explicar).
     let editState = null;
+    const MOTIVOS_ANULACION = ["El neumático ya se rotó", "Se retiró en otra ventana", "Error al emitir la orden", "Otro motivo"];
+
+    // Texto con contador y mensaje de la regla (src/reglas.js); lo escrito nunca se borra
+    function campoTexto({ id, campo, valor, etiqueta, ayuda, alEscribir }) {
+      const err = valor ? REGLAS_CAEX.validar(campo, valor) : "";
+      const max = REGLAS_CAEX.REGLAS[campo].max;
+      return `
+        <div class="space-y-1">
+          <label for="${id}" class="text-xs font-semibold text-[var(--ink)]">${etiqueta}</label>
+          <textarea id="${id}" placeholder="${ayuda}" oninput="${alEscribir}; actualizarCampo('${id}', '${campo}')" aria-describedby="${id}-error" class="w-full h-20 p-2.5 rounded-xl bg-[var(--bg)] border ${err ? "border-rose-500" : "border-[var(--border)]"} text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">${tfEsc(valor)}</textarea>
+          <div class="flex justify-between gap-2 text-[11px]">
+            <span id="${id}-error" class="text-rose-400">${err}</span>
+            <span id="${id}-contador" class="font-mono ${String(valor).trim().length > max ? "text-rose-400 font-bold" : "text-[var(--muted)]"}">${String(valor).trim().length.toLocaleString("es-CL")}/${max}</span>
+          </div>
+        </div>`;
+    }
+    // Actualiza el mensaje, el contador y los botones sin redibujar (no se pierde el cursor ni lo escrito)
+    function actualizarCampo(id, campo) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const err = el.value ? REGLAS_CAEX.validar(campo, el.value) : "";
+      const largo = el.value.trim().length, max = REGLAS_CAEX.REGLAS[campo].max;
+      document.getElementById(id + "-error").textContent = err;
+      const c = document.getElementById(id + "-contador");
+      c.textContent = `${largo.toLocaleString("es-CL")}/${max}`;
+      c.className = `font-mono ${largo > max ? "text-rose-400 font-bold" : "text-[var(--muted)]"}`;
+      el.classList.toggle("border-rose-500", !!err);
+      el.classList.toggle("border-[var(--border)]", !err);
+      actualizarBotonesOT();
+    }
+
+    const motivoAnulacionFinal = () => editState.motivoAnulacion === "Otro motivo"
+      ? `Otro motivo: ${editState.detalleAnulacion.trim()}` : editState.motivoAnulacion;
+    const anulacionValida = () => !!editState.motivoAnulacion &&
+      (editState.motivoAnulacion !== "Otro motivo" || !REGLAS_CAEX.validar("detalleAnulacion", editState.detalleAnulacion));
+
+    function actualizarBotonesOT() {
+      if (!editState) return;
+      const g = document.getElementById("btn-guardar-ot");
+      if (g && !guardando) g.disabled = !!REGLAS_CAEX.validar("motivo", editState.motivo) || g.dataset.tardia === "1";
+      const a = document.getElementById("btn-anular-ot");
+      if (a && !guardando) a.disabled = !anulacionValida();
+      const x = document.getElementById("btn-ejecutar-ot");
+      if (x && !guardando) x.disabled = !!REGLAS_CAEX.validar("motivo", editState.motivoEjecucion);
+    }
+
+    function renderOrdenCerrada(o) {
+      const anulada = o[10] === "anulada";
+      const cierre = [...(o[11] || [])].reverse().find(h => /orden (anulada|ejecutada)/.test(h)) || "";
+      const motivoCierre = cierre.includes("motivo:") ? cierre.split("motivo:").slice(1).join("motivo:").trim() : "No consta (orden cerrada antes de que se registrara el motivo).";
+      const hist = (o[11] || []).map(h => `<li class="text-xs text-[var(--muted)] font-mono">${tfEsc(h)}</li>`).join("") || '<li class="text-xs text-[var(--muted)]">Sin registros.</li>';
+      $.innerHTML = `
+        <div class="max-w-3xl mx-auto space-y-6">
+          <div class="flex items-center gap-3 pb-3 border-b border-[var(--border)]">
+            <button onclick="editState=null; navigate('#/o')" aria-label="Volver a Órdenes" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)]">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">Orden ${o[0]} · ${anulada ? "anulada" : "ejecutada"}</h1>
+              <p class="text-xs text-[var(--muted)] font-mono">${o[2]} · Emitida: ${o[1]}</p>
+            </div>
+          </div>
+          <div role="note" class="p-4 rounded-2xl border-2 ${anulada ? "border-slate-500 bg-slate-500/10" : "border-emerald-500 bg-emerald-500/10"} text-sm text-[var(--ink)]">
+            <strong>Solo lectura.</strong> Esta orden está ${anulada ? "anulada" : "ejecutada"}: no se modifica ni se reactiva. Se conserva para la trazabilidad y el reclamo de garantía.
+            <div class="mt-2 text-xs"><span class="font-semibold">Motivo del cierre:</span> ${tfEsc(motivoCierre)}</div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-2 text-xs">
+              <h3 class="text-sm font-bold text-[var(--ink)]">Datos de la orden</h3>
+              <div><span class="text-[var(--muted)]">Intervención:</span> <strong class="uppercase">${o[3]}</strong></div>
+              <div><span class="text-[var(--muted)]">Ventana de taller:</span> ${o[5]} · ${o[6]}</div>
+              <div><span class="text-[var(--muted)]">Horas remanentes al emitir:</span> ${o[7]} h</div>
+              <div><span class="text-[var(--muted)]">Medición de origen:</span> ${o[8]} · ${o[9]}</div>
+              <div class="pt-2 text-[var(--muted)]">${tfEsc(o[4])}</div>
+            </div>
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-2">
+              <h3 class="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">Historial de trazabilidad</h3>
+              <ul class="space-y-1.5 list-disc pl-4">${hist}</ul>
+            </div>
+          </div>
+        </div>`;
+    }
 
     function renderEditOrder(orderId) {
       updateActiveNav("");
       const o = state.orders.find(x => x[0] === orderId);
-      if (!o) return navigate("#/o");
+      if (!o) return renderNoEncontrado(`La orden ${tfEsc(orderId)} no existe`, "Revise el número: no está entre las órdenes de trabajo guardadas en la base de datos.", "#/o", "Ir a Órdenes");
+      if (o[10] !== "programada") return renderOrdenCerrada(o);
 
       if (!editState || editState.id !== orderId) {
         const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]) || { id: 0 };
@@ -1866,7 +2058,9 @@ const INITIAL_TRUCKS = [
           motivo: "",
           riesgoAceptado: false,
           motivoAnulacion: "",
-          confirmingAnulacion: false
+          detalleAnulacion: "",
+          confirmingAnulacion: false,
+          motivoEjecucion: ""
         };
       }
 
@@ -1875,12 +2069,13 @@ const INITIAL_TRUCKS = [
       const selW = state.windows.find(w => w.id === editState.w);
       const esActual = selW && o[5] === selW.dia && o[6] === selW.turno;
       const tardiaEd = !!(t && selW && !esActual && !(selW.en < t.h));
-      const hist = (o[11] || []).map(h => `<li class="text-xs text-[var(--muted)] font-mono">${h}</li>`).join("") || '<li class="text-xs text-[var(--muted)]">Sin cambios registrados desde la emisión.</li>';
+      const hist = (o[11] || []).map(h => `<li class="text-xs text-[var(--muted)] font-mono">${tfEsc(h)}</li>`).join("") || '<li class="text-xs text-[var(--muted)]">Sin cambios registrados desde la emisión.</li>';
+      const motivoOk = !REGLAS_CAEX.validar("motivo", editState.motivo);
 
       $.innerHTML = `
         <div class="max-w-3xl mx-auto space-y-6">
           <div class="flex items-center gap-3 pb-3 border-b border-[var(--border)]">
-            <button onclick="editState=null; navigate('#/o')" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)]">
+            <button onclick="editState=null; navigate('#/o')" aria-label="Volver a Órdenes" class="p-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--ink)]">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <div>
@@ -1890,11 +2085,11 @@ const INITIAL_TRUCKS = [
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Formulario de Reasignación de Ventana y Notas -->
+
+            <!-- Reasignar ventana -->
             <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
               <h3 class="text-sm font-bold text-[var(--ink)]">Reasignar Ventana de Taller</h3>
-              
+
               <div class="space-y-2">
                 ${state.windows.map(w => {
                   const isCurrent = o[5] === w.dia && o[6] === w.turno;
@@ -1919,23 +2114,29 @@ const INITIAL_TRUCKS = [
 
               <div class="space-y-1">
                 <div class="text-xs font-semibold text-[var(--ink)]">Justificación original de la orden <span class="font-normal text-[var(--muted)]">(no se modifica)</span>:</div>
-                <div class="w-full p-3 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] text-xs text-[var(--muted)]">${o[4]}</div>
+                <div class="w-full p-3 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] text-xs text-[var(--muted)]">${tfEsc(o[4])}</div>
               </div>
 
-              <div class="space-y-1">
-                <label for="motivo-cambio" class="text-xs font-semibold text-[var(--ink)]">Motivo del cambio (obligatorio, queda en el historial):</label>
-                <textarea id="motivo-cambio" placeholder="Ej: el taller no tiene horas hombre en ese turno" oninput="editState.motivo=this.value; actualizarBotonGuardarOT()" class="w-full h-20 p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-blue-500/50">${tfEsc(editState.motivo)}</textarea>
-              </div>
+              ${campoTexto({ id: "motivo-cambio", campo: "motivo", valor: editState.motivo, etiqueta: "Motivo del cambio (obligatorio, queda en el historial):", ayuda: "Ej: el taller no tiene horas hombre en ese turno", alEscribir: "editState.motivo=this.value" })}
 
-              <p id="error-motivo" class="text-[11px] text-rose-400 ${editState.motivo.trim() ? 'hidden' : ''}">El motivo del cambio es obligatorio.</p>
-              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${editState.motivo.trim() && (!tardiaEd || editState.riesgoAceptado) ? '' : 'disabled'} data-tardia="${tardiaEd && !editState.riesgoAceptado ? 1 : 0}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
+              <button id="btn-guardar-ot" onclick="guardarCambiosOrden('${orderId}')" ${motivoOk && (!tardiaEd || editState.riesgoAceptado) ? '' : 'disabled'} data-tardia="${tardiaEd && !editState.riesgoAceptado ? 1 : 0}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-3 rounded-xl shadow-md transition-all">
                 Guardar Modificaciones
               </button>
             </div>
 
-            <!-- Panel de Anulación y Auditoría -->
             <div class="space-y-6">
-              
+
+              <!-- PROP-12: cierre normal de la orden (antes no existía) -->
+              <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 space-y-3">
+                <h3 class="text-sm font-bold text-emerald-500">Marcar como ejecutada</h3>
+                <p class="text-xs text-[var(--muted)]">Cuando el taller hizo el retiro. La orden queda cerrada y en solo lectura.</p>
+                ${campoTexto({ id: "motivo-ejecucion", campo: "motivo", valor: editState.motivoEjecucion, etiqueta: "Observación de cierre (obligatoria):", ayuda: "Ej: retiro hecho en el turno A; neumático en cancha de garantía", alEscribir: "editState.motivoEjecucion=this.value" })}
+                <button id="btn-ejecutar-ot" onclick="marcarEjecutada('${orderId}')" ${REGLAS_CAEX.validar("motivo", editState.motivoEjecucion) ? "disabled" : ""} class="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs py-2.5 rounded-xl transition-all">
+                  Marcar como ejecutada
+                </button>
+              </div>
+
+              <!-- Anular -->
               <div class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-5 space-y-3">
                 <h3 class="text-sm font-bold text-rose-400">Anular esta Orden</h3>
                 <p class="text-xs text-[var(--muted)]">La orden no se elimina de la base de datos: queda registrada como ANULADA para auditoría y se libera el cupo reservado en el taller.</p>
@@ -1943,24 +2144,26 @@ const INITIAL_TRUCKS = [
                 <div class="space-y-1">
                   <div class="text-xs font-medium text-[var(--ink)] mb-1">Motivo de Anulación:</div>
                   <div class="flex flex-wrap gap-1.5">
-                    ${["El neumático ya se rotó", "Se retiró en otra ventana", "Error al emitir la orden", "Otro motivo"].map(m => `
-                      <button onclick="editState.motivoAnulacion='${m}'; renderEditOrder('${orderId}')" class="px-2.5 py-1 rounded-lg text-xs border transition-all ${editState.motivoAnulacion === m ? 'bg-rose-600 text-white border-rose-600' : 'bg-[var(--card)] text-[var(--muted)] border-[var(--border)]'}">
+                    ${MOTIVOS_ANULACION.map(m => `
+                      <button onclick="editState.motivoAnulacion='${m}'; editState.confirmingAnulacion=false; renderEditOrder('${orderId}')" class="px-2.5 py-1 rounded-lg text-xs border transition-all ${editState.motivoAnulacion === m ? 'bg-rose-600 text-white border-rose-600' : 'bg-[var(--card)] text-[var(--muted)] border-[var(--border)]'}">
                         ${m}
                       </button>
                     `).join("")}
                   </div>
                 </div>
 
+                ${editState.motivoAnulacion === "Otro motivo" ? campoTexto({ id: "detalle-anulacion", campo: "detalleAnulacion", valor: editState.detalleAnulacion, etiqueta: "Describa el motivo (obligatorio):", ayuda: "Ej: PRUEBA DE ROTURA", alEscribir: "editState.detalleAnulacion=this.value" }) : ""}
+
                 ${editState.confirmingAnulacion ? `
                   <div class="p-3 bg-[var(--card)] rounded-xl border border-rose-500/40 text-xs space-y-2">
-                    <div class="font-bold text-rose-400">¿Confirmar anulación definitiva?</div>
+                    <div class="font-bold text-rose-400">¿Confirmar anulación definitiva? Motivo: «${tfEsc(motivoAnulacionFinal())}»</div>
                     <div class="flex gap-2">
-                      <button onclick="confirmarAnulacion('${orderId}')" class="bg-rose-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs">Sí, anular</button>
+                      <button id="btn-anular-ot" onclick="confirmarAnulacion('${orderId}')" ${anulacionValida() ? "" : "disabled"} class="bg-rose-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 rounded-lg text-xs">Sí, anular</button>
                       <button onclick="editState.confirmingAnulacion=false; renderEditOrder('${orderId}')" class="bg-[var(--bg)] text-[var(--ink)] px-3 py-1.5 rounded-lg text-xs">Cancelar</button>
                     </div>
                   </div>
                 ` : `
-                  <button onclick="editState.confirmingAnulacion=true; renderEditOrder('${orderId}')" ${editState.motivoAnulacion ? '' : 'disabled'} class="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-semibold text-xs py-2.5 rounded-xl transition-all">
+                  <button onclick="editState.confirmingAnulacion=true; renderEditOrder('${orderId}')" ${anulacionValida() ? '' : 'disabled'} class="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-semibold text-xs py-2.5 rounded-xl transition-all">
                     Anular Orden de Trabajo
                   </button>
                 `}
@@ -1979,16 +2182,12 @@ const INITIAL_TRUCKS = [
       `;
     }
 
-    function actualizarBotonGuardarOT() {
-      const b = document.getElementById("btn-guardar-ot");
-      const ok = !!editState.motivo.trim();
-      if (b) b.disabled = !ok || b.dataset.tardia === "1";
-      document.getElementById("error-motivo")?.classList.toggle("hidden", ok);
-    }
+    // Aviso común después de que la base confirmó
+    const dondeGuardado = () => DB.activo ? "guardado en la base" : "guardado en este navegador (modo local)";
 
-    function guardarCambiosOrden(orderId) {
+    async function guardarCambiosOrden(orderId) {
       const o = state.orders.find(x => x[0] === orderId);
-      if (!o) return;
+      if (!o || !editState) return;
 
       const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
       const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
@@ -1996,48 +2195,59 @@ const INITIAL_TRUCKS = [
 
       const cambiaVentana = !!(newWin && (!curWin || curWin.id !== newWin.id));
       const motivo = (editState.motivo || "").trim();
-      if (!motivo) {
-        showToast("El motivo del cambio es obligatorio.", "danger");
-        return;
-      }
+      const errMotivo = REGLAS_CAEX.validar("motivo", motivo);
+      if (errMotivo) { showToast(errMotivo, "danger"); return; }
       const tt = ST(o[2]);
       const tardia = !!(cambiaVentana && tt && !(newWin.en < tt.h));
       if (tardia && !editState.riesgoAceptado) { showToast("Debe confirmar el riesgo: la nueva ventana llega después del umbral.", "danger"); return; }
       const motivoFinal = tardia ? `${motivo} · RIESGO ACEPTADO: la ventana llega ${newWin.en - tt.h} h después del umbral` : motivo;
-      if (cambiaVentana) {
-        if (curWin) curWin.libres++;
-        newWin.libres--;
-        o[5] = newWin.dia;
-        o[6] = newWin.turno;
+      if (REGLAS_CAEX.validar("motivo", motivoFinal)) { showToast(REGLAS_CAEX.validar("motivo", motivoFinal), "danger"); return; }
+
+      if (DB.activo) {
+        const ok = await guardarEnBase(() => DB.modificarOrden(orderId, { ventanaId: cambiaVentana ? newWin.id : null, motivo: motivoFinal }), "btn-guardar-ot");
+        if (!ok) return;
+      } else {
+        if (cambiaVentana) {
+          if (curWin) curWin.libres++;
+          newWin.libres--;
+          o[5] = newWin.dia;
+          o[6] = newWin.turno;
+        }
+        o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · modificación de orden · motivo: ${motivoFinal}`);
+        saveState();
       }
-
-      o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · modificación de orden · motivo: ${motivoFinal}`);
-
-      saveState();
       editState = null;
-      showToast(tardia ? `Orden ${orderId} reprogramada con riesgo aceptado: llega ${newWin.en - tt.h} h tarde.` : `Orden ${orderId} actualizada correctamente`, tardia ? "warning" : "success");
+      showToast(tardia ? `Orden ${orderId} reprogramada con riesgo aceptado (${dondeGuardado()}): llega ${newWin.en - tt.h} h tarde.` : `Orden ${orderId} actualizada: cambio ${dondeGuardado()}.`, tardia ? "warning" : "success");
       navigate("#/o");
-      persistir(() => DB.modificarOrden(orderId, { ventanaId: cambiaVentana ? newWin.id : null, motivo: motivoFinal }));
     }
 
-    function confirmarAnulacion(orderId) {
+    // Anular y marcar como ejecutada: una sola escritura (el evento del historial) que la base aplica a la orden
+    async function cerrarOrden(orderId, tipo) {
       const o = state.orders.find(x => x[0] === orderId);
-      if (!o) return;
+      if (!o || !editState) return;
+      const anular = tipo === "anulada";
+      if (anular && !anulacionValida()) { showToast(REGLAS_CAEX.validar("detalleAnulacion", editState.detalleAnulacion) || "Elija un motivo de anulación.", "danger"); return; }
+      const motivo = anular ? motivoAnulacionFinal() : editState.motivoEjecucion.trim();
+      const errMotivo = REGLAS_CAEX.validar("motivo", motivo);
+      if (errMotivo) { showToast(errMotivo, "danger"); return; }
 
-      const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
-      const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]);
-      if (curWin) curWin.libres++;
-
-      const motivo = editState.motivoAnulacion;
-      o[10] = "anulada";
-      o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · orden anulada · motivo: ${motivo}`);
-
-      saveState();
+      if (DB.activo) {
+        const ok = await guardarEnBase(() => anular ? DB.anularOrden(orderId, motivo) : DB.ejecutarOrden(orderId, motivo),
+          anular ? "btn-anular-ot" : "btn-ejecutar-ot", anular ? "Anulando…" : "Guardando…");
+        if (!ok) return;
+      } else {
+        const nowStr = new Date().toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+        if (anular) { const curWin = state.windows.find(w => w.dia === o[5] && w.turno === o[6]); if (curWin) curWin.libres++; }
+        o[10] = tipo;
+        o[11] = (o[11] || []).concat(`${nowStr} · ${autorVisible()} · orden ${tipo} · motivo: ${motivo}`);
+        saveState();
+      }
       editState = null;
-      showToast(`Orden ${orderId} anulada y cupo en taller liberado`, "info");
+      showToast(anular ? `Orden ${orderId} anulada y cupo del taller liberado (${dondeGuardado()}).` : `Orden ${orderId} marcada como ejecutada (${dondeGuardado()}).`, anular ? "info" : "success");
       navigate("#/o");
-      persistir(() => DB.anularOrden(orderId, motivo));
     }
+    const confirmarAnulacion = orderId => cerrarOrden(orderId, "anulada");
+    const marcarEjecutada = orderId => cerrarOrden(orderId, "ejecutada");
 
     // --- PANTALLA 7: SIMULADOR DE PASADA POR PÓRTICO (DEMO DE CAPTURA P-100) ---
     let simSelectedTruck = "CAEX-102";
@@ -2391,7 +2601,7 @@ const INITIAL_TRUCKS = [
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   CAPTURA CONFIRMADA
                 </div>
-                <div class="text-[11px] font-mono text-[var(--muted)]">Trazabilidad enviada a ERP</div>
+                <div class="text-[11px] font-mono text-[var(--muted)]">Trazabilidad registrada en la base</div>
               </div>
             </div>
           </div>
@@ -3292,6 +3502,9 @@ const INITIAL_TRUCKS = [
       if (!usuarioEmail && path !== "ayuda") {   // la ayuda se puede leer sin identificarse
         renderIngreso();
         updateActiveNav(null);
+      } else if (DB.activo && cargaInicial !== "lista" && path !== "ayuda") {   // PROP-12: nunca datos a medias
+        cargaInicial === "error" ? renderErrorCarga() : renderCargando();
+        updateActiveNav(null);
       } else if (!path) {
         renderDashboard();
       } else if (path === "c") {
@@ -3327,21 +3540,10 @@ const INITIAL_TRUCKS = [
     window.addEventListener("hashchange", route);
     window.addEventListener("DOMContentLoaded", async () => {
       mostrarUsuario();
-      if (DB.activo) {
-        marcarOrigenDatos("cargando Supabase…", "bg-amber-400");
-        try {
-          await sincronizarDesdeBase();
-          marcarOrigenDatos("Supabase", "bg-emerald-400");
-        } catch (e) {
-          console.error(e);
-          DB.activo = false;
-          marcarOrigenDatos("modo local", "bg-slate-400");
-          showToast(`Sin conexión a Supabase (${e.message}). Se usan los datos locales.`, "danger");
-        }
-      } else {
-        marcarOrigenDatos("modo local", "bg-slate-400");
-      }
-      route();
+      // PROP-12: si la base no responde, se muestra el error con «Reintentar»; ya no se cambia en silencio
+      // a «modo local», donde todo decía «éxito» sin guardarse. El modo local queda solo sin config.js.
+      if (DB.activo) await iniciarDatos();
+      else { marcarOrigenDatos("modo local", "bg-slate-400"); route(); }
     });
   </script>
 </body>

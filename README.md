@@ -236,7 +236,7 @@ Pasos de configuración completos:
 
 2. **Frontend (local y Vercel):** completar `src/config.js` con la URL y la clave **anon** del proyecto (nunca la `service_role`).
    Para probar en local: `cd src && python -m http.server 8000` y abrir http://localhost:8000.
-   El indicador de la barra superior muestra **Supabase** cuando lee y escribe en la base, o **modo local** si no hay conexión (en ese caso usa `localStorage`).
+   El indicador de la barra superior muestra **Supabase** cuando lee y escribe en la base, **sin conexión** (con un botón Reintentar) si la base no responde, o **modo local** solo cuando `config.js` no tiene la conexión configurada (en ese caso usa `localStorage`).
    En Vercel, el *Root Directory* es `src` y la rama de producción es `main`.
 
 3. **Backend API (FastAPI):**
